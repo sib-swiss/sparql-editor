@@ -2,8 +2,6 @@
 
 # 💫 SPARQL editor web component
 
-[![Run tests](https://github.com/sib-swiss/sparql-editor/actions/workflows/test.yml/badge.svg)](https://github.com/sib-swiss/sparql-editor/actions/workflows/test.yml)
-
 </div>
 
 A standard web component to easily deploy a SPARQL query editor for a specific SPARQL endpoint using the popular [YASGUI editor](https://github.com/zazuko/Yasgui).

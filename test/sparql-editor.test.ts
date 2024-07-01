@@ -50,7 +50,7 @@ describe("sparql-editor", () => {
     const sparqlEditor = document.querySelector("sparql-editor") as HTMLElement & {shadowRoot: ShadowRoot};
     await customElements.whenDefined("sparql-editor");
     // Wait for the element to pull examples
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // Check attributes
     expect(sparqlEditor).toBeInTheDocument();
