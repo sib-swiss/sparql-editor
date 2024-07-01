@@ -3,6 +3,7 @@ on: [push, pull_request, workflow_call, workflow_dispatch]
 
 jobs:
   test:
+    name: Run tests
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
