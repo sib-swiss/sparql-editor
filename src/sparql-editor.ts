@@ -187,42 +187,52 @@ export class SparqlEditor extends HTMLElement {
     name: "voidClass",
     bulk: true,
     get: async (yasqe: any) => {
-      const sparqlQuery =
-        "PREFIX void: <http://rdfs.org/ns/void#> SELECT DISTINCT ?class { [] void:class ?class } ORDER BY ?class ";
-      return fetch(this.endpointUrl + "?format=csv&ac=1&query=" + encodeURIComponent(sparqlQuery))
-        .then(response => response.text())
-        .then(text => {
-          const data = text.split("\n").filter(item => item !== "");
-          data.shift();
-          // Remove the original autocompleters for class
-          if (data.length > 0) delete yasqe.autocompleters["class"];
-          return data;
-        })
-        .catch(error => {
-          console.warn("Error retrieving autocomplete for classes:", error);
-          return [];
+      const sparqlQuery = "PREFIX void: <http://rdfs.org/ns/void#> SELECT DISTINCT ?class { [] void:class ?class } ORDER BY ?class ";
+      try {
+        const response = await fetch(
+          `${this.endpointUrl}?format=json&ac=1&query=${encodeURIComponent(sparqlQuery)}`,
+        );
+        const json = await response.json();
+        const clsList: string[] = []
+        json.results.bindings.forEach((b: any) => {
+          clsList.push(b.class.value)
         });
+        if (clsList.length > 0) {
+          delete yasqe.autocompleters["class"];
+        } else {
+          console.warn("No classes found in the VoID description");
+        }
+        return clsList;
+      } catch (error) {
+        console.warn("Error retrieving autocomplete for classes:", error);
+        return [];
+      }
     },
   };
   voidPropertyCompleter = {
     name: "voidProperty",
     bulk: true,
     get: async (yasqe: any) => {
-      const sparqlQuery =
-        "PREFIX void: <http://rdfs.org/ns/void#> SELECT DISTINCT ?property { [] void:linkPredicate|void:property ?property } ORDER BY ?property";
-      return fetch(this.endpointUrl + "?format=csv&ac=1&query=" + encodeURIComponent(sparqlQuery))
-        .then(response => response.text())
-        .then(function (text) {
-          const data = text.split("\n").filter(item => item !== "");
-          data.shift();
-          // Remove the original autocompleters for property
-          if (data.length > 0) delete yasqe.autocompleters["property"];
-          return Promise.resolve(data);
-        })
-        .catch(error => {
-          console.warn("Error retrieving autocomplete for properties:", error);
-          return [];
+      const sparqlQuery = "PREFIX void: <http://rdfs.org/ns/void#> SELECT DISTINCT ?property { [] void:linkPredicate|void:property ?property } ORDER BY ?property";
+      try {
+        const response = await fetch(
+          `${this.endpointUrl}?format=json&ac=1&query=${encodeURIComponent(sparqlQuery)}`,
+        );
+        const json = await response.json();
+        const propsList: string[] = []
+        json.results.bindings.forEach((b: any) => {
+          propsList.push(b.property.value)
         });
+        if (propsList.length > 0) {
+          delete yasqe.autocompleters["property"];
+        } else {
+          console.warn("No properties found in the VoID description");
+        }
+        return propsList;
+      } catch (error) {
+        console.warn("Error retrieving autocomplete for properties:", error);
+        return [];
+      }
     },
   };
 
