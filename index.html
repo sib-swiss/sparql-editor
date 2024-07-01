@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SPARQL editor dev</title>
+    <meta name="description" content="SPARQL editor development page" />
+    <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/f/f3/Rdf_logo.svg" />
+
+    <script type="module" src="./src/sparql-editor.ts"></script>
+  </head>
+
+  <body>
+    <div>
+      <sparql-editor endpoint="https://sparql.uniprot.org/sparql/"></sparql-editor>
+
+      <!-- <sparql-editor endpoint="https://sparql.uniprot.org/sparql/" style="--btn-color: white; --btn-bg-color: #e30613;"></sparql-editor> -->
+      <!-- <sparql-editor endpoint="https://sparql.uniprot.org/sparql/" style="--btn-bg-color: #00709b; --btn-color: white;"></sparql-editor> -->
+
+      <!-- <sparql-editor endpoint="https://www.bgee.org/sparql/"></sparql-editor> -->
+      <!-- <sparql-editor endpoint="https://sparql.omabrowser.org/sparql/"></sparql-editor> -->
+      <!-- <sparql-editor endpoint="https://beta.sparql.swisslipids.org/sparql/"></sparql-editor> -->
+    </div>
+
+    <!-- <div style="display: flex; flex-direction: row;">
+            <div id="sparql-editor" style="flex: 0 0 70%; margin-right: 1em;"></div>
+            <div id="sparql-examples" style="flex: 1; border-left: 1px solid #ccc; padding-left: 1em;"></div>
+        </div>
+
+        <script type="module">
+            import { SparqlEditor } from "./src/sparql-editor-as-class.ts";
+
+            const se = new SparqlEditor(
+                "https://sparql.uniprot.org/sparql/",
+                // "https://www.bgee.org/sparql/",
+                // "https://sparql.omabrowser.org/sparql/",
+                // "https://beta.sparql.swisslipids.org/sparql/",
+                document.getElementById("sparql-editor"),
+                document.getElementById("sparql-examples"),
+            );
+        </script> -->
+  </body>
+</html>

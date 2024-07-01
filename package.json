@@ -1,0 +1,65 @@
+{
+  "name": "sparql-editor",
+  "version": "1.0.0",
+  "description": "A standard web components to easily deploy a SPARQL query editor for a specific SPARQL endpoint using the popular YASGUI editor.",
+  "license": "MIT",
+  "author": {
+    "name": "Vincent Emonet",
+    "email": "vincent.emonet@gmail.com"
+  },
+  "type": "module",
+  "main": "dist/sparql-editor.umd.js",
+  "module": "dist/sparql-editor.js",
+  "types": "dist/sparql-editor.d.ts",
+  "files": [
+    "dist/*"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "prettier --check . && eslint",
+    "fmt": "prettier --write .",
+    "test": "npm run lint && vitest run"
+  },
+  "dependencies": {
+    "@zazuko/yasgui": "^4.3.2",
+    "highlight.js": "^11.9.0",
+    "mermaid": "^10.9.1",
+    "sparqlalgebrajs": "^4.3.8"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.6.0",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^11.1.6",
+    "@testing-library/dom": "^10.2.0",
+    "@testing-library/jest-dom": "^6.4.6",
+    "@types/eslint__js": "^8.42.3",
+    "@types/node": "^20.14.9",
+    "eslint": "^8.57.0",
+    "jsdom": "^24.1.0",
+    "prettier": "^3.3.2",
+    "tslib": "^2.6.3",
+    "typescript": "^5.5.2",
+    "typescript-eslint": "^7.14.1",
+    "vite": "^5.3.2",
+    "vitest": "^1.6.0"
+  },
+  "prettier": {
+    "semi": true,
+    "tabWidth": 2,
+    "singleQuote": false,
+    "bracketSpacing": false,
+    "arrowParens": "avoid",
+    "useTabs": false,
+    "printWidth": 120
+  },
+  "keywords": [
+    "SPARQL",
+    "editor",
+    "YASGUI",
+    "query",
+    "semantic web",
+    "RDF",
+    "Linked Data"
+  ]
+}
