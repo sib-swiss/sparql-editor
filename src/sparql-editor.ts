@@ -389,7 +389,6 @@ SELECT DISTINCT ?comment ?query WHERE {
         //   console.log(this.addPrefixesToQuery(example.query))
         // }
 
-
         // Create a YASQE fancy editor for each example in dialog (super slow)
         // const exYasqeDiv = document.createElement("div");
         // exYasqeDiv.id = `exYasqeDiv${index}`;

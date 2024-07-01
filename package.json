@@ -17,8 +17,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "prettier --check . && eslint",
-    "fmt": "prettier --write .",
+    "lint": "prettier --check . && eslint . --ignore-pattern dist/",
+    "fmt": "prettier --write . && eslint . --fix --ignore-pattern dist/",
     "test": "npm run lint && vitest run"
   },
   "dependencies": {
@@ -35,7 +35,7 @@
     "@testing-library/jest-dom": "^6.4.6",
     "@types/eslint__js": "^8.42.3",
     "@types/node": "^20.14.9",
-    "eslint": "^8.57.0",
+    "eslint": "^9.6.0",
     "jsdom": "^24.1.0",
     "prettier": "^3.3.2",
     "tslib": "^2.6.3",
