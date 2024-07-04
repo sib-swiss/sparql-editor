@@ -187,15 +187,14 @@ export class SparqlEditor extends HTMLElement {
     name: "voidClass",
     bulk: true,
     get: async (yasqe: any) => {
-      const sparqlQuery = "PREFIX void: <http://rdfs.org/ns/void#> SELECT DISTINCT ?class { [] void:class ?class } ORDER BY ?class ";
+      const sparqlQuery =
+        "PREFIX void: <http://rdfs.org/ns/void#> SELECT DISTINCT ?class { [] void:class ?class } ORDER BY ?class ";
       try {
-        const response = await fetch(
-          `${this.endpointUrl}?format=json&ac=1&query=${encodeURIComponent(sparqlQuery)}`,
-        );
+        const response = await fetch(`${this.endpointUrl}?format=json&ac=1&query=${encodeURIComponent(sparqlQuery)}`);
         const json = await response.json();
-        const clsList: string[] = []
+        const clsList: string[] = [];
         json.results.bindings.forEach((b: any) => {
-          clsList.push(b.class.value)
+          clsList.push(b.class.value);
         });
         if (clsList.length > 0) {
           delete yasqe.autocompleters["class"];
@@ -213,15 +212,14 @@ export class SparqlEditor extends HTMLElement {
     name: "voidProperty",
     bulk: true,
     get: async (yasqe: any) => {
-      const sparqlQuery = "PREFIX void: <http://rdfs.org/ns/void#> SELECT DISTINCT ?property { [] void:linkPredicate|void:property ?property } ORDER BY ?property";
+      const sparqlQuery =
+        "PREFIX void: <http://rdfs.org/ns/void#> SELECT DISTINCT ?property { [] void:linkPredicate|void:property ?property } ORDER BY ?property";
       try {
-        const response = await fetch(
-          `${this.endpointUrl}?format=json&ac=1&query=${encodeURIComponent(sparqlQuery)}`,
-        );
+        const response = await fetch(`${this.endpointUrl}?format=json&ac=1&query=${encodeURIComponent(sparqlQuery)}`);
         const json = await response.json();
-        const propsList: string[] = []
+        const propsList: string[] = [];
         json.results.bindings.forEach((b: any) => {
-          propsList.push(b.property.value)
+          propsList.push(b.property.value);
         });
         if (propsList.length > 0) {
           delete yasqe.autocompleters["property"];

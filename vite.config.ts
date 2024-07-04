@@ -12,7 +12,7 @@ export default defineConfig({
     target: ["es2015"],
     lib: {
       entry: "src/sparql-editor.ts",
-      name: "@swissprot/sparql-editor",
+      name: "@sib-swiss/sparql-editor",
       fileName: "sparql-editor",
     },
     minify: true,

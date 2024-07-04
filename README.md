@@ -70,6 +70,22 @@ Update dependencies to the latest available versions:
 npx npm-check-updates -u
 ```
 
+## 🏷️ Release
+
+To create a new release:
+
+- Login with `npm adduser` if not already done
+
+- Upgrade version in `package.json`
+
+- Run release script:
+
+  ```bash
+  npm run release
+  ```
+
+- Create release on GitHub 
+
 ## 🤝 Credits
 
 Thanks to:
