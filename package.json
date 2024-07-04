@@ -1,6 +1,6 @@
 {
   "name": "@sib-swiss/sparql-editor",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A standard web components to easily deploy a SPARQL query editor for a specific SPARQL endpoint using the popular YASGUI editor.",
   "license": "MIT",
   "author": {
@@ -8,7 +8,7 @@
     "email": "vincent.emonet@gmail.com"
   },
   "type": "module",
-  "main": "dist/sparql-editor.umd.js",
+  "main": "dist/sparql-editor.min.js",
   "module": "dist/sparql-editor.js",
   "types": "dist/sparql-editor.d.ts",
   "files": [
