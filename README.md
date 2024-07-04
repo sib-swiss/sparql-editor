@@ -84,7 +84,7 @@ To create a new release:
   npm run release
   ```
 
-- Create release on GitHub 
+- Create release on GitHub
 
 ## 🤝 Credits
 
