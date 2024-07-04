@@ -2,6 +2,8 @@
 
 # 💫 SPARQL editor web component
 
+[![NPM](https://img.shields.io/npm/v/@sib-swiss/sparql-editor)](https://www.npmjs.com/package/@sib-swiss/sparql-editor)
+
 </div>
 
 A standard web component to easily deploy a SPARQL query editor for a specific SPARQL endpoint using the popular [YASGUI editor](https://github.com/zazuko/Yasgui).
@@ -12,21 +14,35 @@ A standard web component to easily deploy a SPARQL query editor for a specific S
 
 ## 🚀 Use
 
-> Release on npm coming soon.
+1. Import from CDN
 
-```html
-<sparql-editor endpoint="https://sparql.uniprot.org/sparql/"></sparql-editor>
-```
+   ```html
+   <script type="module" src="https://unpkg.com/@sib-swiss/sparql-editor"></script>
+   ```
 
-Customize buttons color:
+   Or install with a package manager in your project:
 
-```html
-<sparql-editor
-  endpoint="https://www.bgee.org/sparql/"
-  examples-on-main-page="10"
-  style="--btn-color: white; --btn-bg-color: #00709b;"
-></sparql-editor>
-```
+   ```bash
+   npm install --save @sib-swiss/sparql-editor
+   # or
+   pnpm add @sib-swiss/sparql-editor
+   ```
+
+2. Use the custom element in your HTML/JSX/TSX code:
+
+   ```html
+   <sparql-editor endpoint="https://sparql.uniprot.org/sparql/"></sparql-editor>
+   ```
+
+   You can customize the number of examples displayed on the main page and buttons color:
+
+   ```html
+   <sparql-editor
+     endpoint="https://www.bgee.org/sparql/"
+     examples-on-main-page="10"
+     style="--btn-color: white; --btn-bg-color: #00709b;"
+   ></sparql-editor>
+   ```
 
 ## 🛠️ Development
 
@@ -52,10 +68,10 @@ Auto format code with prettier:
 npm run fmt
 ```
 
-Lint with eslint and run basic tests (we recommend to install the [`ESLint`](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) extension on VSCode):
+Lint with eslint (we recommend to install the [`ESLint`](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) extension on VSCode):
 
 ```bash
-npm test
+npm run lint
 ```
 
 Build for production in the `dist` folder:
