@@ -63,6 +63,10 @@
     "RDF",
     "Linked Data"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sib-swiss/sparql-editor.git"
+  },
   "private": false,
   "publishConfig": {
     "access": "public"

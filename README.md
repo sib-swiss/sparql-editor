@@ -34,14 +34,17 @@ A standard web component to easily deploy a SPARQL query editor for a specific S
    <sparql-editor endpoint="https://sparql.uniprot.org/sparql/"></sparql-editor>
    ```
 
-   You can customize the number of examples displayed on the main page and buttons color:
+   You can customize the number of examples displayed on the main page, buttons color, and provide other HTML elements to be included under the SPARQL example (e.g. about and links to relevant resources):
 
    ```html
    <sparql-editor
      endpoint="https://www.bgee.org/sparql/"
      examples-on-main-page="10"
      style="--btn-color: white; --btn-bg-color: #00709b;"
-   ></sparql-editor>
+   >
+     <h1>About</h1>
+     <p>This SPARQL endpoint contains...</p>
+   </sparql-editor>
    ```
 
 ## 🛠️ Development

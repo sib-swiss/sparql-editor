@@ -38,20 +38,23 @@ export class SparqlEditor extends HTMLElement {
 
     const style = document.createElement("style");
     style.textContent = `
-			${yasguiCss}
-			${yasguiGripInlineCss}
-			${highlightjsCss}
-			${editorCss}
+      ${yasguiCss}
+      ${yasguiGripInlineCss}
+      ${highlightjsCss}
+      ${editorCss}
 		`;
 
     const container = document.createElement("div");
     container.className = "container";
     container.innerHTML = `
-			<div id="sparql-editor">
-				<button id="sparql-add-prefixes-btn" class="btn" style="margin-bottom: 0.3em;">Add common prefixes</button>
-				<div id="yasgui"></div>
-			</div>
-			<div id="sparql-examples"></div>
+      <div id="sparql-editor">
+        <button id="sparql-add-prefixes-btn" class="btn" style="margin-bottom: 0.3em;">Add common prefixes</button>
+        <div id="yasgui"></div>
+      </div>
+      <div>
+        <div id="sparql-examples"></div>
+        <slot></slot>
+      </div>
     `;
     this.shadowRoot?.appendChild(style);
     this.shadowRoot?.appendChild(container);

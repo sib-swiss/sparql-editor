@@ -11,17 +11,26 @@
 
     <!-- <script type="module" src="dist/sparql-editor.min.js"></script> -->
     <!-- <script type="module" src="./dist/sparql-editor.js"></script> -->
-    <!-- <script type="module" src="https://unpkg.com/@sib-swiss/sparql-editor"></script> -->
+    <!-- <script type="module" src="https://unpkg.com/@sib-swiss/sparql-editor@0.1.1"></script> -->
   </head>
 
   <body>
     <div>
       <!-- <sparql-editor endpoint="https://sparql.uniprot.org/sparql/"></sparql-editor> -->
 
-      <!-- <sparql-editor endpoint="https://sparql.uniprot.org/sparql/" style="--btn-color: white; --btn-bg-color: #e30613;"></sparql-editor> -->
+      <!-- <sparql-editor
+        endpoint="https://sparql.uniprot.org/sparql/"
+        describeLinks='["https://sparql.uniprot.org/sparql",""]'
+        style="--btn-color: white; --btn-bg-color: #e30613;"
+        >
+          <p>About</p>
+      </sparql-editor> -->
       <!-- <sparql-editor endpoint="https://sparql.uniprot.org/sparql/" style="--btn-bg-color: #00709b; --btn-color: white;"></sparql-editor> -->
 
-      <sparql-editor endpoint="https://www.bgee.org/sparql/"></sparql-editor>
+      <sparql-editor endpoint="https://www.bgee.org/sparql/">
+        <h1>About</h1>
+        <p>Checkout <a href="">Ontology and infos...</a></p>
+      </sparql-editor>
       <!-- <sparql-editor endpoint="https://sparql.omabrowser.org/sparql/"></sparql-editor> -->
       <!-- <sparql-editor endpoint="https://beta.sparql.swisslipids.org/sparql/"></sparql-editor> -->
     </div>
