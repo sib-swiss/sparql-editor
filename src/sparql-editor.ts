@@ -13,7 +13,7 @@ type ExampleQuery = {
 
 interface VoidDict {
   [key: string]: {
-      [key: string]: string[];
+    [key: string]: string[];
   };
 }
 
@@ -252,27 +252,29 @@ export class SparqlEditor extends HTMLElement {
       // Not perfect, but we can't parse the whole query with SPARQL.js since it's no fully written yet
       // And it would throw an error if the query is not valid
       const subj = getSubjectForCursorPosition(yasqe.getValue(), cursor.line, cursor.ch);
-      const subjTypes = extractAllSubjectsAndTypes(yasqe.getValue())
+      const subjTypes = extractAllSubjectsAndTypes(yasqe.getValue());
       // console.log(hints)
       if (subj && subjTypes.has(subj)) {
         const types = subjTypes.get(subj);
         if (types) {
           // console.log("Types", types)
-          const filteredHints = new Set()
+          const filteredHints = new Set();
           types.forEach(typeCurie => {
             const propSet = new Set(Object.keys(this.voidDescription[this.curieToUri(typeCurie)]));
             // console.log(propSet)
-            hints.filter((obj: any) => {
-              // console.log(this.curieToUri(obj.text))
-              return propSet.has(this.curieToUri(obj.text).replace(/^<|>$/g, ''))
-            }).forEach((obj: any) => {
-              filteredHints.add(obj)
-            })
+            hints
+              .filter((obj: any) => {
+                // console.log(this.curieToUri(obj.text))
+                return propSet.has(this.curieToUri(obj.text).replace(/^<|>$/g, ""));
+              })
+              .forEach((obj: any) => {
+                filteredHints.add(obj);
+              });
           });
-          return Array.from(filteredHints)
+          return Array.from(filteredHints);
         }
       }
-      return hints
+      return hints;
     },
   };
 
@@ -354,20 +356,16 @@ WHERE {
       json.results.bindings.forEach((b: any) => {
         // clsList.push(b.class.value);
         if (!(b["class1"]["value"] in this.voidDescription)) {
-          this.voidDescription[b["class1"]["value"]] = {}
+          this.voidDescription[b["class1"]["value"]] = {};
         }
         if (!(b["prop"]["value"] in this.voidDescription[b["class1"]["value"]])) {
-          this.voidDescription[b["class1"]["value"]][b["prop"]["value"]] = []
+          this.voidDescription[b["class1"]["value"]][b["prop"]["value"]] = [];
         }
         if ("class2" in b) {
-          this.voidDescription[b["class1"]["value"]][b["prop"]["value"]].push(
-                b["class2"]["value"]
-            )
+          this.voidDescription[b["class1"]["value"]][b["prop"]["value"]].push(b["class2"]["value"]);
         }
         if ("datatype" in b) {
-          this.voidDescription[b["class1"]["value"]][b["prop"]["value"]].push(
-                b["datatype"]["value"]
-            )
+          this.voidDescription[b["class1"]["value"]][b["prop"]["value"]].push(b["datatype"]["value"]);
         }
       });
     } catch (error) {
@@ -528,7 +526,7 @@ SELECT DISTINCT ?sq ?comment ?query WHERE {
   // Function to convert CURIE to full URI using the prefix map
   curieToUri(curie: string) {
     if (/^[a-zA-Z][a-zA-Z0-9]*:[a-zA-Z][a-zA-Z0-9]*$/.test(curie)) {
-      const [prefix, local] = curie.split(':');
+      const [prefix, local] = curie.split(":");
       const namespace = this.prefixes.get(prefix);
       return namespace ? `${namespace}${local}` : curie; // Return as-is if prefix not found
     } else {
@@ -542,13 +540,14 @@ function extractAllSubjectsAndTypes(query: string): Map<string, Set<string>> {
   const subjectTypeMap = new Map<string, Set<string>>();
   // Remove comments and string literals, and prefixes to avoid false matches
   const cleanQuery = query
-    .replace(/^#.*$/gm, '')
+    .replace(/^#.*$/gm, "")
     .replace(/'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"/g, '""')
-    .replace(/^PREFIX\s+.*$/gmi, '') // Remove PREFIX/prefix lines;
-    .replace(/;\s*\n/g, '; ') // Also put all triple patterns on a single line
-    .replace(/;\s*$/g, '; ');
+    .replace(/^PREFIX\s+.*$/gim, "") // Remove PREFIX/prefix lines;
+    .replace(/;\s*\n/g, "; ") // Also put all triple patterns on a single line
+    .replace(/;\s*$/g, "; ");
   // console.log(cleanQuery)
-  const typePattern = /\s*(\?\w+|<[^>]+>).*?\s+(?:a|rdf:type|<http:\/\/www\.w3\.org\/1999\/02\/22-rdf-syntax-ns#type>)\s+([^\s.]+)\s*(?:;|\.)/g;
+  const typePattern =
+    /\s*(\?\w+|<[^>]+>).*?\s+(?:a|rdf:type|<http:\/\/www\.w3\.org\/1999\/02\/22-rdf-syntax-ns#type>)\s+([^\s.]+)\s*(?:;|\.)/g;
 
   let match;
   while ((match = typePattern.exec(cleanQuery)) !== null) {
@@ -564,22 +563,21 @@ function extractAllSubjectsAndTypes(query: string): Map<string, Set<string>> {
 }
 
 function getSubjectForCursorPosition(query: string, lineNumber: number, charNumber: number): string | null {
-  const lines = query.split('\n');
+  const lines = query.split("\n");
   const currentLine = lines[lineNumber];
   // Extract the part of the line up to the cursor position
   const partOfLine = currentLine.slice(0, charNumber);
-  const partialQuery = lines.slice(0, lineNumber).join('\n') + '\n' + partOfLine;
+  const partialQuery = lines.slice(0, lineNumber).join("\n") + "\n" + partOfLine;
   // Put all triple patterns on a single line
-  const cleanQuery = partialQuery.replace(/;\s*\n/g, '; ').replace(/;\s*$/g, '; ');
-  const partialLines = cleanQuery.split('\n');
+  const cleanQuery = partialQuery.replace(/;\s*\n/g, "; ").replace(/;\s*$/g, "; ");
+  const partialLines = cleanQuery.split("\n");
   const lastLine = partialLines[partialLines.length - 1];
   const subjectMatch = lastLine.match(/([?\w]+|[<\w]+>)\s+/);
-    if (subjectMatch) {
-        return subjectMatch[1];
-    }
+  if (subjectMatch) {
+    return subjectMatch[1];
+  }
   return null;
 }
-
 
 customElements.define("sparql-editor", SparqlEditor);
 
