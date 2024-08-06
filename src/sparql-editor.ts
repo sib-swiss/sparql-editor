@@ -11,6 +11,12 @@ type ExampleQuery = {
   query: string;
 };
 
+interface VoidDict {
+  [key: string]: {
+      [key: string]: string[];
+  };
+}
+
 /**
  * Custom element to create a SPARQL editor for a given endpoint using YASGUI
  * with autocompletion for classes and properties based on VoID description stored in the endpoint
@@ -24,6 +30,7 @@ export class SparqlEditor extends HTMLElement {
   exampleQueries: ExampleQuery[];
   urlParams: any;
   prefixes: Map<string, string>;
+  voidDescription: VoidDict;
 
   constructor() {
     super();
@@ -87,6 +94,7 @@ export class SparqlEditor extends HTMLElement {
       ["dc", "http://purl.org/dc/terms/"],
       ["faldo", "http://biohackathon.org/resource/faldo#"],
     ]);
+    this.voidDescription = {};
 
     Yasgui.Yasqe.forkAutocompleter("class", this.voidClassCompleter);
     Yasgui.Yasqe.forkAutocompleter("property", this.voidPropertyCompleter);
@@ -107,8 +115,11 @@ export class SparqlEditor extends HTMLElement {
     // Get prefixes and examples, and set default config for YASGUI
     await this.getExampleQueries();
     await this.getPrefixes();
+    await this.getVoidDescription();
     Yasgui.Yasqe.defaults.value = this.addPrefixesToQuery(this.exampleQueries[0]?.query) || Yasgui.Yasqe.defaults.value;
     Yasgui.Yasr.defaults.prefixes = Object.fromEntries(this.prefixes);
+
+    // TODO: make exampleQueries a dict with the query IRI as key, so if the window.location matches a key, it will load the query
 
     // Create YASGUI editor
     const editorEl = this.shadowRoot?.getElementById("yasgui") as HTMLElement;
@@ -235,6 +246,34 @@ export class SparqlEditor extends HTMLElement {
         return [];
       }
     },
+    postprocessHints: (yasqe: any, hints: any) => {
+      const cursor = yasqe.getCursor();
+      // We retrieved the subject at the cursor position and all subjects/types using regex
+      // Not perfect, but we can't parse the whole query with SPARQL.js since it's no fully written yet
+      // And it would throw an error if the query is not valid
+      const subj = getSubjectForCursorPosition(yasqe.getValue(), cursor.line, cursor.ch);
+      const subjTypes = extractAllSubjectsAndTypes(yasqe.getValue())
+      // console.log(hints)
+      if (subj && subjTypes.has(subj)) {
+        const types = subjTypes.get(subj);
+        if (types) {
+          // console.log("Types", types)
+          const filteredHints = new Set()
+          types.forEach(typeCurie => {
+            const propSet = new Set(Object.keys(this.voidDescription[this.curieToUri(typeCurie)]));
+            // console.log(propSet)
+            hints.filter((obj: any) => {
+              // console.log(this.curieToUri(obj.text))
+              return propSet.has(this.curieToUri(obj.text).replace(/^<|>$/g, ''))
+            }).forEach((obj: any) => {
+              filteredHints.add(obj)
+            })
+          });
+          return Array.from(filteredHints)
+        }
+      }
+      return hints
+    },
   };
 
   addPrefixesToQuery(query: string) {
@@ -291,11 +330,56 @@ export class SparqlEditor extends HTMLElement {
     });
   }
 
+  async getVoidDescription() {
+    // Get VoID description to get classes and properties for advanced autocompletion
+    const voidQuery = `PREFIX up: <http://purl.uniprot.org/core/>
+PREFIX void: <http://rdfs.org/ns/void#>
+PREFIX void-ext: <http://ldf.fi/void-ext#>
+SELECT DISTINCT ?class1 ?prop ?class2 ?datatype
+WHERE {
+    ?cp void:class ?class1 ;
+        void:propertyPartition ?pp .
+    ?pp void:property ?prop .
+    OPTIONAL {
+        {
+            ?pp  void:classPartition [ void:class ?class2 ] .
+        } UNION {
+            ?pp void-ext:datatypePartition [ void-ext:datatype ?datatype ] .
+        }
+    }
+}`;
+    try {
+      const response = await fetch(`${this.endpointUrl}?format=json&ac=1&query=${encodeURIComponent(voidQuery)}`);
+      const json = await response.json();
+      json.results.bindings.forEach((b: any) => {
+        // clsList.push(b.class.value);
+        if (!(b["class1"]["value"] in this.voidDescription)) {
+          this.voidDescription[b["class1"]["value"]] = {}
+        }
+        if (!(b["prop"]["value"] in this.voidDescription[b["class1"]["value"]])) {
+          this.voidDescription[b["class1"]["value"]][b["prop"]["value"]] = []
+        }
+        if ("class2" in b) {
+          this.voidDescription[b["class1"]["value"]][b["prop"]["value"]].push(
+                b["class2"]["value"]
+            )
+        }
+        if ("datatype" in b) {
+          this.voidDescription[b["class1"]["value"]][b["prop"]["value"]].push(
+                b["datatype"]["value"]
+            )
+        }
+      });
+    } catch (error) {
+      console.warn("Error retrieving VoID description for autocomplete:", error);
+    }
+  }
+
   async getExampleQueries() {
     const exampleQueriesEl = this.shadowRoot?.getElementById("sparql-examples") as HTMLElement;
     const getQueryExamples = `PREFIX sh: <http://www.w3.org/ns/shacl#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT DISTINCT ?comment ?query WHERE {
+SELECT DISTINCT ?sq ?comment ?query WHERE {
 	?sq a sh:SPARQLExecutable ;
 			rdfs:label|rdfs:comment ?comment ;
 			sh:select|sh:ask|sh:construct|sh:describe ?query .
@@ -440,7 +524,62 @@ SELECT DISTINCT ?comment ?query WHERE {
       console.warn("Error fetching or processing example queries:", error);
     }
   }
+
+  // Function to convert CURIE to full URI using the prefix map
+  curieToUri(curie: string) {
+    if (/^[a-zA-Z][a-zA-Z0-9]*:[a-zA-Z][a-zA-Z0-9]*$/.test(curie)) {
+      const [prefix, local] = curie.split(':');
+      const namespace = this.prefixes.get(prefix);
+      return namespace ? `${namespace}${local}` : curie; // Return as-is if prefix not found
+    } else {
+      // If it's already a full URI, return as-is
+      return curie;
+    }
+  }
 }
+
+function extractAllSubjectsAndTypes(query: string): Map<string, Set<string>> {
+  const subjectTypeMap = new Map<string, Set<string>>();
+  // Remove comments and string literals, and prefixes to avoid false matches
+  const cleanQuery = query
+    .replace(/^#.*$/gm, '')
+    .replace(/'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"/g, '""')
+    .replace(/^PREFIX\s+.*$/gmi, '') // Remove PREFIX/prefix lines;
+    .replace(/;\s*\n/g, '; ') // Also put all triple patterns on a single line
+    .replace(/;\s*$/g, '; ');
+  // console.log(cleanQuery)
+  const typePattern = /\s*(\?\w+|<[^>]+>).*?\s+(?:a|rdf:type|<http:\/\/www\.w3\.org\/1999\/02\/22-rdf-syntax-ns#type>)\s+([^\s.]+)\s*(?:;|\.)/g;
+
+  let match;
+  while ((match = typePattern.exec(cleanQuery)) !== null) {
+    const subject = match[1];
+    const type = match[2];
+
+    if (!subjectTypeMap.has(subject)) {
+      subjectTypeMap.set(subject, new Set());
+    }
+    subjectTypeMap.get(subject)!.add(type);
+  }
+  return subjectTypeMap;
+}
+
+function getSubjectForCursorPosition(query: string, lineNumber: number, charNumber: number): string | null {
+  const lines = query.split('\n');
+  const currentLine = lines[lineNumber];
+  // Extract the part of the line up to the cursor position
+  const partOfLine = currentLine.slice(0, charNumber);
+  const partialQuery = lines.slice(0, lineNumber).join('\n') + '\n' + partOfLine;
+  // Put all triple patterns on a single line
+  const cleanQuery = partialQuery.replace(/;\s*\n/g, '; ').replace(/;\s*$/g, '; ');
+  const partialLines = cleanQuery.split('\n');
+  const lastLine = partialLines[partialLines.length - 1];
+  const subjectMatch = lastLine.match(/([?\w]+|[<\w]+>)\s+/);
+    if (subjectMatch) {
+        return subjectMatch[1];
+    }
+  return null;
+}
+
 
 customElements.define("sparql-editor", SparqlEditor);
 
