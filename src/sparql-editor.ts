@@ -106,10 +106,6 @@ export class SparqlEditor extends HTMLElement {
 
     Yasgui.Yasqe.forkAutocompleter("class", this.voidClassCompleter);
     Yasgui.Yasqe.forkAutocompleter("property", this.voidPropertyCompleter);
-    // // Remove the original autocompleters for class and property
-    // Yasgui.Yasqe.defaults.autocompleters = Yasgui.Yasqe.defaults.autocompleters.filter(
-    //   item => !["class", "property"].includes(item),
-    // );
     Yasgui.defaults.requestConfig = {
       ...Yasgui.defaults.requestConfig,
       endpoint: this.endpointUrl,
@@ -127,7 +123,7 @@ export class SparqlEditor extends HTMLElement {
     Yasgui.Yasqe.defaults.value = this.addPrefixesToQuery(this.exampleQueries[0]?.query) || Yasgui.Yasqe.defaults.value;
     Yasgui.Yasr.defaults.prefixes = Object.fromEntries(this.prefixes);
 
-    // TODO: make exampleQueries a dict with the query IRI as key, so if the window.location matches a key, it will load the query
+    // TODO: make exampleQueries a dict with the query IRI as key, so if the window.location matches a key, it will load the query?
 
     // Create YASGUI editor
     const editorEl = this.shadowRoot?.getElementById("yasgui") as HTMLElement;
@@ -155,16 +151,16 @@ export class SparqlEditor extends HTMLElement {
       const ye = tab.getYasqe();
       tab.getYasr().config.prefixes = {...Yasgui.Yasr.defaults.prefixes, ...ye.getPrefixesFromQuery()};
 
-      // Add limit to query if not provided
-      const limitPattern = /LIMIT\s+\d+\s*$/i;
-      const trimmedQuery = ye.getValue().trim();
-      if ((ye.getQueryType() === "SELECT" || ye.getQueryType() === "CONSTRUCT") && !limitPattern.test(trimmedQuery)) {
-        ye.abortQuery();
-        ye.setValue(trimmedQuery + " LIMIT 1000");
-        ye.query();
-      }
+      // // Add limit to query if not provided
+      // const limitPattern = /LIMIT\s+\d+\s*$/i;
+      // const trimmedQuery = ye.getValue().trim();
+      // if ((ye.getQueryType() === "SELECT" || ye.getQueryType() === "CONSTRUCT") && !limitPattern.test(trimmedQuery)) {
+      //   ye.abortQuery();
+      //   ye.setValue(trimmedQuery + " LIMIT 1000");
+      //   ye.query();
+      // }
       // NOTE: aborting the query generates an error in console
-      // TODO: We "just" need to move yasqe.emit("query") up a few lines here: https://github.com/zazuko/Yasgui/blob/main/packages/yasqe/src/sparql.ts#L73
+      // TODO: it should be handled by an event fired before the query is sent https://github.com/zazuko/Yasgui/pull/16
     });
 
     // Hack to add Describe links for IRIs in the results without touching the YASR table plugin
@@ -547,6 +543,7 @@ export class SparqlEditor extends HTMLElement {
 }
 
 function extractAllSubjectsAndTypes(query: string): Map<string, Set<string>> {
+  // Extract all subjects and their types from a SPARQL query in the process of being written
   const subjectTypeMap = new Map<string, Set<string>>();
   // Remove comments and string literals, and prefixes lines to avoid false matches
   const cleanQuery = query
@@ -572,6 +569,7 @@ function extractAllSubjectsAndTypes(query: string): Map<string, Set<string>> {
 }
 
 function getSubjectForCursorPosition(query: string, lineNumber: number, charNumber: number): string | null {
+  // Extract the subject relevant to the cursor position from a SPARQL query
   const lines = query.split("\n");
   const currentLine = lines[lineNumber];
   // Extract the part of the line up to the cursor position
