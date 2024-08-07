@@ -12,6 +12,11 @@ A standard web component to easily deploy a SPARQL query editor for a specific S
 - **Example SPARQL queries** defined using the SHACL ontology are automatically pulled from the endpoint (queries are defined with `sh:select|sh:ask|sh:construct|sh:describe`, and their human readable description with `rdfs:label|rdfs:comment`). Checkout the [`sparql-examples`](https://github.com/sib-swiss/sparql-examples) project for more details.
 - **Autocomplete possibilities for properties and classes** are automatically pulled from the endpoint based on VoID description present in the triplestore (`void:linkPredicate|void:property` and `void:class`). And the proposed properties are filtered based on the properties available for the type of the subject attached to where your cursor is 🤯. Checkout the [`void-generator`](https://github.com/JervenBolleman/void-generator) project to automatically generate VoID description for your endpoint.
 
+<p align="center">
+  <img src="docs/screenshot_gene.png" alt="Screenshot gene" width="45%" />
+  <img src="docs/screenshot_expression.png" alt="Screenshot expression" width="45%" />
+</p>
+
 ## 🚀 Use
 
 1. Import from CDN
