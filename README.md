@@ -1,5 +1,3 @@
-
-
 <div align="center">
 
 # 💫 SPARQL editor web component
@@ -19,7 +17,6 @@ A standard web component to easily deploy a SPARQL query editor for a specific S
 ---
 
 ![Screenshot expression](docs/screenshot_expression.png)
-
 
 ## 🚀 Use
 
