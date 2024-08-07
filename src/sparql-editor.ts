@@ -12,6 +12,13 @@ type ExampleQuery = {
   query: string;
 };
 
+interface SparqlResultBindings {
+  [key: string]: {
+    value: string;
+    type: string;
+  };
+}
+
 interface VoidDict {
   [key: string]: {
     [key: string]: string[];
@@ -202,13 +209,13 @@ export class SparqlEditor extends HTMLElement {
     name: "voidClass",
     bulk: true,
     get: async (yasqe: any) => {
-      const sparqlQuery =
-        "PREFIX void: <http://rdfs.org/ns/void#> SELECT DISTINCT ?class { [] void:class ?class } ORDER BY ?class ";
       try {
-        const response = await fetch(`${this.endpointUrl}?format=json&ac=1&query=${encodeURIComponent(sparqlQuery)}`);
-        const json = await response.json();
+        const queryResults = await this.queryEndpoint(`PREFIX void: <http://rdfs.org/ns/void#>
+          SELECT DISTINCT ?class
+          WHERE { [] void:class ?class }
+          ORDER BY ?class`);
         const clsList: string[] = [];
-        json.results.bindings.forEach((b: any) => {
+        queryResults.forEach(b => {
           clsList.push(b.class.value);
         });
         if (clsList.length > 0) {
@@ -227,13 +234,13 @@ export class SparqlEditor extends HTMLElement {
     name: "voidProperty",
     bulk: true,
     get: async (yasqe: any) => {
-      const sparqlQuery =
-        "PREFIX void: <http://rdfs.org/ns/void#> SELECT DISTINCT ?property { [] void:linkPredicate|void:property ?property } ORDER BY ?property";
       try {
-        const response = await fetch(`${this.endpointUrl}?format=json&ac=1&query=${encodeURIComponent(sparqlQuery)}`);
-        const json = await response.json();
+        const queryResults = await this.queryEndpoint(`PREFIX void: <http://rdfs.org/ns/void#>
+          SELECT DISTINCT ?property
+          WHERE { [] void:linkPredicate|void:property ?property }
+          ORDER BY ?property`);
         const propsList: string[] = [];
-        json.results.bindings.forEach((b: any) => {
+        queryResults.forEach(b => {
           propsList.push(b.property.value);
         });
         if (propsList.length > 0) {
@@ -275,6 +282,12 @@ export class SparqlEditor extends HTMLElement {
         }
       }
       return hints;
+    },
+    isValidCompletionPosition: (yasqe: any) => {
+      const token = yasqe.getCompleteToken();
+      if (token.string[0] === "?" || token.string[0] === "$") return false; // we are typing a var
+      if (token.state.possibleCurrent.indexOf("a") >= 0) return true; // predicate pos
+      return false;
     },
   };
 
@@ -322,13 +335,20 @@ export class SparqlEditor extends HTMLElement {
     return `?query=${encodeURIComponent(`DESCRIBE <${resourceUrl}>`)}`;
   }
 
+  async queryEndpoint(query: string): Promise<SparqlResultBindings[]> {
+    // We add `&ac=1` to all the queries to exclude these queries from stats
+    const response = await fetch(`${this.endpointUrl}?format=json&ac=1&query=${encodeURIComponent(query)}`);
+    const json = await response.json();
+    return json.results.bindings;
+  }
+
   async getPrefixes() {
     try {
-      const response = await fetch(
-        `${this.endpointUrl}?format=json&ac=1&query=PREFIX sh: <http://www.w3.org/ns/shacl%23> SELECT ?prefix ?namespace WHERE { [] sh:namespace ?namespace ; sh:prefix ?prefix} ORDER BY ?prefix`,
-      );
-      const json = await response.json();
-      json.results.bindings.forEach((b: any) => {
+      const queryResults = await this.queryEndpoint(`PREFIX sh: <http://www.w3.org/ns/shacl#>
+        SELECT ?prefix ?namespace
+        WHERE { [] sh:namespace ?namespace ; sh:prefix ?prefix}
+        ORDER BY ?prefix`);
+      queryResults.forEach(b => {
         this.prefixes.set(b.prefix.value, b.namespace.value);
       });
     } catch (error) {
@@ -338,38 +358,29 @@ export class SparqlEditor extends HTMLElement {
 
   async getVoidDescription() {
     // Get VoID description to get classes and properties for advanced autocomplete
-    const voidQuery = `PREFIX up: <http://purl.uniprot.org/core/>
-PREFIX void: <http://rdfs.org/ns/void#>
-PREFIX void-ext: <http://ldf.fi/void-ext#>
-SELECT DISTINCT ?class1 ?prop ?class2 ?datatype
-WHERE {
-    ?cp void:class ?class1 ;
-        void:propertyPartition ?pp .
-    ?pp void:property ?prop .
-    OPTIONAL {
-        {
-            ?pp  void:classPartition [ void:class ?class2 ] .
-        } UNION {
-            ?pp void-ext:datatypePartition [ void-ext:datatype ?datatype ] .
-        }
-    }
-}`;
     try {
-      const response = await fetch(`${this.endpointUrl}?format=json&ac=1&query=${encodeURIComponent(voidQuery)}`);
-      const json = await response.json();
-      json.results.bindings.forEach((b: any) => {
-        if (!(b.class1.value in this.voidDescription)) {
-          this.voidDescription[b.class1.value] = {};
-        }
-        if (!(b.prop.value in this.voidDescription[b.class1.value])) {
+      const queryResults = await this.queryEndpoint(`PREFIX up: <http://purl.uniprot.org/core/>
+        PREFIX void: <http://rdfs.org/ns/void#>
+        PREFIX void-ext: <http://ldf.fi/void-ext#>
+        SELECT DISTINCT ?class1 ?prop ?class2 ?datatype
+        WHERE {
+            ?cp void:class ?class1 ;
+                void:propertyPartition ?pp .
+            ?pp void:property ?prop .
+            OPTIONAL {
+                {
+                    ?pp  void:classPartition [ void:class ?class2 ] .
+                } UNION {
+                    ?pp void-ext:datatypePartition [ void-ext:datatype ?datatype ] .
+                }
+            }
+        }`);
+      queryResults.forEach(b => {
+        if (!(b.class1.value in this.voidDescription)) this.voidDescription[b.class1.value] = {};
+        if (!(b.prop.value in this.voidDescription[b.class1.value]))
           this.voidDescription[b.class1.value][b.prop.value] = [];
-        }
-        if ("class2" in b) {
-          this.voidDescription[b.class1.value][b.prop.value].push(b.class2.value);
-        }
-        if ("datatype" in b) {
-          this.voidDescription[b.class1.value][b.prop.value].push(b.datatype.value);
-        }
+        if ("class2" in b) this.voidDescription[b.class1.value][b.prop.value].push(b.class2.value);
+        if ("datatype" in b) this.voidDescription[b.class1.value][b.prop.value].push(b.datatype.value);
       });
     } catch (error) {
       console.warn(`Error retrieving VoID description from ${this.endpointUrl} for autocomplete:`, error);
@@ -377,22 +388,18 @@ WHERE {
   }
 
   async getExampleQueries() {
+    // Retrieve example queries from the SPARQL endpoint
     const exampleQueriesEl = this.shadowRoot?.getElementById("sparql-examples") as HTMLElement;
-    const getQueryExamples = `PREFIX sh: <http://www.w3.org/ns/shacl#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-SELECT DISTINCT ?sq ?comment ?query WHERE {
-	?sq a sh:SPARQLExecutable ;
-			rdfs:label|rdfs:comment ?comment ;
-			sh:select|sh:ask|sh:construct|sh:describe ?query .
-} ORDER BY ?sq`;
-
     try {
-      // We add `&ac=1` to all the queries to exclude these queries from stats
-      const response = await fetch(
-        `${this.endpointUrl}?format=json&ac=1&query=${encodeURIComponent(getQueryExamples)}`,
-      );
-      const json = await response.json();
-      json.results.bindings.forEach((b: any) => {
+      const queryResults = await this.queryEndpoint(`PREFIX sh: <http://www.w3.org/ns/shacl#>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        SELECT DISTINCT ?sq ?comment ?query
+        WHERE {
+          ?sq a sh:SPARQLExecutable ;
+            rdfs:label|rdfs:comment ?comment ;
+            sh:select|sh:ask|sh:construct|sh:describe ?query .
+        } ORDER BY ?sq`);
+      queryResults.forEach(b => {
         this.exampleQueries.push({comment: b.comment.value, query: b.query.value});
       });
       if (this.exampleQueries.length === 0) return;
