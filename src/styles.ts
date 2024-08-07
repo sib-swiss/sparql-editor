@@ -70,7 +70,6 @@ export const editorCss = `:host a {
 }
 
 
-
 button.yasqe_share {
   display: none !important;
 }

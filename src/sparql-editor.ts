@@ -2,6 +2,7 @@ import Yasgui from "@zazuko/yasgui";
 import hljs from "highlight.js/lib/core";
 // import mermaid from "mermaid";
 // import { translate } from "sparqlalgebrajs";
+// Or Use SPARQL.js directly?
 
 import {hljsDefineTurtle, hljsDefineSparql} from "./highlight-sparql";
 import {editorCss, yasguiCss, yasguiGripInlineCss, highlightjsCss} from "./styles";
@@ -247,17 +248,16 @@ export class SparqlEditor extends HTMLElement {
       }
     },
     postprocessHints: (yasqe: any, hints: any) => {
-      const cursor = yasqe.getCursor();
-      // We retrieved the subject at the cursor position and all subjects/types using regex
-      // Not perfect, but we can't parse the whole query with SPARQL.js since it's no fully written yet
+      // We retrieve the subject at the cursor position and all subjects/types in the query using regex
+      // Not perfect, but we can't parse the whole query with SPARQL.js since it's not fully written yet
       // And it would throw an error if the query is not valid
+      const cursor = yasqe.getCursor();
       const subj = getSubjectForCursorPosition(yasqe.getValue(), cursor.line, cursor.ch);
       const subjTypes = extractAllSubjectsAndTypes(yasqe.getValue());
-      // console.log(hints)
+      // console.log(subj, subjTypes)
       if (subj && subjTypes.has(subj)) {
         const types = subjTypes.get(subj);
         if (types) {
-          // console.log("Types", types)
           const filteredHints = new Set();
           types.forEach(typeCurie => {
             const propSet = new Set(Object.keys(this.voidDescription[this.curieToUri(typeCurie)]));
@@ -333,7 +333,7 @@ export class SparqlEditor extends HTMLElement {
   }
 
   async getVoidDescription() {
-    // Get VoID description to get classes and properties for advanced autocompletion
+    // Get VoID description to get classes and properties for advanced autocomplete
     const voidQuery = `PREFIX up: <http://purl.uniprot.org/core/>
 PREFIX void: <http://rdfs.org/ns/void#>
 PREFIX void-ext: <http://ldf.fi/void-ext#>
@@ -354,18 +354,17 @@ WHERE {
       const response = await fetch(`${this.endpointUrl}?format=json&ac=1&query=${encodeURIComponent(voidQuery)}`);
       const json = await response.json();
       json.results.bindings.forEach((b: any) => {
-        // clsList.push(b.class.value);
-        if (!(b["class1"]["value"] in this.voidDescription)) {
-          this.voidDescription[b["class1"]["value"]] = {};
+        if (!(b.class1.value in this.voidDescription)) {
+          this.voidDescription[b.class1.value] = {};
         }
-        if (!(b["prop"]["value"] in this.voidDescription[b["class1"]["value"]])) {
-          this.voidDescription[b["class1"]["value"]][b["prop"]["value"]] = [];
+        if (!(b.prop.value in this.voidDescription[b.class1.value])) {
+          this.voidDescription[b.class1.value][b.prop.value] = [];
         }
         if ("class2" in b) {
-          this.voidDescription[b["class1"]["value"]][b["prop"]["value"]].push(b["class2"]["value"]);
+          this.voidDescription[b.class1.value][b.prop.value].push(b.class2.value);
         }
         if ("datatype" in b) {
-          this.voidDescription[b["class1"]["value"]][b["prop"]["value"]].push(b["datatype"]["value"]);
+          this.voidDescription[b.class1.value][b.prop.value].push(b.datatype.value);
         }
       });
     } catch (error) {
@@ -538,26 +537,25 @@ SELECT DISTINCT ?sq ?comment ?query WHERE {
 
 function extractAllSubjectsAndTypes(query: string): Map<string, Set<string>> {
   const subjectTypeMap = new Map<string, Set<string>>();
-  // Remove comments and string literals, and prefixes to avoid false matches
+  // Remove comments and string literals, and prefixes lines to avoid false matches
   const cleanQuery = query
     .replace(/^#.*$/gm, "")
     .replace(/'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"/g, '""')
-    .replace(/^PREFIX\s+.*$/gim, "") // Remove PREFIX/prefix lines;
-    .replace(/;\s*\n/g, "; ") // Also put all triple patterns on a single line
+    .replace(/^PREFIX\s+.*$/gim, "")
+    .replace(/;\s*\n/g, "; ") // Put all triple patterns on a single line
     .replace(/;\s*$/g, "; ");
   // console.log(cleanQuery)
   const typePattern =
-    /\s*(\?\w+|<[^>]+>).*?\s+(?:a|rdf:type|<http:\/\/www\.w3\.org\/1999\/02\/22-rdf-syntax-ns#type>)\s+([^\s.]+)\s*(?:;|\.)/g;
-
+    /\s*(\?\w+|<[^>]+>|\w+:\w*).*?\s+(?:a|rdf:type|<http:\/\/www\.w3\.org\/1999\/02\/22-rdf-syntax-ns#type>)\s+([^\s.]+(?:\s*,\s*[^\s.]+)*)\s*(?:;|\.)/g;
   let match;
   while ((match = typePattern.exec(cleanQuery)) !== null) {
     const subject = match[1];
-    const type = match[2];
-
+    const types = match[2].split(/\s*,\s*/); // Split types separated by commas
     if (!subjectTypeMap.has(subject)) {
       subjectTypeMap.set(subject, new Set());
     }
-    subjectTypeMap.get(subject)!.add(type);
+    const subjectTypes = subjectTypeMap.get(subject)!;
+    types.forEach(type => subjectTypes.add(type));
   }
   return subjectTypeMap;
 }
@@ -572,7 +570,7 @@ function getSubjectForCursorPosition(query: string, lineNumber: number, charNumb
   const cleanQuery = partialQuery.replace(/;\s*\n/g, "; ").replace(/;\s*$/g, "; ");
   const partialLines = cleanQuery.split("\n");
   const lastLine = partialLines[partialLines.length - 1];
-  const subjectMatch = lastLine.match(/([?\w]+|[<\w]+>)\s+/);
+  const subjectMatch = lastLine.match(/\s*([?\w]+|<[^>]+>|\w+:\w*)\s+/);
   if (subjectMatch) {
     return subjectMatch[1];
   }
