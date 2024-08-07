@@ -16,22 +16,75 @@
 
   <body>
     <div>
-      <!-- <sparql-editor endpoint="https://sparql.uniprot.org/sparql/"></sparql-editor> -->
-
-      <!-- <sparql-editor
-        endpoint="https://sparql.uniprot.org/sparql/"
-        describeLinks='["https://sparql.uniprot.org/sparql",""]'
-        style="--btn-color: white; --btn-bg-color: #e30613;"
-        >
-          <p>About</p>
-      </sparql-editor> -->
       <!-- <sparql-editor endpoint="https://sparql.uniprot.org/sparql/" style="--btn-bg-color: #00709b; --btn-color: white;"></sparql-editor> -->
 
+      <!-- UNIPROT -->
+      <!-- <sparql-editor endpoint="https://sparql.uniprot.org/sparql/">
+        <h4>About</h4>
+        <p>
+          This SPARQL endpoint contains all UniProt data. It is free to access and supports the
+          <a href="http://www.w3.org/TR/sparql11-query/">SPARQL 1.1 Standard</a>.
+        </p>
+        <p>
+          There are 0 triples in this release (2024_04). The query timeout is 45 minutes. All triples are available in
+          the default graph. There are 21 named graphs.
+        </p>
+        <h4>Documentation</h4>
+        <ol>
+          <li><a href="http://purl.uniprot.org/core/">Classes and predicates defined by the UniProt consortium</a></li>
+          <li>
+            <a href="https://github.com/sib-swiss/sparql-training/tree/master/uniprot"
+              >Tutorial on using SPARQL with UniProt</a
+            >
+          </li>
+          <li><a href="/.well-known/void">Statistics and diagrams</a></li>
+        </ol>
+      </sparql-editor> -->
+
+      <!-- BGEE -->
       <sparql-editor endpoint="https://www.bgee.org/sparql/">
-        <h1>About</h1>
-        <p>Checkout <a href="">Ontology and infos...</a></p>
+        <h3 style="text-align: center">About</h3>
+        <p>
+          Tutorial and documentation:
+          <a href="https://purl.org/sib-rdf/bgee-tutorial">Querying the Bgee knowledge graph</a>
+        </p>
+        <p>
+          Ontology (data schema): <a href="https://purl.org/genex/documentation">GenEx semantic model specification</a>
+        </p>
+        <p>Support: <a href="https://github.com/BgeeDB/bgee_pipeline/issues">open an issue here</a></p>
       </sparql-editor>
-      <!-- <sparql-editor endpoint="https://sparql.omabrowser.org/sparql/"></sparql-editor> -->
+
+      <!-- OMA -->
+      <!-- <sparql-editor endpoint="https://sparql.omabrowser.org/sparql/">
+        <h3 class="space-margin space-top">About OMA SPARQL Endpoint</h3>
+        <p class="query-text space-margin">
+          The OMA SPARQL endpoint is reachable by using your preferable programming language or SPARQL interface through
+          the following URL address:
+          <a href="https://sparql.omabrowser.org/sparql">https://sparql.omabrowser.org/sparql</a>.
+        </p>
+        <p class="query-text space-margin">
+          The OMA SPARQL endpoint is updated in sync with the <a href="https://omabrowser.org">OMA Browser</a>. The data
+          of the current release as well of the previous releases
+          <a href="https://omabrowser.org/oma/current">can be downloaded</a> from the download section of the OMA
+          Browser as turtle files (look out for <em>OMA Browser in RDF</em>).
+        </p>
+        <p></p>
+        <h3 class="space-margin">RDF Serialisation and Ontologies</h3>
+        <p class="query-text space-margin">
+          The RDF serialisation of the OMA Hierarchical Orthologous Groups is based on the
+          <a href="https://qfo.github.io/OrthologyOntology/">ORTH ontology specification</a> in the context of the Quest
+          for Orthologs (QfO) consortium (see GitHub repository
+          <a href="https://github.com/qfo/OrthologyOntology">here</a>).
+        </p>
+        <p></p>
+        <p class="query-text space-margin space-bottom">
+          To cross-reference other resources, this SPARQL endpoint contains annotation property assertions defined by a
+          first draft of the life-sciences cross-reference (LSCR) ontology that is available to download at the Quest
+          for Orthologs github repository <a href="https://github.com/qfo/OrthologyOntology">here</a> -
+          <a href="https://github.com/qfo/OrthologyOntology/blob/master/lscr.ttl">lscr.ttl</a> file.
+        </p>
+      </sparql-editor> -->
+
       <!-- <sparql-editor endpoint="https://beta.sparql.swisslipids.org/sparql/"></sparql-editor> -->
     </div>
 

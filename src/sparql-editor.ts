@@ -218,7 +218,7 @@ export class SparqlEditor extends HTMLElement {
         }
         return clsList;
       } catch (error) {
-        console.warn("Error retrieving autocomplete for classes:", error);
+        console.warn(`Error retrieving classes for autocomplete from ${this.endpointUrl} VoID description:`, error);
         return [];
       }
     },
@@ -243,7 +243,7 @@ export class SparqlEditor extends HTMLElement {
         }
         return propsList;
       } catch (error) {
-        console.warn("Error retrieving autocomplete for properties:", error);
+        console.warn(`Error retrieving properties for autocomplete from ${this.endpointUrl} VoID description:`, error);
         return [];
       }
     },
@@ -323,13 +323,17 @@ export class SparqlEditor extends HTMLElement {
   }
 
   async getPrefixes() {
-    const response = await fetch(
-      `${this.endpointUrl}?format=json&ac=1&query=PREFIX sh: <http://www.w3.org/ns/shacl%23> SELECT ?prefix ?namespace WHERE { [] sh:namespace ?namespace ; sh:prefix ?prefix} ORDER BY ?prefix`,
-    );
-    const json = await response.json();
-    json.results.bindings.forEach((b: any) => {
-      this.prefixes.set(b.prefix.value, b.namespace.value);
-    });
+    try {
+      const response = await fetch(
+        `${this.endpointUrl}?format=json&ac=1&query=PREFIX sh: <http://www.w3.org/ns/shacl%23> SELECT ?prefix ?namespace WHERE { [] sh:namespace ?namespace ; sh:prefix ?prefix} ORDER BY ?prefix`,
+      );
+      const json = await response.json();
+      json.results.bindings.forEach((b: any) => {
+        this.prefixes.set(b.prefix.value, b.namespace.value);
+      });
+    } catch (error) {
+      console.warn(`Error retrieving Prefixes from ${this.endpointUrl}:`, error);
+    }
   }
 
   async getVoidDescription() {
@@ -368,7 +372,7 @@ WHERE {
         }
       });
     } catch (error) {
-      console.warn("Error retrieving VoID description for autocomplete:", error);
+      console.warn(`Error retrieving VoID description from ${this.endpointUrl} for autocomplete:`, error);
     }
   }
 
@@ -518,7 +522,7 @@ SELECT DISTINCT ?sq ?comment ?query WHERE {
         document.body.style.overflow = "";
       });
     } catch (error) {
-      console.warn("Error fetching or processing example queries:", error);
+      console.warn(`Error fetching or processing example queries from ${this.endpointUrl}:`, error);
     }
   }
 
