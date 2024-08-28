@@ -333,7 +333,16 @@ export class SparqlEditor extends HTMLElement {
 
   async queryEndpoint(query: string): Promise<SparqlResultBindings[]> {
     // We add `&ac=1` to all the queries to exclude these queries from stats
-    const response = await fetch(`${this.endpointUrl}?format=json&ac=1&query=${encodeURIComponent(query)}`);
+    const response = await fetch(
+      `${this.endpointUrl}?ac=1&query=${encodeURIComponent(query)}`,
+      {
+        signal: AbortSignal.timeout(5000),
+        headers: {
+          'Accept': 'application/json'
+        }
+      }
+    );
+    // console.log(await response.text());
     const json = await response.json();
     return json.results.bindings;
   }
@@ -341,7 +350,7 @@ export class SparqlEditor extends HTMLElement {
   async getPrefixes() {
     try {
       const queryResults = await this.queryEndpoint(`PREFIX sh: <http://www.w3.org/ns/shacl#>
-        SELECT ?prefix ?namespace
+        SELECT DISTINCT ?prefix ?namespace
         WHERE { [] sh:namespace ?namespace ; sh:prefix ?prefix}
         ORDER BY ?prefix`);
       queryResults.forEach(b => {

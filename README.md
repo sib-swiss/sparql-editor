@@ -42,7 +42,7 @@ The editor retrieves metadata about the endpoint by directly querying the SPARQL
    <sparql-editor endpoint="https://sparql.uniprot.org/sparql/"></sparql-editor>
    ```
 
-   You can customize the number of examples displayed on the main page, buttons color, and provide other HTML elements to be included under the SPARQL example (e.g. about and links to relevant resources):
+   You can customize the number of examples displayed on the main page, buttons color, and provide other HTML elements to be included under the SPARQL examples (e.g. about and links to relevant resources):
 
    ```html
    <sparql-editor
