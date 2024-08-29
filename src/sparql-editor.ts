@@ -258,7 +258,7 @@ export class SparqlEditor extends HTMLElement {
       const subj = getSubjectForCursorPosition(yasqe.getValue(), cursor.line, cursor.ch);
       const subjTypes = extractAllSubjectsAndTypes(yasqe.getValue());
       // console.log(subj, subjTypes)
-      if (subj && subjTypes.has(subj)) {
+      if (subj && subjTypes.has(subj) && Object.keys(this.voidDescription).length > 0) {
         const types = subjTypes.get(subj);
         if (types) {
           const filteredHints = new Set();
