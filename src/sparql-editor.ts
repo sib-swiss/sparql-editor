@@ -199,10 +199,10 @@ export class SparqlEditor extends HTMLElement {
     bulk: true,
     get: async () => {
       const prefixArray: string[] = [];
-      this.prefixes.forEach((ns, prefix) => prefixArray.push(`${prefix}: <${ns}>`))
+      this.prefixes.forEach((ns, prefix) => prefixArray.push(`${prefix}: <${ns}>`));
       return prefixArray.sort();
     },
-  }
+  };
   voidClassCompleter = {
     name: "voidClass",
     bulk: true,
@@ -337,15 +337,12 @@ export class SparqlEditor extends HTMLElement {
 
   async queryEndpoint(query: string): Promise<SparqlResultBindings[]> {
     // We add `&ac=1` to all the queries to exclude these queries from stats
-    const response = await fetch(
-      `${this.endpointUrl}?ac=1&query=${encodeURIComponent(query)}`,
-      {
-        signal: AbortSignal.timeout(5000),
-        headers: {
-          'Accept': 'application/json'
-        }
-      }
-    );
+    const response = await fetch(`${this.endpointUrl}?ac=1&query=${encodeURIComponent(query)}`, {
+      signal: AbortSignal.timeout(5000),
+      headers: {
+        Accept: "application/json",
+      },
+    });
     // console.log(await response.text());
     const json = await response.json();
     return json.results.bindings;

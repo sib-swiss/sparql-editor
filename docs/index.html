@@ -9,14 +9,14 @@
 
     <style>
       body {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          text-align: center;
-          height: 100vh;
-          margin: 0;
-          font-family: Arial, sans-serif;
-          background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        height: 100vh;
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
       }
       /* #container {
           text-align: center;
@@ -26,31 +26,31 @@
           box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
       } */
       input[type="text"] {
-          width: 80%;
-          padding: 10px;
-          margin: 10px 0;
-          border-radius: 5px;
-          border: 1px solid #ccc;
+        width: 80%;
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 5px;
+        border: 1px solid #ccc;
       }
       button {
-          padding: 10px 20px;
-          border: none;
-          border-radius: 5px;
-          background-color: #007BFF;
-          color: white;
-          font-size: 16px;
-          cursor: pointer;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        background-color: #007bff;
+        color: white;
+        font-size: 16px;
+        cursor: pointer;
       }
       button:hover {
-          background-color: #0056b3;
+        background-color: #0056b3;
       }
       .result {
-          margin-top: 20px;
-          font-size: 18px;
+        margin-top: 20px;
+        font-size: 18px;
       }
       .result span {
-          font-weight: bold;
-          margin-right: 10px;
+        font-weight: bold;
+        margin-right: 10px;
       }
     </style>
   </head>
@@ -59,69 +59,74 @@
     <div id="container">
       <h2>SPARQL Endpoint Checker</h2>
       <form id="sparqlForm">
-        <input type="text" id="sparqlEndpoint" placeholder="Enter SPARQL endpoint URL" required>
-        <br>
+        <input type="text" id="sparqlEndpoint" placeholder="Enter SPARQL endpoint URL" required />
+        <br />
         <button type="submit">Check Endpoint</button>
       </form>
       <div id="results" class="result"></div>
     </div>
 
     <script>
-      document.getElementById('sparqlForm').addEventListener('submit', function(event) {
-          event.preventDefault();
-          runChecks();
+      document.getElementById("sparqlForm").addEventListener("submit", function (event) {
+        event.preventDefault();
+        runChecks();
       });
 
       async function queryEndpoint(endpointUrl, query) {
-        const response = await fetch(
-          `${endpointUrl}?ac=1&query=${encodeURIComponent(query)}`,
-          {
-            signal: AbortSignal.timeout(5000),
-            headers: {
-              'Accept': 'application/json'
-            }
-          }
-        );
+        const response = await fetch(`${endpointUrl}?ac=1&query=${encodeURIComponent(query)}`, {
+          signal: AbortSignal.timeout(5000),
+          headers: {
+            Accept: "application/json",
+          },
+        });
         // console.log(await response.text());
         const json = await response.json();
         return json.results.bindings;
       }
 
       async function runChecks() {
-          const endpoint = document.getElementById('sparqlEndpoint').value;
-          const resultsDiv = document.getElementById('results');
-          resultsDiv.innerHTML = '';
+        const endpoint = document.getElementById("sparqlEndpoint").value;
+        const resultsDiv = document.getElementById("results");
+        resultsDiv.innerHTML = "";
 
-          try {
-            const prefixesResults = await queryEndpoint(endpoint, `PREFIX sh: <http://www.w3.org/ns/shacl#>
+        try {
+          const prefixesResults = await queryEndpoint(
+            endpoint,
+            `PREFIX sh: <http://www.w3.org/ns/shacl#>
               SELECT DISTINCT ?prefix ?namespace
               WHERE { [] sh:namespace ?namespace ; sh:prefix ?prefix}
-              ORDER BY ?prefix`);
+              ORDER BY ?prefix`,
+          );
 
-            if (prefixesResults.length === 0) {
-              resultsDiv.innerHTML += `<p>❌ No prefixes found</p>`;
-              return;
-            } else {
-              resultsDiv.innerHTML += `<p>✅ Found ${prefixesResults.length} prefixes</p>`;
-            }
+          if (prefixesResults.length === 0) {
+            resultsDiv.innerHTML += `<p>❌ No prefixes found</p>`;
+            return;
+          } else {
+            resultsDiv.innerHTML += `<p>✅ Found ${prefixesResults.length} prefixes</p>`;
+          }
 
-            const exampleQueriesResults = await queryEndpoint(endpoint, `PREFIX sh: <http://www.w3.org/ns/shacl#>
+          const exampleQueriesResults = await queryEndpoint(
+            endpoint,
+            `PREFIX sh: <http://www.w3.org/ns/shacl#>
               PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
               SELECT DISTINCT ?sq ?comment ?query
               WHERE {
                 ?sq a sh:SPARQLExecutable ;
                   rdfs:label|rdfs:comment ?comment ;
                   sh:select|sh:ask|sh:construct|sh:describe ?query .
-              } ORDER BY ?sq`);
+              } ORDER BY ?sq`,
+          );
 
-            if (exampleQueriesResults.length === 0) {
-              resultsDiv.innerHTML += `<p>❌ No example SPARQL queries found</p>`;
-              return;
-            } else {
-              resultsDiv.innerHTML += `<p>✅ Found ${exampleQueriesResults.length} example SPARQL queries</p>`;
-            }
+          if (exampleQueriesResults.length === 0) {
+            resultsDiv.innerHTML += `<p>❌ No example SPARQL queries found</p>`;
+            return;
+          } else {
+            resultsDiv.innerHTML += `<p>✅ Found ${exampleQueriesResults.length} example SPARQL queries</p>`;
+          }
 
-            const voidResults = await queryEndpoint(endpoint, `PREFIX up: <http://purl.uniprot.org/core/>
+          const voidResults = await queryEndpoint(
+            endpoint,
+            `PREFIX up: <http://purl.uniprot.org/core/>
               PREFIX void: <http://rdfs.org/ns/void#>
               PREFIX void-ext: <http://ldf.fi/void-ext#>
               SELECT DISTINCT ?class1
@@ -136,20 +141,20 @@
                           ?pp void-ext:datatypePartition [ void-ext:datatype ?datatype ] .
                       }
                   }
-              }`);
+              }`,
+          );
 
-            if (voidResults.length === 0) {
-              resultsDiv.innerHTML += `<p>❌ No VoID description found.<br/>Checkout the <a href="https://github.com/JervenBolleman/void-generator" target="_blank">void-generator</a> project to automatically generate a <a href="https://www.w3.org/TR/void/">VoID description</a> for the classes and predicates inside your endpoint.</p>`;
-              return;
-            } else {
-              resultsDiv.innerHTML += `<p>✅ Found VoID description for ${voidResults.length} classes</p>`;
-            }
-
-          } catch (error) {
-              console.log("Error querying the endpoint", error);
-              resultsDiv.innerHTML += `<p>❌ Error querying the endpoint: ${error.message}</p>`;
-              return;
+          if (voidResults.length === 0) {
+            resultsDiv.innerHTML += `<p>❌ No VoID description found.<br/>Checkout the <a href="https://github.com/JervenBolleman/void-generator" target="_blank">void-generator</a> project to automatically generate a <a href="https://www.w3.org/TR/void/">VoID description</a> for the classes and predicates inside your endpoint.</p>`;
+            return;
+          } else {
+            resultsDiv.innerHTML += `<p>✅ Found VoID description for ${voidResults.length} classes</p>`;
           }
+        } catch (error) {
+          console.log("Error querying the endpoint", error);
+          resultsDiv.innerHTML += `<p>❌ Error querying the endpoint: ${error.message}</p>`;
+          return;
+        }
       }
     </script>
   </body>
