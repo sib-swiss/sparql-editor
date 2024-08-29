@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>dbgi SPARQL editor</title>
+    <meta name="description" content="SPARQL editor for dbgi at the SIB" />
+    <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/f/f3/Rdf_logo.svg" />
+
+    <script type="module" src="https://unpkg.com/@sib-swiss/sparql-editor"></script>
+  </head>
+
+  <body>
+    <div>
+
+      <sparql-editor endpoint="https://biosoda.unil.ch/graphdb/repositories/emi-dbgi">
+        <h1>SPARQL editors for SIB endpoints</h1>
+        <ul>
+          <li><a href="/uniprot">UniProt - protein knowledgebase</a></li>
+          <li><a href="/bgee">Bgee - gene expression</a></li>
+          <li><a href="/oma">OMA - Ortholog MAtrix</a></li>
+          <li><a href="/hamap">HAMAP - High-quality Automated and Manual Annotation of Proteins</a></li>
+          <li><a href="/dbgi">DBGI - The Digital Botanical Garden Initiative</a></li>
+        </ul>
+        <p>You can check if an endpoint contains the <a href="/check">necessary metadata here</a> (examples and VoID description)</p>
+      </sparql-editor>
+
+    </div>
+  </body>
+</html>

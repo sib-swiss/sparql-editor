@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>SPARQL editor dev</title>
-    <meta name="description" content="SPARQL editor demo page" />
+    <title>SPARQL editor demo pages</title>
+    <meta name="description" content="SPARQL editor demo pages" />
     <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/f/f3/Rdf_logo.svg" />
 
     <script type="module" src="https://unpkg.com/@sib-swiss/sparql-editor"></script>
@@ -12,30 +12,36 @@
 
   <body>
     <div>
-
-      <!-- UNIPROT demo -->
-      <sparql-editor endpoint="https://sparql.uniprot.org/sparql/">
-        <h4>About</h4>
-        <p>
-          This SPARQL endpoint contains all UniProt data. It is free to access and supports the
-          <a href="http://www.w3.org/TR/sparql11-query/">SPARQL 1.1 Standard</a>.
-        </p>
-        <p>
-          There are 186,631,773,819 triples in this release (2024_04). The query timeout is 45 minutes.
-          All triples are available in the default graph. There are 22 named graphs.
-        </p>
-        <h4>Documentation</h4>
-        <ol>
-          <li><a href="http://purl.uniprot.org/core/">Classes and predicates defined by the UniProt consortium</a></li>
-          <li>
-            <a href="https://github.com/sib-swiss/sparql-training/tree/master/uniprot"
-              >Tutorial on using SPARQL with UniProt</a
-            >
-          </li>
-          <li><a href="/.well-known/void">Statistics and diagrams</a></li>
-        </ol>
-      </sparql-editor>
-
+      <h1>SPARQL editors for SIB endpoints</h1>
+      <ul>
+        <li><a href="/uniprot">UniProt - protein knowledgebase</a></li>
+        <li><a href="/bgee">Bgee - gene expression</a></li>
+        <li><a href="/oma">OMA - Ortholog MAtrix</a></li>
+        <li><a href="/hamap">HAMAP - High-quality Automated and Manual Annotation of Proteins</a></li>
+        <li><a href="/dbgi">DBGI - The Digital Botanical Garden Initiative</a></li>
+      </ul>
+      <p>You can check if an endpoint contains the <a href="/check">necessary metadata here</a> (examples and VoID description)</p>
     </div>
   </body>
+
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+    }
+    p, ul {
+      font-size: 18px;
+    }
+    a {
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
 </html>

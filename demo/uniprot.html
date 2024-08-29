@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SPARQL editor dev</title>
+    <meta name="description" content="SPARQL editor demo page" />
+    <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/f/f3/Rdf_logo.svg" />
+
+    <script type="module" src="https://unpkg.com/@sib-swiss/sparql-editor"></script>
+  </head>
+
+  <body>
+    <div>
+
+      <!-- UNIPROT demo -->
+      <sparql-editor endpoint="https://sparql.uniprot.org/sparql/">
+        <h4>About</h4>
+        <p>
+          This SPARQL endpoint contains all UniProt data. It is free to access and supports the
+          <a href="http://www.w3.org/TR/sparql11-query/">SPARQL 1.1 Standard</a>.
+        </p>
+        <p>
+          There are 186,631,773,819 triples in this release (2024_04). The query timeout is 45 minutes.
+          All triples are available in the default graph. There are 22 named graphs.
+        </p>
+        <h4>Documentation</h4>
+        <ol>
+          <li><a href="http://purl.uniprot.org/core/">Classes and predicates defined by the UniProt consortium</a></li>
+          <li>
+            <a href="https://github.com/sib-swiss/sparql-training/tree/master/uniprot"
+              >Tutorial on using SPARQL with UniProt</a
+            >
+          </li>
+          <li><a href="/.well-known/void">Statistics and diagrams</a></li>
+        </ol>
+      </sparql-editor>
+
+    </div>
+  </body>
+</html>

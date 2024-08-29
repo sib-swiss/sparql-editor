@@ -1,6 +1,6 @@
 {
   "name": "@sib-swiss/sparql-editor",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "A standard web components to easily deploy a SPARQL query editor for a specific SPARQL endpoint using the popular YASGUI editor.",
   "license": "MIT",
   "author": {
@@ -16,6 +16,7 @@
   ],
   "scripts": {
     "dev": "vite",
+    "demo": "npx http-server demo",
     "build": "vite build",
     "lint": "prettier --check . && eslint . --ignore-pattern dist/",
     "fmt": "prettier --write . && eslint . --fix --ignore-pattern dist/",

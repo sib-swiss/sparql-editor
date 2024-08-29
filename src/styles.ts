@@ -48,6 +48,7 @@ export const editorCss = `:host a {
 :host {
     --btn-color: #e30613;
     --btn-bg-color: #f8bca5;
+    font-family: Arial, sans-serif;
 }
 
 :host button.btn {

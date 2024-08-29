@@ -3,10 +3,13 @@
 # 💫 SPARQL editor web component
 
 [![NPM](https://img.shields.io/npm/v/@sib-swiss/sparql-editor)](https://www.npmjs.com/package/@sib-swiss/sparql-editor)
+[![Deploy demo to GitHub Pages](https://github.com/sib-swiss/sparql-editor/actions/workflows/deploy.yml/badge.svg)](https://github.com/sib-swiss/sparql-editor/actions/workflows/deploy.yml)
 
 </div>
 
 A standard web component to easily deploy a user-friendly SPARQL query editor for a specific SPARQL endpoint, based on the popular [YASGUI editor](https://github.com/zazuko/Yasgui) with advanced autocomplete for predicates based on classes.
+
+👆️ You can use it for a few SPARQL endpoints of the SIB, such as UniProt and Bgee, here: **[sib-swiss.github.io/sparql-editor](https://sib-swiss.github.io/sparql-editor)**
 
 The editor retrieves metadata about the endpoint by directly querying the SPARQL endpoint, so all you need to do is to properly document your endpoint. Reducing the need for complex infrastructure, while making your SPARQL endpoints easier to query for users and machines.
 
@@ -51,7 +54,7 @@ The editor retrieves metadata about the endpoint by directly querying the SPARQL
      style="--btn-color: white; --btn-bg-color: #00709b;"
    >
      <h1>About</h1>
-     <p>This SPARQL endpoint contains...</p>
+     <p>This SPARQL endpoint contains things</p>
    </sparql-editor>
    ```
 
@@ -75,7 +78,7 @@ Create a `index.html` file with:
     <meta name="description" content="SPARQL editor demo page" />
     <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/f/f3/Rdf_logo.svg" />
     <!-- Import the module from a CDN -->
-    <script type="module" src="https://unpkg.com/@sib-swiss/sparql-editor@0.1.3"></script>
+    <script type="module" src="https://unpkg.com/@sib-swiss/sparql-editor@0.1.4"></script>
   </head>
 
   <body>
@@ -137,6 +140,12 @@ Build for production in the `dist` folder:
 
 ```bash
 npm run build
+```
+
+Run the [demo pages](https://sib-swiss.github.io/sparql-editor) locally:
+
+```bash
+npm run demo
 ```
 
 Update dependencies to the latest available versions:

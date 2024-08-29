@@ -409,6 +409,7 @@ export class SparqlEditor extends HTMLElement {
       queryResults.forEach(b => {
         this.exampleQueries.push({comment: b.comment.value, query: b.query.value});
       });
+      console.log(queryResults)
       if (this.exampleQueries.length === 0) return;
 
       // Add title for examples
