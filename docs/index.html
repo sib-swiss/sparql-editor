@@ -6,60 +6,20 @@
     <title>SPARQL Endpoint Metadata Checker</title>
     <meta name="description" content="Check if your SPARQL endpoint contains the right metadata" />
     <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/f/f3/Rdf_logo.svg" />
-
-    <style>
-      body {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        text-align: center;
-        height: 100vh;
-        margin: 0;
-        font-family: Arial, sans-serif;
-        background-color: #f4f4f4;
-      }
-      /* #container {
-          text-align: center;
-          background: white;
-          padding: 20px;
-          border-radius: 8px;
-          box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      } */
-      input[type="text"] {
-        width: 80%;
-        padding: 10px;
-        margin: 10px 0;
-        border-radius: 5px;
-        border: 1px solid #ccc;
-      }
-      button {
-        padding: 10px 20px;
-        border: none;
-        border-radius: 5px;
-        background-color: #007bff;
-        color: white;
-        font-size: 16px;
-        cursor: pointer;
-      }
-      button:hover {
-        background-color: #0056b3;
-      }
-      .result {
-        margin-top: 20px;
-        font-size: 18px;
-      }
-      .result span {
-        font-weight: bold;
-        margin-right: 10px;
-      }
-    </style>
   </head>
+
+  <!-- https://sparql.uniprot.org/sparql/ -->
+  <!-- https://biosoda.unil.ch/graphdb/repositories/emi-dbgi -->
+  <!-- https://rdf.metanetx.org/sparql/ -->
 
   <body>
     <div id="container">
-      <h2>SPARQL Endpoint Checker</h2>
+      <h2>SPARQL Endpoint Metadata Checker</h2>
+      <p>Check if your SPARQL endpoint contains the right metadata to make it easier to understand and query.</p>
       <form id="sparqlForm">
-        <input type="text" id="sparqlEndpoint" placeholder="Enter SPARQL endpoint URL" required />
+        <input type="text" id="sparqlEndpoint" placeholder="Enter SPARQL endpoint URL" required
+          value="https://biosoda.unil.ch/graphdb/repositories/emi-dbgi"
+        />
         <br />
         <button type="submit">Check Endpoint</button>
       </form>
@@ -99,8 +59,10 @@
           );
 
           if (prefixesResults.length === 0) {
-            resultsDiv.innerHTML += `<p>❌ No prefixes found</p>`;
-            return;
+            resultsDiv.innerHTML += `<p><b>⚠️ No prefixes found</b></p>
+              <p>Add prefix/namespace definitions to your endpoint using SHACL <code>sh:namespace</code> and <code>sh:prefix</code> properties.</p>
+              <p>Checkout the <a href="https://github.com/sib-swiss/sparql-examples" target="_blank">sparql-examples</a> project
+              to help you generate prefix definitions alongside SPARQL queries examples and upload them to your endpoint.</p>`;
           } else {
             resultsDiv.innerHTML += `<p>✅ Found ${prefixesResults.length} prefixes</p>`;
           }
@@ -118,8 +80,9 @@
           );
 
           if (exampleQueriesResults.length === 0) {
-            resultsDiv.innerHTML += `<p>❌ No example SPARQL queries found</p>`;
-            return;
+            resultsDiv.innerHTML += `<p><b>⚠️ No example SPARQL queries found</b></p>
+              <p>Checkout the <a href="https://github.com/sib-swiss/sparql-examples" target="_blank">sparql-examples</a> project
+              to help you generate SHACL representations of SPARQL queries and upload them to your endpoint.</p>`;
           } else {
             resultsDiv.innerHTML += `<p>✅ Found ${exampleQueriesResults.length} example SPARQL queries</p>`;
           }
@@ -145,7 +108,10 @@
           );
 
           if (voidResults.length === 0) {
-            resultsDiv.innerHTML += `<p>❌ No VoID description found.<br/>Checkout the <a href="https://github.com/JervenBolleman/void-generator" target="_blank">void-generator</a> project to automatically generate a <a href="https://www.w3.org/TR/void/">VoID description</a> for the classes and predicates inside your endpoint.</p>`;
+            resultsDiv.innerHTML += `<p><b>⚠️ No VoID description found.</b></p>
+              <p>Checkout the <a href="https://github.com/JervenBolleman/void-generator" target="_blank">void-generator</a> project
+              to automatically generate a <a href="https://www.w3.org/TR/void/">VoID description</a> for the classes and predicates inside your endpoint,
+              and upload it to your endpoint.</p>`;
             return;
           } else {
             resultsDiv.innerHTML += `<p>✅ Found VoID description for ${voidResults.length} classes</p>`;
@@ -157,5 +123,57 @@
         }
       }
     </script>
+
+    <style>
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        height: 100vh;
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+      }
+      #container {
+        width: 90%;
+        max-width: 900px;
+        text-align: center;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      input[type="text"] {
+        width: 70%;
+        min-width: 250px;
+        max-width: 100%;
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        box-sizing: border-box;
+      }
+      button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        background-color: #007bff;
+        color: white;
+        font-size: 16px;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      .result {
+        margin-top: 20px;
+        font-size: 18px;
+      }
+      .result span {
+        font-weight: bold;
+        margin-right: 10px;
+      }
+    </style>
   </body>
 </html>
