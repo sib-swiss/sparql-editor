@@ -74,19 +74,7 @@ export class SparqlEditor extends HTMLElement {
     this.shadowRoot?.appendChild(style);
     this.shadowRoot?.appendChild(container);
 
-    // NOTE: Alternative way to create the template. But I find it super ugly to need to clone the template content...
-    // const template = document.createElement('template');
-    // template.innerHTML = `
-    //   <div style="display: flex; flex-direction: row;">
-    // 		<div id="sparql-editor" style="flex: 0 0 70%; margin-right: 1em;">
-    // 			<button id="sparql-add-prefixes-btn" style="margin-bottom: 0.3em;">Add common prefixes</button>
-    // 			<div id="yasgui"></div>
-    // 		</div>
-    // 		<div id="sparql-examples" style="flex: 1; border-left: 1px solid #ccc; padding-left: 1em;"></div>
-    // 	</div>
-    // `;
-    // this.shadowRoot?.appendChild(template.content.cloneNode(true));
-
+    // Initialize prefixes with some defaults
     this.prefixes = new Map([
       ["rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#"],
       ["rdfs", "http://www.w3.org/2000/01/rdf-schema#"],
@@ -104,6 +92,9 @@ export class SparqlEditor extends HTMLElement {
     ]);
     this.voidDescription = {};
 
+    // NOTE: autocompleters get are executed when Yasgui is instantiated
+    Yasgui.Yasqe.defaults.autocompleters.splice(Yasgui.Yasqe.defaults.autocompleters.indexOf("prefixes"), 1);
+    Yasgui.Yasqe.forkAutocompleter("prefixes", this.prefixesCompleter);
     Yasgui.Yasqe.forkAutocompleter("class", this.voidClassCompleter);
     Yasgui.Yasqe.forkAutocompleter("property", this.voidPropertyCompleter);
     Yasgui.defaults.requestConfig = {
@@ -125,7 +116,7 @@ export class SparqlEditor extends HTMLElement {
 
     // TODO: make exampleQueries a dict with the query IRI as key, so if the window.location matches a key, it will load the query?
 
-    // Create YASGUI editor
+    // Instantiate YASGUI editor
     const editorEl = this.shadowRoot?.getElementById("yasgui") as HTMLElement;
     this.yasgui = new Yasgui(editorEl, {
       copyEndpointOnNewTab: true,
@@ -200,7 +191,18 @@ export class SparqlEditor extends HTMLElement {
     }
   }
 
-  // https://github.com/zazuko/Yasgui/blob/main/packages/yasqe/src/autocompleters/classes.ts#L8
+  // Original autocompleters: https://github.com/zazuko/Yasgui/blob/main/packages/yasqe/src/autocompleters/classes.ts#L8
+  // Fork examples: https://github.com/zazuko/Yasgui/blob/main/webpack/pages/yasqe.html#L61
+  prefixesCompleter = {
+    name: "shaclPrefixes",
+    persistenceId: null,
+    bulk: true,
+    get: async () => {
+      const prefixArray: string[] = [];
+      this.prefixes.forEach((ns, prefix) => prefixArray.push(`${prefix}: <${ns}>`))
+      return prefixArray.sort();
+    },
+  }
   voidClassCompleter = {
     name: "voidClass",
     bulk: true,
@@ -257,22 +259,24 @@ export class SparqlEditor extends HTMLElement {
       const cursor = yasqe.getCursor();
       const subj = getSubjectForCursorPosition(yasqe.getValue(), cursor.line, cursor.ch);
       const subjTypes = extractAllSubjectsAndTypes(yasqe.getValue());
-      // console.log(subj, subjTypes)
+      // console.log("subj, subjTypes, unfiltered hints", subj, subjTypes, hints)
       if (subj && subjTypes.has(subj) && Object.keys(this.voidDescription).length > 0) {
         const types = subjTypes.get(subj);
+        // console.log("types", types)
         if (types) {
           const filteredHints = new Set();
           types.forEach(typeCurie => {
             const propSet = new Set(Object.keys(this.voidDescription[this.curieToUri(typeCurie)]));
-            // console.log(propSet)
+            // console.log("propSet hints", propSet, hints)
             hints
               .filter((obj: any) => {
-                // console.log(this.curieToUri(obj.text))
+                // console.log("Filter hints", obj.text, this.curieToUri(obj.text), this.curieToUri(obj.text).replace(/^<|>$/g, ""))
                 return propSet.has(this.curieToUri(obj.text).replace(/^<|>$/g, ""));
               })
               .forEach((obj: any) => {
                 filteredHints.add(obj);
               });
+            // console.log("filtered hints", hints, filteredHints)
           });
           return Array.from(filteredHints);
         }
@@ -348,6 +352,7 @@ export class SparqlEditor extends HTMLElement {
   }
 
   async getPrefixes() {
+    // Get prefixes from the SPARQL endpoint using SHACL
     try {
       const queryResults = await this.queryEndpoint(`PREFIX sh: <http://www.w3.org/ns/shacl#>
         SELECT DISTINCT ?prefix ?namespace
@@ -540,7 +545,8 @@ export class SparqlEditor extends HTMLElement {
 
   // Function to convert CURIE to full URI using the prefix map
   curieToUri(curie: string) {
-    if (/^[a-zA-Z][a-zA-Z0-9]*:[a-zA-Z][a-zA-Z0-9]*$/.test(curie)) {
+    // if (/^[a-zA-Z][a-zA-Z0-9]*:[a-zA-Z][a-zA-Z0-9_-]*$/.test(curie)) {
+    if (/^[a-zA-Z][\w.-]*:[\w.-]+$/.test(curie)) {
       const [prefix, local] = curie.split(":");
       const namespace = this.prefixes.get(prefix);
       return namespace ? `${namespace}${local}` : curie; // Return as-is if prefix not found
