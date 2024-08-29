@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>SPARQL Endpoint Metadata Checker</title>
+    <title>SPARQL Endpoint Metadata Check</title>
     <meta name="description" content="Check if your SPARQL endpoint contains the right metadata" />
     <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/f/f3/Rdf_logo.svg" />
   </head>
@@ -14,12 +14,10 @@
 
   <body>
     <div id="container">
-      <h2>SPARQL Endpoint Metadata Checker</h2>
+      <h2>SPARQL Endpoint Metadata Check</h2>
       <p>Check if your SPARQL endpoint contains the right metadata to make it easier to understand and query.</p>
       <form id="sparqlForm">
-        <input type="text" id="sparqlEndpoint" placeholder="Enter SPARQL endpoint URL" required
-          value="https://biosoda.unil.ch/graphdb/repositories/emi-dbgi"
-        />
+        <input type="text" id="sparqlEndpoint" placeholder="Enter a SPARQL endpoint URL" required />
         <br />
         <button type="submit">Check Endpoint</button>
       </form>
