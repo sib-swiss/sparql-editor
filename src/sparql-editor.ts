@@ -64,6 +64,7 @@ export class SparqlEditor extends HTMLElement {
     container.innerHTML = `
       <div id="sparql-editor">
         <button id="sparql-add-prefixes-btn" class="btn" style="margin-bottom: 0.3em;">Add common prefixes</button>
+        <button id="sparql-save-example-btn" class="btn" style="margin-bottom: 0.3em;">Save query as example</button>
         <div id="yasgui"></div>
       </div>
       <div>
@@ -172,6 +173,61 @@ export class SparqlEditor extends HTMLElement {
       });
     });
 
+    // Button to pop a dialog to save the query as an example in a turtle file
+    const addExampleBtnEl = this.shadowRoot?.getElementById("sparql-save-example-btn");
+    const capitalize = (str: any) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+    addExampleBtnEl?.addEventListener("click", () => {
+      const dialog = document.createElement("dialog");
+      dialog.style.width = "400px";
+      dialog.style.padding = "1em";
+      dialog.style.borderRadius = "8px";
+      dialog.style.borderColor = "#cccccc";
+      // <textarea id="description" name="description" rows="4" style="width: 100%;"></textarea><br><br>
+      dialog.innerHTML = `
+        <form id="example-form" method="dialog">
+          <h3>Save query as example</h3>
+          <p>Save the current query as an example in a turtle file that you can then submit to the repository where all examples are stored.</p>
+          <label for="description">Description:</label><br>
+          <input type="text" id="description" name="description" style="width: 100%;" maxlength="200"><br><br>
+          <label for="keywords">Keywords (optional, comma separated):</label><br>
+          <input type="text" id="keywords" name="keywords" style="width: 100%;"><br><br>
+          <button type="submit" class="btn">Save</button>
+          <button type="button" class="btn" onclick="this.closest('dialog').close()">Cancel</button>
+        </form>
+      `;
+      this.shadowRoot?.appendChild(dialog);
+      dialog.showModal();
+      dialog.querySelector("#example-form")?.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const description = (dialog.querySelector("#description") as HTMLTextAreaElement).value;
+        const keywordsStr = (dialog.querySelector("#keywords") as HTMLInputElement).value.split(",").map((kw: string) => `"${kw.trim()}"`).join(', ');
+        const queryType = capitalize(this.yasgui?.getTab()?.getYasqe().getQueryType())
+        const endpointUrlWithSlash = this.endpointUrl.endsWith('/') ? this.endpointUrl : `${this.endpointUrl}/`;
+        const exampleNumberForId = (this.exampleQueries.length + 1).toString().padStart(3, '0');
+        const keywordsBit = keywordsStr.length > 2 ? `schema:keyword ${keywordsStr} ;\n    ` : '';
+
+        const shaclStr = `@prefix ex: <${endpointUrlWithSlash}.well-known/sparql-examples/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix schema: <https://schema.org/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+ex:${exampleNumberForId} a sh:SPARQLExecutable${['Select', 'Construct', "Ask"].includes(queryType) ? `,
+        sh:SPARQL${queryType}Executable` : ''} ;
+    rdfs:comment "${description}"@en ;
+    sh:prefixes _:sparql_examples_prefixes ;
+    sh:${queryType.toLowerCase()} """${this.yasgui?.getTab()?.getYasqe().getValue()}""" ;
+    ${keywordsBit}schema:target <${this.endpointUrl}> .`
+
+        const dataStr = `data:text/turtle;charset=utf-8,${encodeURIComponent(shaclStr)}`;
+        const downloadAnchor = document.createElement("a");
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", `${exampleNumberForId}.ttl`);
+        downloadAnchor.click();
+        dialog.close();
+      });
+    });
+
+
     // Parse query params from URL and auto run query if provided in URL
     // NOTE: Yasqe already automatically load query param in the editor and run the query
     // But it does not trigger the .on("query") event, so it does not add limit
@@ -190,6 +246,11 @@ export class SparqlEditor extends HTMLElement {
       this.yasgui.getTab()?.getYasqe().query();
     }
   }
+
+  // TODO: there is a SUGGESTIONS_LIMIT of 100 on the get. So doing filtering in postProcessHints is not ideal...
+  // Best would be to have a way to filter the results in the get method directly
+  // (it will also reduce the amount of SPARQL request done!)
+  // It ctreates problem with UniProt query3 up:Natural_Variant_Annotation
 
   // Original autocompleters: https://github.com/zazuko/Yasgui/blob/main/packages/yasqe/src/autocompleters/classes.ts#L8
   // Fork examples: https://github.com/zazuko/Yasgui/blob/main/webpack/pages/yasqe.html#L61
@@ -553,6 +614,9 @@ export class SparqlEditor extends HTMLElement {
       return curie;
     }
   }
+
+
+
 }
 
 function extractAllSubjectsAndTypes(query: string): Map<string, Set<string>> {
