@@ -21,7 +21,8 @@
     "lint": "prettier --check . && eslint . --ignore-pattern dist/",
     "fmt": "prettier --write . && eslint . --fix --ignore-pattern dist/",
     "test": "npm run lint && vitest run",
-    "release": "npm run lint && npm run build && npm publish"
+    "release": "npm run lint && npm run build && npm publish",
+    "prepare": "husky"
   },
   "dependencies": {
     "@zazuko/yasgui": "^4.3.2",
@@ -38,6 +39,7 @@
     "@types/eslint__js": "^8.42.3",
     "@types/node": "^20.14.9",
     "eslint": "^8.57.0",
+    "husky": "^9.1.5",
     "jsdom": "^24.1.0",
     "prettier": "^3.3.2",
     "tslib": "^2.6.3",
