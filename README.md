@@ -9,7 +9,7 @@
 
 A standard web component to easily deploy a user-friendly SPARQL query editor for a specific SPARQL endpoint, based on the popular [YASGUI editor](https://github.com/zazuko/Yasgui) with advanced autocomplete for predicates based on classes.
 
-👆️ You can use it for a few SPARQL endpoints of the SIB, such as UniProt and Bgee, here: **[sib-swiss.github.io/sparql-editor](https://sib-swiss.github.io/sparql-editor)**
+👆️ You can **try it** for a few SPARQL endpoints of the SIB, such as UniProt and Bgee, here: **[sib-swiss.github.io/sparql-editor](https://sib-swiss.github.io/sparql-editor)**
 
 The editor retrieves metadata about the endpoint by directly querying the SPARQL endpoint, so all you need to do is to properly document your endpoint. Reducing the need for complex infrastructure, while making your SPARQL endpoints easier to query for users and machines.
 
