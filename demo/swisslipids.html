@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>dbgi SPARQL editor</title>
-    <meta name="description" content="SPARQL editor for dbgi at the SIB" />
+    <title>SwissLipids SPARQL editor</title>
+    <meta name="description" content="SPARQL editor for the SwissLipids endpoint at the SIB" />
     <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/f/f3/Rdf_logo.svg" />
     <link rel="stylesheet" href="styles.css" />
 
@@ -14,9 +14,24 @@
   <body>
     <div>
       <sparql-editor
-        endpoint="https://biosoda.unil.ch/graphdb/repositories/emi-dbgi"
+        endpoint="https://beta.sparql.swisslipids.org/"
         examples-repository="https://github.com/sib-swiss/sparql-examples"
       >
+        <h4>About</h4>
+        <p>
+          This SPARQL endpoint contains all SwissLipids data. It is free to access and supports the
+          <a href="http://www.w3.org/TR/sparql11-query/">SPARQL 1.1 Standard</a>.
+        </p>
+        <p>
+          There are 15,271,348 triples in this release (2024_08_30). The query timeout is 45 minutes. All triples are
+          available in the default graph. There are 3 named graphs.
+        </p>
+        <h4>Documentation</h4>
+        <ol>
+          <li><a href="/.well-known/void">Statistics and diagrams</a></li>
+          <li><a href="/.well-known/sparql-examples/">Example queries</a></li>
+        </ol>
+
         <h4>Other SPARQL editors for SIB endpoints</h4>
         <ul>
           <li><a href="/sparql-editor/uniprot">UniProt - protein knowledgebase</a></li>

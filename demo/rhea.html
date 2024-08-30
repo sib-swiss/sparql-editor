@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>dbgi SPARQL editor</title>
-    <meta name="description" content="SPARQL editor for dbgi at the SIB" />
+    <title>Rhea SPARQL editor</title>
+    <meta name="description" content="SPARQL editor for the Rhea endpoint at the SIB" />
     <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/f/f3/Rdf_logo.svg" />
     <link rel="stylesheet" href="styles.css" />
 
@@ -14,9 +14,34 @@
   <body>
     <div>
       <sparql-editor
-        endpoint="https://biosoda.unil.ch/graphdb/repositories/emi-dbgi"
+        endpoint="https://sparql.rhea-db.org/sparql/"
         examples-repository="https://github.com/sib-swiss/sparql-examples"
       >
+        <h4>About</h4>
+        <p>
+          This SPARQL endpoint contains Rhea reactions data (see
+          <a href="https://www.rhea-db.org/statistics">statistics</a>), and a snapshot of ChEBI data matching the Rhea
+          release. It is free to access and supports the SPARQL 1.1 Standard.
+        </p>
+        <p>
+          The query timeout is 45 minutes. All triples are available in the default graph. There are two named graphs:
+          <a href="http://sparql.rhea-db.org/rhea">Rhea</a> and <a href="http://sparql.rhea-db.org/chebi"> ChEBI</a>.
+        </p>
+        <h4>Documentation</h4>
+        <ol>
+          <li>
+            <a href="/.well-known/void">Statistics</a> and
+            <a href="https://ftp.expasy.org/databases/rhea/rdf/rhea_rdf_documentation.pdf">diagrams</a>
+          </li>
+          <li>
+            <a href="https://github.com/sib-swiss/sparql-training/tree/master/rhea"
+              >Tutorial on using SPARQL with Rhea</a
+            >
+          </li>
+          <li><a href="/.well-known/sparql-examples/">Example queries</a></li>
+          <li><a href="https://www.rhea-db.org/statistics">Release data</a></li>
+        </ol>
+
         <h4>Other SPARQL editors for SIB endpoints</h4>
         <ul>
           <li><a href="/sparql-editor/uniprot">UniProt - protein knowledgebase</a></li>

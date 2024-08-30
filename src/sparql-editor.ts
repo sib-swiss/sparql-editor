@@ -39,6 +39,10 @@ export class SparqlEditor extends HTMLElement {
   urlParams: any;
   prefixes: Map<string, string>;
   voidDescription: VoidDict;
+  classesList: string[];
+  predicatesList: string[];
+  examplesNamespace: string;
+  examplesRepository: string | null;
 
   constructor() {
     super();
@@ -50,6 +54,10 @@ export class SparqlEditor extends HTMLElement {
 
     this.examplesOnMainPage = Number(this.getAttribute("examples-on-main-page")) || 10;
     this.exampleQueries = [];
+    this.examplesNamespace =
+      this.getAttribute("examples-namespace") ||
+      (this.endpointUrl.endsWith("/") ? this.endpointUrl : `${this.endpointUrl}/`) + ".well-known/sparql-examples/";
+    this.examplesRepository = this.getAttribute("examples-repository");
 
     const style = document.createElement("style");
     style.textContent = `
@@ -92,9 +100,12 @@ export class SparqlEditor extends HTMLElement {
       ["faldo", "http://biohackathon.org/resource/faldo#"],
     ]);
     this.voidDescription = {};
+    this.classesList = [];
+    this.predicatesList = [];
 
     // NOTE: autocompleters get are executed when Yasgui is instantiated
     Yasgui.Yasqe.defaults.autocompleters.splice(Yasgui.Yasqe.defaults.autocompleters.indexOf("prefixes"), 1);
+    Yasgui.Yasqe.defaults.autocompleters.splice(Yasgui.Yasqe.defaults.autocompleters.indexOf("property"), 1);
     Yasgui.Yasqe.forkAutocompleter("prefixes", this.prefixesCompleter);
     Yasgui.Yasqe.forkAutocompleter("class", this.voidClassCompleter);
     Yasgui.Yasqe.forkAutocompleter("property", this.voidPropertyCompleter);
@@ -182,13 +193,15 @@ export class SparqlEditor extends HTMLElement {
       dialog.style.padding = "1em";
       dialog.style.borderRadius = "8px";
       dialog.style.borderColor = "#cccccc";
-      // <textarea id="description" name="description" rows="4" style="width: 100%;"></textarea><br><br>
+      const exampleRepoLink = this.examplesRepository
+        ? `<a href="${this.examplesRepository}" target="_blank">repository</a>`
+        : "repository";
       dialog.innerHTML = `
         <form id="example-form" method="dialog">
           <h3>Save query as example</h3>
-          <p>Download the current query as an example in a turtle file that you can then submit to the repository where all examples are stored.</p>
+          <p>Download the current query as an example in a turtle file that you can then submit to the ${exampleRepoLink} where all examples are stored.</p>
           <label for="description">Description:</label><br>
-          <input type="text" id="description" name="description" style="width: 100%;" maxlength="200"><br><br>
+          <input type="text" id="description" name="description" required style="width: 100%;" maxlength="200"><br><br>
           <label for="keywords">Keywords (optional, comma separated):</label><br>
           <input type="text" id="keywords" name="keywords" style="width: 100%;"><br><br>
           <button type="submit" class="btn">Download</button>
@@ -197,26 +210,31 @@ export class SparqlEditor extends HTMLElement {
       `;
       this.shadowRoot?.appendChild(dialog);
       dialog.showModal();
-      dialog.querySelector("#example-form")?.addEventListener("submit", (e) => {
+      dialog.querySelector("#example-form")?.addEventListener("submit", e => {
         e.preventDefault();
         const description = (dialog.querySelector("#description") as HTMLTextAreaElement).value;
-        const keywordsStr = (dialog.querySelector("#keywords") as HTMLInputElement).value.split(",").map((kw: string) => `"${kw.trim()}"`).join(', ');
-        const queryType = capitalize(this.yasgui?.getTab()?.getYasqe().getQueryType())
-        const endpointUrlWithSlash = this.endpointUrl.endsWith('/') ? this.endpointUrl : `${this.endpointUrl}/`;
-        const exampleNumberForId = (this.exampleQueries.length + 1).toString().padStart(3, '0');
-        const keywordsBit = keywordsStr.length > 2 ? `schema:keyword ${keywordsStr} ;\n    ` : '';
-
-        const shaclStr = `@prefix ex: <${endpointUrlWithSlash}.well-known/sparql-examples/> .
+        const keywordsStr = (dialog.querySelector("#keywords") as HTMLInputElement).value
+          .split(",")
+          .map((kw: string) => `"${kw.trim()}"`)
+          .join(", ");
+        const queryType = capitalize(this.yasgui?.getTab()?.getYasqe().getQueryType());
+        const exampleNumberForId = (this.exampleQueries.length + 1).toString().padStart(3, "0");
+        const keywordsBit = keywordsStr.length > 2 ? `schema:keyword ${keywordsStr} ;\n    ` : "";
+        const shaclStr = `@prefix ex: <${this.examplesNamespace}> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix schema: <https://schema.org/> .
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 
-ex:${exampleNumberForId} a sh:SPARQLExecutable${['Select', 'Construct', "Ask"].includes(queryType) ? `,
-        sh:SPARQL${queryType}Executable` : ''} ;
+ex:${exampleNumberForId} a sh:SPARQLExecutable${
+          ["Select", "Construct", "Ask"].includes(queryType)
+            ? `,
+        sh:SPARQL${queryType}Executable`
+            : ""
+        } ;
     rdfs:comment "${description}"@en ;
     sh:prefixes _:sparql_examples_prefixes ;
     sh:${queryType.toLowerCase()} """${this.yasgui?.getTab()?.getYasqe().getValue()}""" ;
-    ${keywordsBit}schema:target <${this.endpointUrl}> .`
+    ${keywordsBit}schema:target <${this.endpointUrl}> .`;
 
         const dataStr = `data:text/turtle;charset=utf-8,${encodeURIComponent(shaclStr)}`;
         const downloadAnchor = document.createElement("a");
@@ -226,7 +244,6 @@ ex:${exampleNumberForId} a sh:SPARQLExecutable${['Select', 'Construct', "Ask"].i
         dialog.close();
       });
     });
-
 
     // Parse query params from URL and auto run query if provided in URL
     // NOTE: Yasqe already automatically load query param in the editor and run the query
@@ -247,11 +264,6 @@ ex:${exampleNumberForId} a sh:SPARQLExecutable${['Select', 'Construct', "Ask"].i
     }
   }
 
-  // TODO: there is a SUGGESTIONS_LIMIT of 100 on the get. So doing filtering in postProcessHints is not ideal...
-  // Best would be to have a way to filter the results in the get method directly
-  // (it will also reduce the amount of SPARQL request done!)
-  // It ctreates problem with UniProt query3 up:Natural_Variant_Annotation
-
   // Original autocompleters: https://github.com/zazuko/Yasgui/blob/main/packages/yasqe/src/autocompleters/classes.ts#L8
   // Fork examples: https://github.com/zazuko/Yasgui/blob/main/webpack/pages/yasqe.html#L61
   prefixesCompleter = {
@@ -268,55 +280,18 @@ ex:${exampleNumberForId} a sh:SPARQLExecutable${['Select', 'Construct', "Ask"].i
     name: "voidClass",
     bulk: true,
     get: async (yasqe: any) => {
-      try {
-        const queryResults = await this.queryEndpoint(`PREFIX void: <http://rdfs.org/ns/void#>
-          SELECT DISTINCT ?class
-          WHERE { [] void:class ?class }
-          ORDER BY ?class`);
-        const clsList: string[] = [];
-        queryResults.forEach(b => {
-          clsList.push(b.class.value);
-        });
-        if (clsList.length > 0) {
-          delete yasqe.autocompleters["class"];
-        } else {
-          console.warn("No classes found in the VoID description");
-        }
-        return clsList;
-      } catch (error) {
-        console.warn(`Error retrieving classes for autocomplete from ${this.endpointUrl} VoID description:`, error);
-        return [];
+      if (this.classesList.length > 0) {
+        delete yasqe.autocompleters["class"];
+      } else {
+        console.warn("No classes found in the VoID description");
       }
+      return this.classesList;
     },
   };
   voidPropertyCompleter = {
     name: "voidProperty",
-    bulk: true,
+    bulk: false,
     get: async (yasqe: any) => {
-      try {
-        const queryResults = await this.queryEndpoint(`PREFIX void: <http://rdfs.org/ns/void#>
-          SELECT DISTINCT ?property
-          WHERE { [] void:linkPredicate|void:property ?property }
-          ORDER BY ?property`);
-        const propsList: string[] = [];
-        queryResults.forEach(b => {
-          propsList.push(b.property.value);
-        });
-        if (propsList.length > 0) {
-          delete yasqe.autocompleters["property"];
-        } else {
-          console.warn("No properties found in the VoID description");
-        }
-        return propsList;
-      } catch (error) {
-        console.warn(`Error retrieving properties for autocomplete from ${this.endpointUrl} VoID description:`, error);
-        return [];
-      }
-    },
-    postprocessHints: (yasqe: any, hints: any) => {
-      // We retrieve the subject at the cursor position and all subjects/types in the query using regex
-      // Not perfect, but we can't parse the whole query with SPARQL.js since it's not fully written yet
-      // And it would throw an error if the query is not valid
       const cursor = yasqe.getCursor();
       const subj = getSubjectForCursorPosition(yasqe.getValue(), cursor.line, cursor.ch);
       const subjTypes = extractAllSubjectsAndTypes(yasqe.getValue());
@@ -325,24 +300,15 @@ ex:${exampleNumberForId} a sh:SPARQLExecutable${['Select', 'Construct', "Ask"].i
         const types = subjTypes.get(subj);
         // console.log("types", types)
         if (types) {
-          const filteredHints = new Set();
+          const suggestPreds = new Set<string>();
           types.forEach(typeCurie => {
-            const propSet = new Set(Object.keys(this.voidDescription[this.curieToUri(typeCurie)]));
-            // console.log("propSet hints", propSet, hints)
-            hints
-              .filter((obj: any) => {
-                // console.log("Filter hints", obj.text, this.curieToUri(obj.text), this.curieToUri(obj.text).replace(/^<|>$/g, ""))
-                return propSet.has(this.curieToUri(obj.text).replace(/^<|>$/g, ""));
-              })
-              .forEach((obj: any) => {
-                filteredHints.add(obj);
-              });
-            // console.log("filtered hints", hints, filteredHints)
+            Object.keys(this.voidDescription[this.curieToUri(typeCurie)]).forEach(prop => suggestPreds.add(prop));
           });
-          return Array.from(filteredHints);
+          // console.log("suggestPreds", suggestPreds)
+          return Array.from(suggestPreds).sort();
         }
       }
-      return hints;
+      return this.predicatesList;
     },
     isValidCompletionPosition: (yasqe: any) => {
       const token = yasqe.getCompleteToken();
@@ -351,63 +317,6 @@ ex:${exampleNumberForId} a sh:SPARQLExecutable${['Select', 'Construct', "Ask"].i
       return false;
     },
   };
-
-  addPrefixesToQuery(query: string) {
-    // Add prefixes to a query without using YASGUI
-    // Required to add prefixes to the query before creating the YASGUI editor
-    const sortedKeys = [...this.prefixes.keys()].sort();
-    for (const key of sortedKeys) {
-      const value = this.prefixes.get(key);
-      const pref: any = {};
-      pref[key] = value;
-      const prefix = "PREFIX " + key + " ?: ?<" + value;
-      if (!new RegExp(prefix, "g").test(query) && new RegExp("[(| |\u00a0|/|^]" + key + ":", "g").test(query)) {
-        query = `PREFIX ${key}: <${value}>\n${query}`;
-      }
-    }
-    return query;
-  }
-
-  addPrefixesToQueryInEditor() {
-    // Add prefixes to the query loaded in the YASGUI editor
-    const query = this.yasgui?.getTab()?.getYasqe().getValue();
-    const sortedKeys = [...this.prefixes.keys()].sort();
-    for (const key of sortedKeys) {
-      const value = this.prefixes.get(key);
-      const pref: any = {};
-      pref[key] = value;
-      const prefix = "PREFIX " + key + " ?: ?<" + value;
-      if (!new RegExp(prefix, "g").test(query) && new RegExp("[(| |\u00a0|/|^]" + key + ":", "g").test(query)) {
-        this.yasgui?.getTab()?.getYasqe().addPrefixes(pref);
-      }
-    }
-  }
-
-  addTab(query: string, index: number) {
-    this.yasgui?.addTab(true, {
-      ...Yasgui.Tab.getDefaults(),
-      name: `Query ${index + 1}`,
-      yasqe: {value: query},
-    });
-    this.addPrefixesToQueryInEditor();
-  }
-
-  createDescribeUrl(resourceUrl: string) {
-    return `?query=${encodeURIComponent(`DESCRIBE <${resourceUrl}>`)}`;
-  }
-
-  async queryEndpoint(query: string): Promise<SparqlResultBindings[]> {
-    // We add `&ac=1` to all the queries to exclude these queries from stats
-    const response = await fetch(`${this.endpointUrl}?ac=1&query=${encodeURIComponent(query)}`, {
-      signal: AbortSignal.timeout(5000),
-      headers: {
-        Accept: "application/json",
-      },
-    });
-    // console.log(await response.text());
-    const json = await response.json();
-    return json.results.bindings;
-  }
 
   async getPrefixes() {
     // Get prefixes from the SPARQL endpoint using SHACL
@@ -443,13 +352,22 @@ ex:${exampleNumberForId} a sh:SPARQLExecutable${['Select', 'Construct', "Ask"].i
                 }
             }
         }`);
+      const clsSet = new Set<string>();
+      const predSet = new Set<string>();
       queryResults.forEach(b => {
+        clsSet.add(b.class1.value);
+        predSet.add(b.prop.value);
         if (!(b.class1.value in this.voidDescription)) this.voidDescription[b.class1.value] = {};
         if (!(b.prop.value in this.voidDescription[b.class1.value]))
           this.voidDescription[b.class1.value][b.prop.value] = [];
-        if ("class2" in b) this.voidDescription[b.class1.value][b.prop.value].push(b.class2.value);
+        if ("class2" in b) {
+          this.voidDescription[b.class1.value][b.prop.value].push(b.class2.value);
+          clsSet.add(b.class2.value);
+        }
         if ("datatype" in b) this.voidDescription[b.class1.value][b.prop.value].push(b.datatype.value);
       });
+      this.classesList = Array.from(clsSet).sort();
+      this.predicatesList = Array.from(predSet).sort();
     } catch (error) {
       console.warn(`Error retrieving VoID description from ${this.endpointUrl} for autocomplete:`, error);
     }
@@ -464,13 +382,13 @@ ex:${exampleNumberForId} a sh:SPARQLExecutable${['Select', 'Construct', "Ask"].i
         SELECT DISTINCT ?sq ?comment ?query
         WHERE {
           ?sq a sh:SPARQLExecutable ;
-            rdfs:label|rdfs:comment ?comment ;
+            rdfs:comment ?comment ;
             sh:select|sh:ask|sh:construct|sh:describe ?query .
         } ORDER BY ?sq`);
       queryResults.forEach(b => {
         this.exampleQueries.push({comment: b.comment.value, query: b.query.value});
       });
-      console.log(queryResults);
+      // console.log(queryResults);
       if (this.exampleQueries.length === 0) return;
 
       // Add title for examples
@@ -602,6 +520,63 @@ ex:${exampleNumberForId} a sh:SPARQLExecutable${['Select', 'Construct', "Ask"].i
     }
   }
 
+  addPrefixesToQuery(query: string) {
+    // Add prefixes to a query without using YASGUI
+    // Required to add prefixes to the query before creating the YASGUI editor
+    const sortedKeys = [...this.prefixes.keys()].sort();
+    for (const key of sortedKeys) {
+      const value = this.prefixes.get(key);
+      const pref: any = {};
+      pref[key] = value;
+      const prefix = "PREFIX " + key + " ?: ?<" + value;
+      if (!new RegExp(prefix, "g").test(query) && new RegExp("[(| |\u00a0|/|^]" + key + ":", "g").test(query)) {
+        query = `PREFIX ${key}: <${value}>\n${query}`;
+      }
+    }
+    return query;
+  }
+
+  addPrefixesToQueryInEditor() {
+    // Add prefixes to the query loaded in the YASGUI editor
+    const query = this.yasgui?.getTab()?.getYasqe().getValue();
+    const sortedKeys = [...this.prefixes.keys()].sort();
+    for (const key of sortedKeys) {
+      const value = this.prefixes.get(key);
+      const pref: any = {};
+      pref[key] = value;
+      const prefix = "PREFIX " + key + " ?: ?<" + value;
+      if (!new RegExp(prefix, "g").test(query) && new RegExp("[(| |\u00a0|/|^]" + key + ":", "g").test(query)) {
+        this.yasgui?.getTab()?.getYasqe().addPrefixes(pref);
+      }
+    }
+  }
+
+  addTab(query: string, index: number) {
+    this.yasgui?.addTab(true, {
+      ...Yasgui.Tab.getDefaults(),
+      name: `Query ${index + 1}`,
+      yasqe: {value: query},
+    });
+    this.addPrefixesToQueryInEditor();
+  }
+
+  createDescribeUrl(resourceUrl: string) {
+    return `?query=${encodeURIComponent(`DESCRIBE <${resourceUrl}>`)}`;
+  }
+
+  async queryEndpoint(query: string): Promise<SparqlResultBindings[]> {
+    // We add `&ac=1` to all the queries to exclude these queries from stats
+    const response = await fetch(`${this.endpointUrl}?ac=1&query=${encodeURIComponent(query)}`, {
+      signal: AbortSignal.timeout(5000),
+      headers: {
+        Accept: "application/json",
+      },
+    });
+    // console.log(await response.text());
+    const json = await response.json();
+    return json.results.bindings;
+  }
+
   // Function to convert CURIE to full URI using the prefix map
   curieToUri(curie: string) {
     // if (/^[a-zA-Z][a-zA-Z0-9]*:[a-zA-Z][a-zA-Z0-9_-]*$/.test(curie)) {
@@ -614,9 +589,6 @@ ex:${exampleNumberForId} a sh:SPARQLExecutable${['Select', 'Construct', "Ask"].i
       return curie;
     }
   }
-
-
-
 }
 
 function extractAllSubjectsAndTypes(query: string): Map<string, Set<string>> {

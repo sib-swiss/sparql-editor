@@ -25,7 +25,7 @@ The editor retrieves metadata about the endpoint by directly querying the SPARQL
 
 ## 🚀 Use
 
-1. Import from CDN
+1. Import from a CDN:
 
    ```html
    <script type="module" src="https://unpkg.com/@sib-swiss/sparql-editor"></script>
@@ -45,26 +45,37 @@ The editor retrieves metadata about the endpoint by directly querying the SPARQL
    <sparql-editor endpoint="https://sparql.uniprot.org/sparql/"></sparql-editor>
    ```
 
-   You can customize the number of examples displayed on the main page, buttons color, and provide other HTML elements to be included under the SPARQL examples (e.g. about and links to relevant resources):
-
-   ```html
-   <sparql-editor
-     endpoint="https://www.bgee.org/sparql/"
-     examples-on-main-page="10"
-     style="--btn-color: white; --btn-bg-color: #00709b;"
-   >
-     <h1>About</h1>
-     <p>This SPARQL endpoint contains things</p>
-   </sparql-editor>
-   ```
-
 > [!WARNING]
 >
 > Metadata are retrieved by a few lightweight queries sent from client-side JavaScript when the editor is initialized, so your SPARQL **endpoint should accept CORS** (either from \*, which is recommended, or just from the URL where the editor is deployed)
 
+### ⚙️ Available attributes
+
+You can customize a few attributes when calling the custom element:
+
+- the URL to the git repository where the query examples for this endpoint are stored (used to inform the user where they can submit a new example query),
+- the namespace used when saving a query as example (defaults to the endpoint URL + /.well-known/sparql-examples/ when not specified),
+- the number of examples displayed on the main page (defaults to 10),
+- buttons color.
+
+You can also provide other HTML elements to be included under the SPARQL examples (e.g. about information and links to relevant resources):
+
+```html
+<sparql-editor
+  endpoint="https://www.bgee.org/sparql/"
+  examples-repository="https://github.com/sib-swiss/sparql-examples"
+  examples-namespace="https://sparql.uniprot.org/sparql/.well-known/sparql-examples/"
+  examples-on-main-page="10"
+  style="--btn-color: white; --btn-bg-color: #00709b;"
+>
+  <h1>About</h1>
+  <p>This SPARQL endpoint contains things</p>
+</sparql-editor>
+```
+
 ## 📝 Basic example
 
-No need for a complex project you can integrate SPARQL editor in any HTML page by importing from a CDN.
+No need for a complex project you can integrate SPARQL editor in any HTML page by importing from a CDN!
 
 Create a `index.html` file with:
 
@@ -78,7 +89,7 @@ Create a `index.html` file with:
     <meta name="description" content="SPARQL editor demo page" />
     <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/f/f3/Rdf_logo.svg" />
     <!-- Import the module from a CDN -->
-    <script type="module" src="https://unpkg.com/@sib-swiss/sparql-editor@0.1.4"></script>
+    <script type="module" src="https://unpkg.com/@sib-swiss/sparql-editor"></script>
   </head>
 
   <body>
