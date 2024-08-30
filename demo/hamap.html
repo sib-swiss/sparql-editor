@@ -6,13 +6,13 @@
     <title>HAMAP SPARQL editor</title>
     <meta name="description" content="SPARQL editor for HAMAP endpoint at the SIB" />
     <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/f/f3/Rdf_logo.svg" />
+    <link rel="stylesheet" href="styles.css" />
 
     <script type="module" src="https://unpkg.com/@sib-swiss/sparql-editor"></script>
   </head>
 
   <body>
     <div>
-
       <sparql-editor endpoint="https://hamap.expasy.org/sparql/">
         <h4>Other SPARQL editors for SIB endpoints</h4>
         <ul>
@@ -22,11 +22,8 @@
           <li><a href="/sparql-editor/hamap">HAMAP - High-quality Automated and Manual Annotation of Proteins</a></li>
           <li><a href="/sparql-editor/dbgi">DBGI - The Digital Botanical Garden Initiative</a></li>
         </ul>
-        <p>
-          You can check if an endpoint contains the <a href="/check">necessary metadata here</a>.
-        </p>
+        <p>You can check if an endpoint contains the <a href="/sparql-editor/check">necessary metadata here</a>.</p>
       </sparql-editor>
-
     </div>
   </body>
 </html>

@@ -1,0 +1,8 @@
+a {
+  text-decoration: none;
+  color: #00709b;
+}
+a:hover {
+  filter: brightness(60%);
+  text-decoration: underline;
+}
