@@ -17,11 +17,11 @@ The editor retrieves metadata about the endpoint by directly querying the SPARQL
 
 👆️ You can **try it** for a few SPARQL endpoints of the SIB, such as UniProt and Bgee, here: **[sib-swiss.github.io/sparql-editor](https://sib-swiss.github.io/sparql-editor)**
 
-![Screenshot gene](docs/screenshot_gene.png)
+![Screenshot gene](demo/screenshot_gene.png)
 
 ---
 
-![Screenshot expression](docs/screenshot_expression.png)
+![Screenshot expression](demo/screenshot_expression.png)
 
 ## 🚀 Use
 
