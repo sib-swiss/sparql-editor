@@ -186,12 +186,12 @@ export class SparqlEditor extends HTMLElement {
       dialog.innerHTML = `
         <form id="example-form" method="dialog">
           <h3>Save query as example</h3>
-          <p>Save the current query as an example in a turtle file that you can then submit to the repository where all examples are stored.</p>
+          <p>Download the current query as an example in a turtle file that you can then submit to the repository where all examples are stored.</p>
           <label for="description">Description:</label><br>
           <input type="text" id="description" name="description" style="width: 100%;" maxlength="200"><br><br>
           <label for="keywords">Keywords (optional, comma separated):</label><br>
           <input type="text" id="keywords" name="keywords" style="width: 100%;"><br><br>
-          <button type="submit" class="btn">Save</button>
+          <button type="submit" class="btn">Download</button>
           <button type="button" class="btn" onclick="this.closest('dialog').close()">Cancel</button>
         </form>
       `;
