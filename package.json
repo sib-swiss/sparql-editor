@@ -18,15 +18,15 @@
     "dev": "vite",
     "demo": "npx http-server demo",
     "build": "vite build",
-    "lint": "prettier --check . && eslint . --ignore-pattern dist/",
     "fmt": "prettier --write . && eslint . --fix --ignore-pattern dist/",
+    "lint": "prettier --check . && eslint . --ignore-pattern dist/",
     "test": "npm run lint && vitest run",
     "release": "npm run lint && npm run build && npm publish",
     "prepare": "husky"
   },
   "dependencies": {
     "@zazuko/yasgui": "^4.3.2",
-    "highlight.js": "^11.9.0",
+    "highlight.js": "^11.10.0",
     "mermaid": "^10.9.1",
     "sparqlalgebrajs": "^4.3.8"
   },
