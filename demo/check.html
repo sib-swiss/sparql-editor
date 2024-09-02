@@ -72,7 +72,7 @@
               SELECT DISTINCT ?sq ?comment ?query
               WHERE {
                 ?sq a sh:SPARQLExecutable ;
-                  rdfs:label|rdfs:comment ?comment ;
+                  rdfs:comment ?comment ;
                   sh:select|sh:ask|sh:construct|sh:describe ?query .
               } ORDER BY ?sq`,
           );

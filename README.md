@@ -13,8 +13,53 @@ A standard web component to easily deploy a user-friendly SPARQL query editor fo
 The editor retrieves metadata about the endpoint by directly querying the SPARQL endpoint, so all you need to do is to properly document your endpoint. Reducing the need for complex infrastructure, while making your SPARQL endpoints easier to query for users and machines.
 
 - **Prefixes** are automatically pulled from the endpoint using their definition defined with the [SHACL ontology](https://www.w3.org/TR/shacl/) (`sh:prefix`/`sh:namespace`).
-- **Example SPARQL queries** defined using the SHACL ontology are automatically pulled from the endpoint (queries are defined with `sh:select|sh:ask|sh:construct|sh:describe`, and their human readable description with `rdfs:comment`). Checkout the [`sparql-examples`](https://github.com/sib-swiss/sparql-examples) project for more details.
+
+  The prefixes/namespaces are retrieved with this query:
+
+  ```SPARQL
+  PREFIX sh: <http://www.w3.org/ns/shacl#>
+  SELECT DISTINCT ?prefix ?namespace
+  WHERE { [] sh:namespace ?namespace ; sh:prefix ?prefix }
+  ORDER BY ?prefix
+  ```
+
+- **Example SPARQL queries** defined using the SHACL ontology are automatically pulled from the endpoint (queries are defined with `sh:select|sh:ask|sh:construct|sh:describe`, and their human readable description with `rdfs:comment`). Checkout the [`sparql-examples`](https://github.com/sib-swiss/sparql-examples) project for more details. 
+
+  The example queries are retrieved with this SPARQL query:
+
+  ```SPARQL
+  PREFIX sh: <http://www.w3.org/ns/shacl#>
+  PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+  SELECT DISTINCT ?sq ?comment ?query
+  WHERE {
+      ?sq a sh:SPARQLExecutable ;
+          rdfs:comment ?comment ;
+          sh:select|sh:ask|sh:construct|sh:describe ?query .
+  } ORDER BY ?sq
+  ```
+
 - **Autocomplete possibilities for properties and classes** are automatically pulled from the endpoint based on [VoID description](https://www.w3.org/TR/void/) present in the triplestore (`void:linkPredicate|void:property` and `void:class`). The proposed properties are filtered based on the predicates available for the class of the subject related to where your cursor is 🤯. Checkout the [`void-generator`](https://github.com/JervenBolleman/void-generator) project to automatically generate VoID description for your endpoint.
+
+  VoID description is retrieved using this SPARQL query:
+
+  ```SPARQL
+  PREFIX up: <http://purl.uniprot.org/core/>
+  PREFIX void: <http://rdfs.org/ns/void#>
+  PREFIX void-ext: <http://ldf.fi/void-ext#>
+  SELECT DISTINCT ?subjectClass ?prop ?objectClass ?objectDatatype
+  WHERE {
+      ?cp void:class ?subjectClass ;
+          void:propertyPartition ?pp .
+      ?pp void:property ?prop .
+      OPTIONAL {
+          {
+              ?pp  void:classPartition [ void:class ?objectClass ] .
+          } UNION {
+              ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
+          }
+      }
+  }
+  ```
 
 👆️ You can **try it** for a few SPARQL endpoints of the SIB, such as UniProt and Bgee, here: **[sib-swiss.github.io/sparql-editor](https://sib-swiss.github.io/sparql-editor)**
 
