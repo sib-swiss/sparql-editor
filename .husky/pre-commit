@@ -1,0 +1,5 @@
+# npx lint-staged
+# commented because it does not work with prettier
+# [error] No parser could be inferred for file "/home/vemonet/dev/expasy/sparql-editor/.husky/pre-commit".
+npm run fmt
+npm run lint

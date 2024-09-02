@@ -118,11 +118,7 @@ export class SparqlEditor extends HTMLElement {
 
   async connectedCallback() {
     // Get prefixes and examples, and set default config for YASGUI
-    await Promise.all([
-      this.getExampleQueries(),
-      this.getPrefixes(),
-      this.getVoidDescription(),
-    ]);
+    await Promise.all([this.getExampleQueries(), this.getPrefixes(), this.getVoidDescription()]);
 
     Yasgui.Yasqe.defaults.value = this.addPrefixesToQuery(this.exampleQueries[0]?.query) || Yasgui.Yasqe.defaults.value;
     Yasgui.Yasr.defaults.prefixes = Object.fromEntries(this.prefixes);

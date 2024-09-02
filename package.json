@@ -17,7 +17,7 @@
   "scripts": {
     "dev": "vite",
     "demo": "npx http-server demo",
-    "build": "vite build",eslint . --fix
+    "build": "vite build",
     "fmt": "prettier --write . && eslint . --fix --ignore-pattern dist/",
     "lint": "prettier --check . && eslint . --ignore-pattern dist/",
     "test": "npm run lint && vitest run",
@@ -59,19 +59,11 @@
     "useTabs": false,
     "printWidth": 120
   },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
-  },
   "lint-staged": {
-    "linters": {
-      "*": [
-        "prettier --write",
-        "eslint --fix",
-        "git add"
-      ]
-    }
+    "*": [
+      "prettier --write",
+      "eslint --fix"
+    ]
   },
   "keywords": [
     "SPARQL",
