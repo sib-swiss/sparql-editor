@@ -1,11 +1,9 @@
 import Yasgui from "@zazuko/yasgui";
 import hljs from "highlight.js/lib/core";
-// import mermaid from "mermaid";
-// import { translate } from "sparqlalgebrajs";
-// Or Use SPARQL.js directly?
 
 import {hljsDefineTurtle, hljsDefineSparql} from "./highlight-sparql";
 import {editorCss, yasguiCss, yasguiGripInlineCss, highlightjsCss} from "./styles";
+// import {Parser} from "sparqljs";
 
 type ExampleQuery = {
   comment: string;
@@ -120,9 +118,12 @@ export class SparqlEditor extends HTMLElement {
 
   async connectedCallback() {
     // Get prefixes and examples, and set default config for YASGUI
-    await this.getExampleQueries();
-    await this.getPrefixes();
-    await this.getVoidDescription();
+    await Promise.all([
+      this.getExampleQueries(),
+      this.getPrefixes(),
+      this.getVoidDescription(),
+    ]);
+
     Yasgui.Yasqe.defaults.value = this.addPrefixesToQuery(this.exampleQueries[0]?.query) || Yasgui.Yasqe.defaults.value;
     Yasgui.Yasr.defaults.prefixes = Object.fromEntries(this.prefixes);
 
@@ -149,6 +150,31 @@ export class SparqlEditor extends HTMLElement {
       this.yasgui?.getTab()?.getYasqe().addPrefixes(sortedPrefixes);
       this.yasgui?.getTab()?.getYasqe().collapsePrefixes(true);
     });
+
+    // const parser = new Parser();
+    // // @ts-ignore TS complains for nothing about args of the event, but the tab is properly passed
+    // this.yasgui.getTab()?.getYasqe().on("change", (tab: any) => {
+    //   try {
+    //     const parsedQuery = parser.parse(tab.getValue());
+    //     console.log(parsedQuery);
+    //     // TODO: make this a separate function, recursive
+    //     // @ts-ignore SparqlQuery type definition is completely wrong, as usual, so we need to ignore
+    //     for (const part of parsedQuery.where) {
+    //       if (part["type"] === "bgp") {
+    //         for (const triple of part["triples"]) {
+    //           console.log(triple);
+    //           if (!this.predicatesList.includes(triple["predicate"]["value"])) {
+    //             console.log(`Predicate not valid: ${triple["predicate"]["value"]}`);
+    //           }
+    //         }
+    //       }
+    //     }
+    //     // check if the classes/properties are in the 2 lists
+    //     // If not, pop an error at the line where it is (do a search to find the line)
+    //   } catch {
+    //     return;
+    //   }
+    // })
 
     this.yasgui.on("query", (_y, tab) => {
       const ye = tab.getYasqe();
@@ -210,6 +236,8 @@ export class SparqlEditor extends HTMLElement {
       `;
       this.shadowRoot?.appendChild(dialog);
       dialog.showModal();
+      const descriptionInput = dialog.querySelector("#description") as HTMLInputElement;
+      descriptionInput.focus();
       dialog.querySelector("#example-form")?.addEventListener("submit", e => {
         e.preventDefault();
         const description = (dialog.querySelector("#description") as HTMLTextAreaElement).value;
