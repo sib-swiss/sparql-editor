@@ -23,6 +23,8 @@ interface VoidDict {
   };
 }
 
+const addSlashAtEnd = (str: any) => (str.endsWith("/") ? str : `${str}/`);
+
 /**
  * Custom element to create a SPARQL editor for a given endpoint using YASGUI
  * with autocompletion for classes and properties based on VoID description stored in the endpoint
@@ -40,7 +42,8 @@ export class SparqlEditor extends HTMLElement {
   classesList: string[];
   predicatesList: string[];
   examplesNamespace: string;
-  examplesRepository: string | null;
+  examplesRepo: string | null;
+  examplesRepoAddUrl: string | null;
 
   constructor() {
     super();
@@ -53,9 +56,10 @@ export class SparqlEditor extends HTMLElement {
     this.examplesOnMainPage = Number(this.getAttribute("examples-on-main-page")) || 10;
     this.exampleQueries = [];
     this.examplesNamespace =
-      this.getAttribute("examples-namespace") ||
-      (this.endpointUrl.endsWith("/") ? this.endpointUrl : `${this.endpointUrl}/`) + ".well-known/sparql-examples/";
-    this.examplesRepository = this.getAttribute("examples-repository");
+      this.getAttribute("examples-namespace") || addSlashAtEnd(this.endpointUrl) + ".well-known/sparql-examples/";
+    this.examplesRepoAddUrl = this.getAttribute("examples-repo-add-url");
+    this.examplesRepo = this.getAttribute("examples-repository");
+    if (this.examplesRepoAddUrl && !this.examplesRepo) this.examplesRepo = this.examplesRepoAddUrl.split("/new/")[0];
 
     const style = document.createElement("style");
     style.textContent = `
@@ -215,9 +219,12 @@ export class SparqlEditor extends HTMLElement {
       dialog.style.padding = "1em";
       dialog.style.borderRadius = "8px";
       dialog.style.borderColor = "#cccccc";
-      const exampleRepoLink = this.examplesRepository
-        ? `<a href="${this.examplesRepository}" target="_blank">repository</a>`
+      const exampleRepoLink = this.examplesRepo
+        ? `<a href="${this.examplesRepo}" target="_blank">repository</a>`
         : "repository";
+      const addToRepoBtn = this.examplesRepoAddUrl
+        ? `<button type="button" class="btn" id="add-to-repo-btn">Add example to repository</button>`
+        : "";
       dialog.innerHTML = `
         <form id="example-form" method="dialog">
           <h3>Save query as example</h3>
@@ -226,7 +233,8 @@ export class SparqlEditor extends HTMLElement {
           <input type="text" id="description" name="description" required style="width: 100%;" maxlength="200"><br><br>
           <label for="keywords">Keywords (optional, comma separated):</label><br>
           <input type="text" id="keywords" name="keywords" style="width: 100%;"><br><br>
-          <button type="submit" class="btn">Download</button>
+          <button type="submit" class="btn">Download example file</button>
+          ${addToRepoBtn}
           <button type="button" class="btn" onclick="this.closest('dialog').close()">Cancel</button>
         </form>
       `;
@@ -234,8 +242,10 @@ export class SparqlEditor extends HTMLElement {
       dialog.showModal();
       const descriptionInput = dialog.querySelector("#description") as HTMLInputElement;
       descriptionInput.focus();
-      dialog.querySelector("#example-form")?.addEventListener("submit", e => {
-        e.preventDefault();
+
+      const exampleNumberForId = (this.exampleQueries.length + 1).toString().padStart(3, "0");
+
+      const generateShacl = () => {
         const description = (dialog.querySelector("#description") as HTMLTextAreaElement).value;
         const keywordsStr = (dialog.querySelector("#keywords") as HTMLInputElement).value
           .split(",")
@@ -244,7 +254,7 @@ export class SparqlEditor extends HTMLElement {
         const queryType = capitalize(this.yasgui?.getTab()?.getYasqe().getQueryType());
         const exampleNumberForId = (this.exampleQueries.length + 1).toString().padStart(3, "0");
         const keywordsBit = keywordsStr.length > 2 ? `schema:keyword ${keywordsStr} ;\n    ` : "";
-        const shaclStr = `@prefix ex: <${this.examplesNamespace}> .
+        return `@prefix ex: <${this.examplesNamespace}> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix schema: <https://schema.org/> .
 @prefix sh: <http://www.w3.org/ns/shacl#> .
@@ -259,7 +269,12 @@ ex:${exampleNumberForId} a sh:SPARQLExecutable${
     sh:prefixes _:sparql_examples_prefixes ;
     sh:${queryType.toLowerCase()} """${this.yasgui?.getTab()?.getYasqe().getValue()}""" ;
     ${keywordsBit}schema:target <${this.endpointUrl}> .`;
+      };
 
+      const formEl = dialog.querySelector("#example-form") as HTMLFormElement;
+      formEl.addEventListener("submit", e => {
+        e.preventDefault();
+        const shaclStr = generateShacl();
         const dataStr = `data:text/turtle;charset=utf-8,${encodeURIComponent(shaclStr)}`;
         const downloadAnchor = document.createElement("a");
         downloadAnchor.setAttribute("href", dataStr);
@@ -267,6 +282,23 @@ ex:${exampleNumberForId} a sh:SPARQLExecutable${
         downloadAnchor.click();
         dialog.close();
       });
+
+      if (this.examplesRepoAddUrl) {
+        dialog.querySelector("#add-to-repo-btn")?.addEventListener("click", () => {
+          if (formEl.checkValidity()) {
+            const shaclStr = generateShacl();
+            const uploadExampleUrl = `${this.examplesRepoAddUrl}?filename=${exampleNumberForId}.ttl&value=${encodeURIComponent(shaclStr)}`;
+            window.open(uploadExampleUrl, "_blank");
+            // navigator.clipboard.writeText(shaclStr).then(() => {
+            //   window.open(uploadExampleUrl, "_blank");
+            // }).catch(err => {
+            //   console.warn("Failed to copy SHACL: ", err);
+            // });
+          } else {
+            formEl.reportValidity();
+          }
+        });
+      }
     });
 
     // Parse query params from URL and auto run query if provided in URL

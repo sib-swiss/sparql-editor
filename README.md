@@ -23,7 +23,7 @@ The editor retrieves metadata about the endpoint by directly querying the SPARQL
   ORDER BY ?prefix
   ```
 
-- **Example SPARQL queries** defined using the SHACL ontology are automatically pulled from the endpoint (queries are defined with `sh:select|sh:ask|sh:construct|sh:describe`, and their human readable description with `rdfs:comment`). Checkout the [`sparql-examples`](https://github.com/sib-swiss/sparql-examples) project for more details. 
+- **Example SPARQL queries** defined using the SHACL ontology are automatically pulled from the endpoint (queries are defined with `sh:select|sh:ask|sh:construct|sh:describe`, and their human readable description with `rdfs:comment`). Checkout the [`sparql-examples`](https://github.com/sib-swiss/sparql-examples) project for more details.
 
   The example queries are retrieved with this SPARQL query:
 
@@ -97,18 +97,20 @@ The editor retrieves metadata about the endpoint by directly querying the SPARQL
 
 ### ⚙️ Available attributes
 
-You can customize a few attributes when calling the custom element:
+You can customize a few optional attributes when calling the custom element:
 
-- the URL to the git repository where the query examples for this endpoint are stored (used to inform the user where they can submit a new example query),
-- the namespace used when saving a query as example (defaults to the endpoint URL + /.well-known/sparql-examples/ when not specified),
-- the number of examples displayed on the main page (defaults to 10),
-- buttons color.
+- `examples-repo-add-url`: the URL to directly add the query to the git repository where the query examples for this endpoint are stored through the GitHub web UI,
+- `examples-repository`: the URL to the git repository where the query examples for this endpoint are stored (automatically generated from `examples-repo-add-url` if you provide it),
+- `examples-namespace`: the namespace used when saving a query as example (defaults to the endpoint URL + /.well-known/sparql-examples/ when not specified),
+- `examples-on-main-page`: the number of examples displayed on the main page (defaults to 10),
+- `style="--btn-color / --btn-bg-color"`: buttons color.
 
 You can also provide other HTML elements to be included under the SPARQL examples (e.g. about information and links to relevant resources):
 
 ```html
 <sparql-editor
   endpoint="https://www.bgee.org/sparql/"
+  examples-repo-add-url="https://github.com/sib-swiss/sparql-examples/new/master/examples/Bgee"
   examples-repository="https://github.com/sib-swiss/sparql-examples"
   examples-namespace="https://sparql.uniprot.org/sparql/.well-known/sparql-examples/"
   examples-on-main-page="10"
@@ -142,6 +144,7 @@ Create a `index.html` file with:
     <div>
       <sparql-editor
         endpoint="https://www.bgee.org/sparql/"
+        examples-repo-add-url="https://github.com/sib-swiss/sparql-examples/new/master/examples/Bgee"
         examples-on-main-page="10"
         style="--btn-color: white; --btn-bg-color: #00709b;"
       >
