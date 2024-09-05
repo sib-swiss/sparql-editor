@@ -48,41 +48,41 @@
         resultsDiv.innerHTML = "";
 
         try {
-          const prefixesResults = await queryEndpoint(
-            endpoint,
-            `PREFIX sh: <http://www.w3.org/ns/shacl#>
-              SELECT DISTINCT ?prefix ?namespace
-              WHERE { [] sh:namespace ?namespace ; sh:prefix ?prefix}
-              ORDER BY ?prefix`,
-          );
+          const checkPrefixesQuery = `PREFIX sh: <http://www.w3.org/ns/shacl#>
+SELECT DISTINCT ?prefix ?namespace
+WHERE { [] sh:namespace ?namespace ; sh:prefix ?prefix}
+ORDER BY ?prefix`;
+          const prefixesResults = await queryEndpoint(endpoint, checkPrefixesQuery);
 
           if (prefixesResults.length === 0) {
-            resultsDiv.innerHTML += `<p><b>⚠️ No prefixes found</b></p>
+            resultsDiv.innerHTML += `<h4>⚠️ No prefixes found</h4>
               <p>Add prefix/namespace definitions to your endpoint using SHACL <code>sh:namespace</code> and <code>sh:prefix</code> properties.</p>
               <p>Checkout the <a href="https://github.com/sib-swiss/sparql-examples" target="_blank">sparql-examples</a> project
-              to help you generate prefix definitions alongside SPARQL queries examples and upload them to your endpoint.</p>`;
+              to help you generate prefix definitions alongside SPARQL queries examples and upload them to your endpoint.</p>
+              <p>We are running this query to retrieve prefixes:</p>
+              <pre><code>${checkPrefixesQuery.replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</code></pre>`;
           } else {
-            resultsDiv.innerHTML += `<p>✅ Found ${prefixesResults.length} prefixes</p>`;
+            resultsDiv.innerHTML += `<h4>✅ Found ${prefixesResults.length} prefixes</h4>`;
           }
 
-          const exampleQueriesResults = await queryEndpoint(
-            endpoint,
-            `PREFIX sh: <http://www.w3.org/ns/shacl#>
-              PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-              SELECT DISTINCT ?sq ?comment ?query
-              WHERE {
-                ?sq a sh:SPARQLExecutable ;
-                  rdfs:comment ?comment ;
-                  sh:select|sh:ask|sh:construct|sh:describe ?query .
-              } ORDER BY ?sq`,
-          );
+          const checkExamplesQuery = `PREFIX sh: <http://www.w3.org/ns/shacl#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT DISTINCT ?sq ?comment ?query
+WHERE {
+  ?sq a sh:SPARQLExecutable ;
+    rdfs:comment ?comment ;
+    sh:select|sh:ask|sh:construct|sh:describe ?query .
+} ORDER BY ?sq`;
+          const exampleQueriesResults = await queryEndpoint(endpoint, checkExamplesQuery);
 
           if (exampleQueriesResults.length === 0) {
-            resultsDiv.innerHTML += `<p><b>⚠️ No example SPARQL queries found</b></p>
+            resultsDiv.innerHTML += `<h4>⚠️ No example SPARQL queries found</h4>
               <p>Checkout the <a href="https://github.com/sib-swiss/sparql-examples" target="_blank">sparql-examples</a> project
-              to help you generate SHACL representations of SPARQL queries and upload them to your endpoint.</p>`;
+              to help you generate SHACL representations of SPARQL queries and upload them to your endpoint.</p>
+              <p>We are running this query to retrieve examples:</p>
+              <pre><code>${checkExamplesQuery.replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</code></pre>`;
           } else {
-            resultsDiv.innerHTML += `<p>✅ Found ${exampleQueriesResults.length} example SPARQL queries</p>`;
+            resultsDiv.innerHTML += `<h4>✅ Found ${exampleQueriesResults.length} example SPARQL queries</h4>`;
           }
 
           const voidResults = await queryEndpoint(
@@ -90,33 +90,50 @@
             `PREFIX up: <http://purl.uniprot.org/core/>
               PREFIX void: <http://rdfs.org/ns/void#>
               PREFIX void-ext: <http://ldf.fi/void-ext#>
-              SELECT DISTINCT ?class1
+              SELECT DISTINCT ?subjectClass
               WHERE {
-                  ?cp void:class ?class1 ;
+                  ?cp void:class ?subjectClass ;
                       void:propertyPartition ?pp .
                   ?pp void:property ?prop .
                   OPTIONAL {
                       {
-                          ?pp  void:classPartition [ void:class ?class2 ] .
+                          ?pp  void:classPartition [ void:class ?objectClass ] .
                       } UNION {
-                          ?pp void-ext:datatypePartition [ void-ext:datatype ?datatype ] .
+                          ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
                       }
                   }
               }`,
           );
 
           if (voidResults.length === 0) {
-            resultsDiv.innerHTML += `<p><b>⚠️ No VoID description found.</b></p>
+            resultsDiv.innerHTML += `<h4>⚠️ No VoID description found</h4>
               <p>Checkout the <a href="https://github.com/JervenBolleman/void-generator" target="_blank">void-generator</a> project
               to automatically generate a <a href="https://www.w3.org/TR/void/">VoID description</a> for the classes and predicates inside your endpoint,
-              and upload it to your endpoint.</p>`;
+              and upload it to your endpoint.</p>
+              <p>We are running this query to retrieve the VoID description:</p>
+              <pre><code>PREFIX up: &lt;http://purl.uniprot.org/core/&gt;
+PREFIX void: &lt;http://rdfs.org/ns/void#&gt;
+PREFIX void-ext: &lt;http://ldf.fi/void-ext#&gt;
+SELECT DISTINCT ?subjectClass ?prop ?objectClass ?objectDatatype
+WHERE {
+    ?cp void:class ?subjectClass ;
+        void:propertyPartition ?pp .
+    ?pp void:property ?prop .
+    OPTIONAL {
+        {
+            ?pp  void:classPartition [ void:class ?objectClass ] .
+        } UNION {
+            ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
+        }
+    }
+}</code></pre>`;
             return;
           } else {
-            resultsDiv.innerHTML += `<p>✅ Found VoID description for ${voidResults.length} classes</p>`;
+            resultsDiv.innerHTML += `<h4>✅ Found VoID description for ${voidResults.length} classes</h4>`;
           }
         } catch (error) {
           console.log("Error querying the endpoint", error);
-          resultsDiv.innerHTML += `<p>❌ Error querying the endpoint: ${error.message}</p>`;
+          resultsDiv.innerHTML += `<h4>❌ Error querying the endpoint: ${error.message}</h4>`;
           return;
         }
       }
@@ -128,15 +145,24 @@
         justify-content: center;
         align-items: center;
         text-align: center;
-        height: 100vh;
+        min-height: 100vh;
         margin: 0;
         font-family: Arial, sans-serif;
         background-color: #f4f4f4;
       }
+      p,
+      pre {
+        text-align: left;
+      }
+      pre {
+        background-color: #f9f9f9;
+        padding: 10px;
+        border-radius: 5px;
+        overflow-x: auto;
+      }
       #container {
         width: 90%;
         max-width: 900px;
-        text-align: center;
         background: white;
         padding: 20px;
         border-radius: 8px;
