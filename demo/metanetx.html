@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MetaNetX SPARQL editor</title>
+    <meta name="description" content="SPARQL editor for the MetaNetX endpoint at the SIB" />
+    <link rel="icon" type="image/png" href="sib-logo.png" />
+    <link rel="stylesheet" href="styles.css" />
+
+    <script type="module" src="https://unpkg.com/@sib-swiss/sparql-editor"></script>
+  </head>
+
+  <body>
+    <div>
+      <sparql-editor
+        endpoint="https://rdf.metanetx.org/sparql/"
+        examples-repo-add-url="https://github.com/sib-swiss/sparql-examples/new/master/examples/MetaNetX"
+      >
+        <h4>Other SPARQL editors for SIB endpoints</h4>
+        <ul>
+          <li><a href="/sparql-editor/uniprot">UniProt - protein knowledgebase</a></li>
+          <li><a href="/sparql-editor/bgee">Bgee - gene expression</a></li>
+          <li><a href="/sparql-editor/oma">OMA - Ortholog MAtrix</a></li>
+          <li>
+            <a href="/sparql-editor/swisslipids">SwissLipids - A knowledge resource for lipids and their biology</a>
+          </li>
+          <li>
+            <a href="/sparql-editor/rhea"
+              >Rhea - expert-curated knowledgebase of chemical and transport reactions of biological interest</a
+            >
+          </li>
+          <li><a href="/sparql-editor/hamap">HAMAP - High-quality Automated and Manual Annotation of Proteins</a></li>
+          <li>
+            <a href="/sparql-editor/metanetx"
+              >MetaNetX - Automated Model Construction and Genome Annotation for Large-Scale Metabolic Networks</a
+            >
+          </li>
+          <li><a href="/sparql-editor/dbgi">DBGI - The Digital Botanical Garden Initiative</a></li>
+        </ul>
+        <p>You can check if an endpoint contains the <a href="/sparql-editor/check">necessary metadata here</a>.</p>
+      </sparql-editor>
+    </div>
+  </body>
+</html>

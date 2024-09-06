@@ -48,15 +48,21 @@ The editor retrieves metadata about the endpoint by directly querying the SPARQL
   PREFIX void-ext: <http://ldf.fi/void-ext#>
   SELECT DISTINCT ?subjectClass ?prop ?objectClass ?objectDatatype
   WHERE {
-      ?cp void:class ?subjectClass ;
-          void:propertyPartition ?pp .
-      ?pp void:property ?prop .
-      OPTIONAL {
-          {
-              ?pp  void:classPartition [ void:class ?objectClass ] .
-          } UNION {
-              ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
+      {
+          ?cp void:class ?subjectClass ;
+              void:propertyPartition ?pp .
+          ?pp void:property ?prop .
+          OPTIONAL {
+              {
+                  ?pp  void:classPartition [ void:class ?objectClass ] .
+              } UNION {
+                  ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
+              }
           }
+      } UNION {
+          ?linkset void:subjectsTarget ?subjectClass ;
+              void:linkPredicate ?prop ;
+              void:objectsTarget ?objectClass .
       }
   }
   ```

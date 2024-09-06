@@ -11,6 +11,7 @@
   <!-- https://sparql.uniprot.org/sparql/ -->
   <!-- https://biosoda.unil.ch/graphdb/repositories/emi-dbgi -->
   <!-- https://rdf.metanetx.org/sparql/ -->
+  <!-- CORS error: https://beta.metanetx.org/sparql/ -->
 
   <body>
     <div id="container">
@@ -92,6 +93,7 @@ WHERE {
               PREFIX void-ext: <http://ldf.fi/void-ext#>
               SELECT DISTINCT ?subjectClass
               WHERE {
+                {
                   ?cp void:class ?subjectClass ;
                       void:propertyPartition ?pp .
                   ?pp void:property ?prop .
@@ -102,6 +104,11 @@ WHERE {
                           ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
                       }
                   }
+                } UNION {
+                  ?ls void:subjectsTarget ?subjectClass ;
+                    void:linkPredicate ?prop ;
+                    void:objectsTarget ?objectClass .
+                }
               }`,
           );
 
@@ -116,6 +123,7 @@ PREFIX void: &lt;http://rdfs.org/ns/void#&gt;
 PREFIX void-ext: &lt;http://ldf.fi/void-ext#&gt;
 SELECT DISTINCT ?subjectClass ?prop ?objectClass ?objectDatatype
 WHERE {
+  {
     ?cp void:class ?subjectClass ;
         void:propertyPartition ?pp .
     ?pp void:property ?prop .
@@ -126,6 +134,11 @@ WHERE {
             ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
         }
     }
+  } UNION {
+    ?linkset void:subjectsTarget ?subjectClass ;
+      void:linkPredicate ?prop ;
+      void:objectsTarget ?objectClass .
+  }
 }</code></pre>`;
             return;
           } else {
@@ -133,7 +146,9 @@ WHERE {
           }
         } catch (error) {
           console.log("Error querying the endpoint", error);
-          resultsDiv.innerHTML += `<h4>❌ Error querying the endpoint: ${error.message}</h4>`;
+          resultsDiv.innerHTML += `<h4>❌ Error querying the endpoint: ${error.message}</h4>
+          <p>It might be that CORS is not enabled for your endpoint, open the inspect panel and checkout the console to find out
+          (CORS is poorly designed and the JavaScript is not able to catch the CORS error message even if it is send to the console).</p>`;
           return;
         }
       }

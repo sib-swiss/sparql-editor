@@ -3,6 +3,9 @@ import hljs from "highlight.js/lib/core";
 
 import {hljsDefineTurtle, hljsDefineSparql} from "./highlight-sparql";
 import {editorCss, yasguiCss, yasguiGripInlineCss, highlightjsCss} from "./styles";
+// import { drawSvgStringAsElement } from "./utils";
+// import tooltip from "@zazuko/yasqe/src/tooltip";
+// import {warning} from "@zazuko/yasqe/src/imgs";
 // import {Parser} from "sparqljs";
 
 type ExampleQuery = {
@@ -18,12 +21,15 @@ interface SparqlResultBindings {
 }
 
 interface VoidDict {
+  // [key: string]: {
   [key: string]: {
     [key: string]: string[];
   };
+  // }
 }
 
 const addSlashAtEnd = (str: any) => (str.endsWith("/") ? str : `${str}/`);
+const capitalize = (str: any) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 
 /**
  * Custom element to create a SPARQL editor for a given endpoint using YASGUI
@@ -151,6 +157,7 @@ export class SparqlEditor extends HTMLElement {
       this.yasgui?.getTab()?.getYasqe().collapsePrefixes(true);
     });
 
+    // TODO: Detect errors in the query and show them in the editor
     // const parser = new Parser();
     // // @ts-ignore TS complains for nothing about args of the event, but the tab is properly passed
     // this.yasgui.getTab()?.getYasqe().on("change", (tab: any) => {
@@ -179,6 +186,24 @@ export class SparqlEditor extends HTMLElement {
     this.yasgui.on("query", (_y, tab) => {
       const ye = tab.getYasqe();
       tab.getYasr().config.prefixes = {...Yasgui.Yasr.defaults.prefixes, ...ye.getPrefixesFromQuery()};
+
+      // for (let l = 0; l < ye.getDoc().lineCount(); ++l) {
+      //   const token = ye.getTokenAt(
+      //     {
+      //       line: l,
+      //       ch: ye.getDoc().getLine(l).length,
+      //     },
+      //     true
+      //   );
+      //   console.log(l, token);
+      // }
+
+      // // TODO: here is how we can show an error at a specific line
+      // const warningEl = drawSvgStringAsElement(warning);
+      // warningEl.className = "parseErrorIcon";
+      // // @ts-ignore TS is not smart enough to understand that Yasqe and Yasqe are same type...
+      // tooltip(ye, warningEl, "Big error!");
+      // ye.setGutterMarker(13, "gutterErrorBar", warningEl);
 
       // // Add limit to query if not provided
       // const limitPattern = /LIMIT\s+\d+\s*$/i;
@@ -211,8 +236,8 @@ export class SparqlEditor extends HTMLElement {
     });
 
     // Button to pop a dialog to save the query as an example in a turtle file
+    const exampleNumberForId = (this.exampleQueries.length + 1).toString().padStart(3, "0");
     const addExampleBtnEl = this.shadowRoot?.getElementById("sparql-save-example-btn");
-    const capitalize = (str: any) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
     addExampleBtnEl?.addEventListener("click", () => {
       const dialog = document.createElement("dialog");
       dialog.style.width = "400px";
@@ -231,6 +256,10 @@ export class SparqlEditor extends HTMLElement {
           <p>Download the current query as an example in a turtle file that you can then submit to the ${exampleRepoLink} where all examples are stored.</p>
           <label for="description">Description:</label><br>
           <input type="text" id="description" name="description" required style="width: 100%;" maxlength="200"><br><br>
+          <label for="query-uri">Query example filename/URI (no spaces):</label><br>
+          <input type="text" id="example-uri" name="example-uri" required pattern="^[a-zA-Z0-9_-]+$"
+            title="Only alphanumeric characters, underscores, or hyphens are allowed."
+            style="width: 100%;" placeholder="Enter a valid filename" value="${exampleNumberForId}"><br><br>
           <label for="keywords">Keywords (optional, comma separated):</label><br>
           <input type="text" id="keywords" name="keywords" style="width: 100%;"><br><br>
           <button type="submit" class="btn">Download example file</button>
@@ -243,8 +272,6 @@ export class SparqlEditor extends HTMLElement {
       const descriptionInput = dialog.querySelector("#description") as HTMLInputElement;
       descriptionInput.focus();
 
-      const exampleNumberForId = (this.exampleQueries.length + 1).toString().padStart(3, "0");
-
       const generateShacl = () => {
         const description = (dialog.querySelector("#description") as HTMLTextAreaElement).value;
         const keywordsStr = (dialog.querySelector("#keywords") as HTMLInputElement).value
@@ -252,33 +279,36 @@ export class SparqlEditor extends HTMLElement {
           .map((kw: string) => `"${kw.trim()}"`)
           .join(", ");
         const queryType = capitalize(this.yasgui?.getTab()?.getYasqe().getQueryType());
-        const exampleNumberForId = (this.exampleQueries.length + 1).toString().padStart(3, "0");
         const keywordsBit = keywordsStr.length > 2 ? `schema:keyword ${keywordsStr} ;\n    ` : "";
-        return `@prefix ex: <${this.examplesNamespace}> .
+        const exampleUri = (dialog.querySelector("#example-uri") as HTMLInputElement).value;
+        return [
+          `@prefix ex: <${this.examplesNamespace}> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix schema: <https://schema.org/> .
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 
-ex:${exampleNumberForId} a sh:SPARQLExecutable${
-          ["Select", "Construct", "Ask"].includes(queryType)
-            ? `,
+ex:${exampleUri} a sh:SPARQLExecutable${
+            ["Select", "Construct", "Ask"].includes(queryType)
+              ? `,
         sh:SPARQL${queryType}Executable`
-            : ""
-        } ;
+              : ""
+          } ;
     rdfs:comment "${description}"@en ;
     sh:prefixes _:sparql_examples_prefixes ;
     sh:${queryType.toLowerCase()} """${this.yasgui?.getTab()?.getYasqe().getValue()}""" ;
-    ${keywordsBit}schema:target <${this.endpointUrl}> .`;
+    ${keywordsBit}schema:target <${this.endpointUrl}> .`,
+          exampleUri,
+        ];
       };
 
       const formEl = dialog.querySelector("#example-form") as HTMLFormElement;
       formEl.addEventListener("submit", e => {
         e.preventDefault();
-        const shaclStr = generateShacl();
+        const [shaclStr, exampleUri] = generateShacl();
         const dataStr = `data:text/turtle;charset=utf-8,${encodeURIComponent(shaclStr)}`;
         const downloadAnchor = document.createElement("a");
         downloadAnchor.setAttribute("href", dataStr);
-        downloadAnchor.setAttribute("download", `${exampleNumberForId}.ttl`);
+        downloadAnchor.setAttribute("download", `${exampleUri}.ttl`);
         downloadAnchor.click();
         dialog.close();
       });
@@ -286,8 +316,8 @@ ex:${exampleNumberForId} a sh:SPARQLExecutable${
       if (this.examplesRepoAddUrl) {
         dialog.querySelector("#add-to-repo-btn")?.addEventListener("click", () => {
           if (formEl.checkValidity()) {
-            const shaclStr = generateShacl();
-            const uploadExampleUrl = `${this.examplesRepoAddUrl}?filename=${exampleNumberForId}.ttl&value=${encodeURIComponent(shaclStr)}`;
+            const [shaclStr, exampleUri] = generateShacl();
+            const uploadExampleUrl = `${this.examplesRepoAddUrl}?filename=${exampleUri}.ttl&value=${encodeURIComponent(shaclStr)}`;
             window.open(uploadExampleUrl, "_blank");
             // navigator.clipboard.writeText(shaclStr).then(() => {
             //   window.open(uploadExampleUrl, "_blank");
@@ -350,15 +380,18 @@ ex:${exampleNumberForId} a sh:SPARQLExecutable${
     get: async (yasqe: any) => {
       const cursor = yasqe.getCursor();
       const subj = getSubjectForCursorPosition(yasqe.getValue(), cursor.line, cursor.ch);
+      // TODO: get the URL of the endpoint for SERVICE calls
       const subjTypes = extractAllSubjectsAndTypes(yasqe.getValue());
       // console.log("subj, subjTypes, unfiltered hints", subj, subjTypes, hints)
-      if (subj && subjTypes.has(subj) && Object.keys(this.voidDescription).length > 0) {
+      if (subj && subjTypes.has(subj) && Object.keys(this.voidDescription[this.endpointUrl]).length > 0) {
         const types = subjTypes.get(subj);
         // console.log("types", types)
         if (types) {
           const suggestPreds = new Set<string>();
           types.forEach(typeCurie => {
-            Object.keys(this.voidDescription[this.curieToUri(typeCurie)]).forEach(prop => suggestPreds.add(prop));
+            Object.keys(this.voidDescription[this.endpointUrl][this.curieToUri(typeCurie)]).forEach(prop =>
+              suggestPreds.add(prop),
+            );
           });
           // console.log("suggestPreds", suggestPreds)
           return Array.from(suggestPreds).sort();
@@ -395,32 +428,39 @@ ex:${exampleNumberForId} a sh:SPARQLExecutable${
       const queryResults = await this.queryEndpoint(`PREFIX up: <http://purl.uniprot.org/core/>
         PREFIX void: <http://rdfs.org/ns/void#>
         PREFIX void-ext: <http://ldf.fi/void-ext#>
-        SELECT DISTINCT ?class1 ?prop ?class2 ?datatype
+        SELECT DISTINCT ?subjectClass ?prop ?objectClass ?objectDatatype
         WHERE {
-            ?cp void:class ?class1 ;
+          {
+            ?cp void:class ?subjectClass ;
                 void:propertyPartition ?pp .
             ?pp void:property ?prop .
             OPTIONAL {
                 {
-                    ?pp  void:classPartition [ void:class ?class2 ] .
+                    ?pp  void:classPartition [ void:class ?objectClass ] .
                 } UNION {
-                    ?pp void-ext:datatypePartition [ void-ext:datatype ?datatype ] .
+                    ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
                 }
             }
+          } UNION {
+            ?ls void:subjectsTarget ?subjectClass ;
+                void:linkPredicate ?prop ;
+                void:objectsTarget ?objectClass .
+          }
         }`);
       const clsSet = new Set<string>();
       const predSet = new Set<string>();
       queryResults.forEach(b => {
-        clsSet.add(b.class1.value);
+        clsSet.add(b.subjectClass.value);
         predSet.add(b.prop.value);
-        if (!(b.class1.value in this.voidDescription)) this.voidDescription[b.class1.value] = {};
-        if (!(b.prop.value in this.voidDescription[b.class1.value]))
-          this.voidDescription[b.class1.value][b.prop.value] = [];
-        if ("class2" in b) {
-          this.voidDescription[b.class1.value][b.prop.value].push(b.class2.value);
-          clsSet.add(b.class2.value);
+        if (!(b.subjectClass.value in this.voidDescription)) this.voidDescription[b.subjectClass.value] = {};
+        if (!(b.prop.value in this.voidDescription[b.subjectClass.value]))
+          this.voidDescription[b.subjectClass.value][b.prop.value] = [];
+        if ("objectClass" in b) {
+          this.voidDescription[b.subjectClass.value][b.prop.value].push(b.objectClass.value);
+          clsSet.add(b.objectClass.value);
         }
-        if ("datatype" in b) this.voidDescription[b.class1.value][b.prop.value].push(b.datatype.value);
+        if ("objectDatatype" in b)
+          this.voidDescription[b.subjectClass.value][b.prop.value].push(b.objectDatatype.value);
       });
       this.classesList = Array.from(clsSet).sort();
       this.predicatesList = Array.from(predSet).sort();
