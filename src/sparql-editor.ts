@@ -3,7 +3,7 @@ import hljs from "highlight.js/lib/core";
 
 import {hljsDefineTurtle, hljsDefineSparql} from "./highlight-sparql";
 import {editorCss, yasguiCss, yasguiGripInlineCss, highlightjsCss} from "./styles";
-// import { drawSvgStringAsElement } from "./utils";
+// import { drawSvgStringAsElement } from "@zazuko/yasgui-utils";
 // import tooltip from "@zazuko/yasqe/src/tooltip";
 // import {warning} from "@zazuko/yasqe/src/imgs";
 // import {Parser} from "sparqljs";
@@ -256,7 +256,7 @@ export class SparqlEditor extends HTMLElement {
           <p>Download the current query as an example in a turtle file that you can then submit to the ${exampleRepoLink} where all examples are stored.</p>
           <label for="description">Description:</label><br>
           <input type="text" id="description" name="description" required style="width: 100%;" maxlength="200"><br><br>
-          <label for="query-uri">Query example filename/URI (no spaces):</label><br>
+          <label for="query-uri">Query example filename and URI (no spaces):</label><br>
           <input type="text" id="example-uri" name="example-uri" required pattern="^[a-zA-Z0-9_-]+$"
             title="Only alphanumeric characters, underscores, or hyphens are allowed."
             style="width: 100%;" placeholder="Enter a valid filename" value="${exampleNumberForId}"><br><br>
