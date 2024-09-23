@@ -50,6 +50,7 @@ export class SparqlEditor extends HTMLElement {
   examplesNamespace: string;
   examplesRepo: string | null;
   examplesRepoAddUrl: string | null;
+  addLimit: number | null;
 
   constructor() {
     super();
@@ -59,6 +60,7 @@ export class SparqlEditor extends HTMLElement {
     if (this.endpointUrl === "")
       throw new Error("No endpoint provided. Please use the 'endpoint' attribute to specify the SPARQL endpoint URL.");
 
+    this.addLimit = Number(this.getAttribute("add-limit")) || null;
     this.examplesOnMainPage = Number(this.getAttribute("examples-on-main-page")) || 10;
     this.exampleQueries = [];
     this.examplesNamespace =
@@ -144,7 +146,7 @@ export class SparqlEditor extends HTMLElement {
     // mermaid.initialize({ startOnLoad: false });
     // await mermaid.run({
     //     querySelector: '.language-mermaid',
-    // });
+    // });`<
 
     // Button to add all prefixes to the query
     const addPrefixesBtnEl = this.shadowRoot?.getElementById("sparql-add-prefixes-btn");
@@ -183,9 +185,20 @@ export class SparqlEditor extends HTMLElement {
     //   }
     // })
 
-    this.yasgui.on("query", (_y, tab) => {
+    this.yasgui.on("queryBefore", (_y, tab) => {
       const ye = tab.getYasqe();
       tab.getYasr().config.prefixes = {...Yasgui.Yasr.defaults.prefixes, ...ye.getPrefixesFromQuery()};
+
+      if (this.addLimit) {
+        // Add limit to query if not provided
+        const limitPattern = /LIMIT\s+\d+\s*$/i;
+        if (
+          (ye.getQueryType() === "SELECT" || ye.getQueryType() === "CONSTRUCT") &&
+          !limitPattern.test(ye.getValue().trim())
+        ) {
+          ye.setValue(`${ye.getValue().trim()} LIMIT ${this.addLimit}`);
+        }
+      }
 
       // for (let l = 0; l < ye.getDoc().lineCount(); ++l) {
       //   const token = ye.getTokenAt(
@@ -204,17 +217,6 @@ export class SparqlEditor extends HTMLElement {
       // // @ts-ignore TS is not smart enough to understand that Yasqe and Yasqe are same type...
       // tooltip(ye, warningEl, "Big error!");
       // ye.setGutterMarker(13, "gutterErrorBar", warningEl);
-
-      // // Add limit to query if not provided
-      // const limitPattern = /LIMIT\s+\d+\s*$/i;
-      // const trimmedQuery = ye.getValue().trim();
-      // if ((ye.getQueryType() === "SELECT" || ye.getQueryType() === "CONSTRUCT") && !limitPattern.test(trimmedQuery)) {
-      //   ye.abortQuery();
-      //   ye.setValue(trimmedQuery + " LIMIT 1000");
-      //   ye.query();
-      // }
-      // NOTE: aborting the query generates an error in console
-      // TODO: it should be handled by an event fired before the query is sent https://github.com/zazuko/Yasgui/pull/16
     });
 
     // Hack to add Describe links for IRIs in the results without touching the YASR table plugin

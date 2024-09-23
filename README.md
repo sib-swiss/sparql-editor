@@ -109,6 +109,7 @@ You can customize a few optional attributes when calling the custom element:
 - `examples-repository`: the URL to the git repository where the query examples for this endpoint are stored (automatically generated from `examples-repo-add-url` if you provide it),
 - `examples-namespace`: the namespace used when saving a query as example (defaults to the endpoint URL + /.well-known/sparql-examples/ when not specified),
 - `examples-on-main-page`: the number of examples displayed on the main page (defaults to 10),
+- `add-limit`: the number of rows to be added as limit to the query before being sent, if no limit has been defined by the user (default to none)
 - `style="--btn-color / --btn-bg-color"`: buttons color.
 
 You can also provide other HTML elements to be included under the SPARQL examples (e.g. about information and links to relevant resources):
@@ -120,6 +121,7 @@ You can also provide other HTML elements to be included under the SPARQL example
   examples-repository="https://github.com/sib-swiss/sparql-examples"
   examples-namespace="https://sparql.uniprot.org/sparql/.well-known/sparql-examples/"
   examples-on-main-page="10"
+  add-limit="10000"
   style="--btn-color: white; --btn-bg-color: #00709b;"
 >
   <h1>About</h1>
