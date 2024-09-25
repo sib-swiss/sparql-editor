@@ -13,13 +13,24 @@
 
   <body>
     <div>
-      <h1 align="center">💫 SPARQL editor for SIB endpoints</h1>
+      <!-- <h1 align="center">💫 SPARQL editor for SIB endpoints</h1> -->
 
       <sparql-editor
         endpoint="https://sparql.uniprot.org/sparql/,https://www.bgee.org/sparql/,https://sparql.omabrowser.org/sparql/,https://beta.sparql.swisslipids.org/,https://sparql.rhea-db.org/sparql/,https://biosoda.unil.ch/graphdb/repositories/emi-dbgi,https://hamap.expasy.org/sparql/,https://rdf.metanetx.org/sparql/"
         examples-repository="https://github.com/sib-swiss/sparql-examples"
       >
-        <h4>Focused SPARQL editors for SIB endpoints</h4>
+        <h4>Metadata-based SPARQL editor</h4>
+        <p>Metadata used by this editor are automatically retrieved by querying the endpoints:</p>
+        <ul>
+          <li>Context-aware autocomplete for classes and predicates based on the content of the endpoints</li>
+          <li>Example queries</li>
+          <li>Commonly used prefixes</li>
+        </ul>
+        <p>
+          See the <a href="https://github.com/sib-swiss/sparql-editor" target="_blank">repository</a> for more details,
+          or the <a href="check">check page</a> to check if an endpoint contains the necessary metadata.
+        </p>
+        <h4>Editors for specific SIB endpoints</h4>
         <ul>
           <li><a href="uniprot">UniProt - protein knowledgebase</a></li>
           <li><a href="bgee">Bgee - gene expression</a></li>
@@ -35,26 +46,19 @@
           <li><a href="hamap">HAMAP - High-quality Automated and Manual Annotation of Proteins</a></li>
           <li><a href="dbgi">DBGI - The Digital Botanical Garden Initiative</a></li>
         </ul>
-        <p>
-          You can check if an endpoint contains the <a href="check">necessary metadata here</a> (query examples and VoID
-          description).
-        </p>
       </sparql-editor>
     </div>
   </body>
 
-  <!-- <style>
+  <style>
     body {
-      display: flex;
+      font-family: Arial, sans-serif;
+      /* display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
       font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
+      background-color: #f4f4f4; */
     }
-    p,
-    ul {
-      font-size: 18px;
-    }
-  </style> -->
+  </style>
 </html>
