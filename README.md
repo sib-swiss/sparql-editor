@@ -224,7 +224,7 @@ npm run demo
 Update dependencies to the latest available versions:
 
 ```bash
-npx npm-check-updates -u
+npm run upgrade
 ```
 
 ## 🏷️ Release
