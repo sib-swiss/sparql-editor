@@ -16,6 +16,7 @@ import {
   getVoidDescription,
   EndpointsMetadata,
   getServiceUriForCursorPosition,
+  compressUri,
 } from "./utils";
 
 const addSlashAtEnd = (str: any) => (str.endsWith("/") ? str : `${str}/`);
@@ -346,6 +347,9 @@ export class SparqlEditor extends HTMLElement {
     get: (_yasqe: any, token: any) => {
       return this.currentEndpoint().classes.filter(iri => iri.indexOf(token.autocompletionString) === 0);
     },
+    postProcessSuggestion: (yasqe: any, token: any, suggestedString: string) => {
+      return this.postProcessSuggestion(token, suggestedString);
+    },
   };
   voidPropertyCompleter = {
     name: "voidProperty",
@@ -387,7 +391,21 @@ export class SparqlEditor extends HTMLElement {
       if (token.state.possibleCurrent.indexOf("a") >= 0) return true; // predicate pos
       return false;
     },
+    postProcessSuggestion: (yasqe: any, token: any, suggestedString: string) => {
+      return this.postProcessSuggestion(token, suggestedString);
+    },
   };
+
+  postProcessSuggestion(token: any, suggestedString: string) {
+    if (token.tokenPrefix && token.autocompletionString && token.tokenPrefixUri) {
+      // we need to get the suggested string back to prefixed form
+      suggestedString = token.tokenPrefix + suggestedString.substring(token.tokenPrefixUri.length);
+    } else {
+      // Convert the suggested string to prefixed form when possible
+      suggestedString = compressUri(this.currentEndpoint().prefixes, suggestedString) || "<" + suggestedString + ">";
+    }
+    return suggestedString;
+  }
 
   showSaveExampleDialog() {
     // Create dialog to save the current query as an example in a turtle file

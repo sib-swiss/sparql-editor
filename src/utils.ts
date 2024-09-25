@@ -29,6 +29,18 @@ type ExampleQuery = {
   query: string;
 };
 
+// Replace the longest prefix in a URI with its corresponding prefix
+export function compressUri(prefixes: {[key: string]: string}, uri: string): string | null {
+  let longestPrefix = "";
+  for (const prefix in prefixes) {
+    if (uri.startsWith(prefixes[prefix]) && prefix.length > longestPrefix.length) {
+      longestPrefix = prefix;
+    }
+  }
+  if (longestPrefix === "") return null;
+  return uri.replace(prefixes[longestPrefix], longestPrefix + ":");
+}
+
 export async function queryEndpoint(query: string, endpoint: string): Promise<SparqlResultBindings[]> {
   // We add `&ac=1` to all the queries to exclude these queries from stats
   const response = await fetch(`${endpoint}?ac=1&query=${encodeURIComponent(query)}`, {
