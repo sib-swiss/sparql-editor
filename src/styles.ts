@@ -51,6 +51,10 @@ export const editorCss = `:host a {
     font-family: Arial, sans-serif;
 }
 
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
 :host button.btn {
   background-color: var(--btn-bg-color);
   color: var(--btn-color);

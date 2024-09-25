@@ -1,3 +1,22 @@
+export type EndpointsMetadata = {
+  // Endpoint URL
+  [key: string]: {
+    void: VoidDict;
+    classes: string[];
+    predicates: string[];
+    prefixes: {[key: string]: string};
+    examples: ExampleQuery[];
+    retrievedAt?: Date;
+  };
+};
+
+type VoidDict = {
+  // Subject class
+  [key: string]: {
+    [key: string]: string[]; // Predicate: object classes/datatypes
+  };
+};
+
 type SparqlResultBindings = {
   [key: string]: {
     value: string;
@@ -5,15 +24,7 @@ type SparqlResultBindings = {
   };
 };
 
-type VoidDict = {
-  // [key: string]: {
-  [key: string]: {
-    [key: string]: string[];
-  };
-  // }
-};
-
-export type ExampleQuery = {
+type ExampleQuery = {
   comment: string;
   query: string;
 };
@@ -200,3 +211,20 @@ export function getServiceUriForCursorPosition(query: string, lineNumber: number
   }
   return null;
 }
+
+// // Initialize prefixes with some defaults
+// this.prefixes = new Map([
+//   ["rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#"],
+//   ["rdfs", "http://www.w3.org/2000/01/rdf-schema#"],
+//   ["xsd", "http://www.w3.org/2001/XMLSchema#"],
+//   ["owl", "http://www.w3.org/2002/07/owl#"],
+//   ["skos", "http://www.w3.org/2004/02/skos/core#"],
+//   ["up", "http://purl.uniprot.org/core/"],
+//   ["keywords", "http://purl.uniprot.org/keywords/"],
+//   ["uniprotkb", "http://purl.uniprot.org/uniprot/"],
+//   ["taxon", "http://purl.uniprot.org/taxonomy/"],
+//   ["ec", "http://purl.uniprot.org/enzyme/"],
+//   ["bibo", "http://purl.org/ontology/bibo/"],
+//   ["dc", "http://purl.org/dc/terms/"],
+//   ["faldo", "http://biohackathon.org/resource/faldo#"],
+// ]);

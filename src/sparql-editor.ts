@@ -14,26 +14,9 @@ import {
   getExampleQueries,
   getPrefixes,
   getVoidDescription,
-  ExampleQuery,
+  EndpointsMetadata,
   getServiceUriForCursorPosition,
 } from "./utils";
-
-interface EndpointsMetadata {
-  // Endpoint URL
-  [key: string]: {
-    void: {
-      // Subject class
-      [key: string]: {
-        [key: string]: string[]; // Predicate: object classes/datatypes
-      };
-    };
-    classes: string[];
-    predicates: string[];
-    prefixes: {[key: string]: string};
-    examples: ExampleQuery[];
-    retrievedAt?: Date;
-  };
-}
 
 const addSlashAtEnd = (str: any) => (str.endsWith("/") ? str : `${str}/`);
 const capitalize = (str: any) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
@@ -84,9 +67,6 @@ export class SparqlEditor extends HTMLElement {
 
     this.addLimit = Number(this.getAttribute("add-limit")) || null;
     this.examplesOnMainPage = Number(this.getAttribute("examples-on-main-page")) || 10;
-    // this.exampleQueries = [];
-    // this.examplesNamespace =
-    //   this.getAttribute("examples-namespace") || addSlashAtEnd(this.endpointUrl) + ".well-known/sparql-examples/";
     this.examplesRepoAddUrl = this.getAttribute("examples-repo-add-url");
     this.examplesRepo = this.getAttribute("examples-repository");
     if (this.examplesRepoAddUrl && !this.examplesRepo) this.examplesRepo = this.examplesRepoAddUrl.split("/new/")[0];
@@ -123,6 +103,10 @@ export class SparqlEditor extends HTMLElement {
       <div id="sparql-editor">
         <button id="sparql-add-prefixes-btn" class="btn" style="margin-bottom: 0.3em;">Add common prefixes</button>
         <button id="sparql-save-example-btn" class="btn" style="margin-bottom: 0.3em;">Save query as example</button>
+        <div id="loading-spinner" style="display: flex; justify-content: center; align-items: center; height: 100px; flex-direction: column;">
+          <div class="spinner" style="border: 4px solid rgba(0,0,0,0.1); border-left-color: #000; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite;"></div>
+          <p style="margin-top: 10px; text-align: center;">Loading editor...</p>
+        </div>
         <div id="yasgui"></div>
       </div>
       <div>
@@ -132,23 +116,6 @@ export class SparqlEditor extends HTMLElement {
     `;
     this.shadowRoot?.appendChild(style);
     this.shadowRoot?.appendChild(container);
-
-    // // Initialize prefixes with some defaults
-    // this.prefixes = new Map([
-    //   ["rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#"],
-    //   ["rdfs", "http://www.w3.org/2000/01/rdf-schema#"],
-    //   ["xsd", "http://www.w3.org/2001/XMLSchema#"],
-    //   ["owl", "http://www.w3.org/2002/07/owl#"],
-    //   ["skos", "http://www.w3.org/2004/02/skos/core#"],
-    //   ["up", "http://purl.uniprot.org/core/"],
-    //   ["keywords", "http://purl.uniprot.org/keywords/"],
-    //   ["uniprotkb", "http://purl.uniprot.org/uniprot/"],
-    //   ["taxon", "http://purl.uniprot.org/taxonomy/"],
-    //   ["ec", "http://purl.uniprot.org/enzyme/"],
-    //   ["bibo", "http://purl.org/ontology/bibo/"],
-    //   ["dc", "http://purl.org/dc/terms/"],
-    //   ["faldo", "http://biohackathon.org/resource/faldo#"],
-    // ]);
 
     // NOTE: autocompleters get are executed when Yasgui is instantiated
     Yasgui.Yasqe.defaults.autocompleters.splice(Yasgui.Yasqe.defaults.autocompleters.indexOf("prefixes"), 1);
@@ -229,16 +196,15 @@ export class SparqlEditor extends HTMLElement {
       copyEndpointOnNewTab: true,
     });
     await this.loadCurrentEndpoint();
+    const spinEl = this.shadowRoot?.getElementById("loading-spinner");
+    if (spinEl) spinEl.style.display = "none";
 
-    // TODO: Not perfect, it is only triggered once for each endpoint, not everytime the endpoint changes
-    // It's triggered multiple times for same endpoint if you only keep 1 tab, but breaks when opening more tabs
-    this.yasgui?.getTab()?.on("endpointChange", async () => {
-      // console.log("Endpoint changed", endpoint, this.currentEndpoint());
-      await this.loadCurrentEndpoint();
-    });
-
-    this.yasgui?.on("tabSelect", async (yasgui: Yasgui, newTabId: string) => {
+    this.yasgui?.on("tabSelect", (yasgui: Yasgui, newTabId: string) => {
+      // The endpoint is not updated when switching tabs, so we need to load it manually
       this.loadCurrentEndpoint(yasgui.getTab(newTabId)?.getEndpoint());
+    });
+    this.yasgui?.on("endpointHistoryChange", () => {
+      this.loadCurrentEndpoint();
     });
 
     // mermaid.initialize({ startOnLoad: false });
