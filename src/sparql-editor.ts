@@ -15,6 +15,7 @@ import {
   getPrefixes,
   getVoidDescription,
   ExampleQuery,
+  getServiceUriForCursorPosition,
 } from "./utils";
 
 interface EndpointsMetadata {
@@ -98,7 +99,6 @@ export class SparqlEditor extends HTMLElement {
       ${editorCss}
 		`;
     if (endpoints.length === 1) {
-      console.log("Only one endpoint, hiding the controlbar");
       style.textContent += `.yasgui .controlbar {
   display: none !important;
 }`;
@@ -189,10 +189,8 @@ export class SparqlEditor extends HTMLElement {
         examples: [],
       };
     }
-    // console.log("get meta", this.meta[endpoint].prefixes.size);
-    // if (Object.keys(this.meta[endpoint].prefixes).length < 1) {
     if (!this.meta[endpoint].retrievedAt) {
-      console.log(`Getting metadata for ${endpoint}`);
+      // console.log(`Getting metadata for ${endpoint}`);
       [
         this.meta[endpoint].examples,
         this.meta[endpoint].prefixes,
@@ -231,17 +229,16 @@ export class SparqlEditor extends HTMLElement {
       copyEndpointOnNewTab: true,
     });
     await this.loadCurrentEndpoint();
-    console.log(this.endpointUrl());
 
     // TODO: Not perfect, it is only triggered once for each endpoint, not everytime the endpoint changes
+    // It's triggered multiple times for same endpoint if you only keep 1 tab, but breaks when opening more tabs
     this.yasgui?.getTab()?.on("endpointChange", async () => {
       // console.log("Endpoint changed", endpoint, this.currentEndpoint());
       await this.loadCurrentEndpoint();
     });
 
     this.yasgui?.on("tabSelect", async (yasgui: Yasgui, newTabId: string) => {
-      // @ts-ignore
-      this.loadCurrentEndpoint(yasgui.getTab(newTabId).endpointSelect.value);
+      this.loadCurrentEndpoint(yasgui.getTab(newTabId)?.getEndpoint());
     });
 
     // mermaid.initialize({ startOnLoad: false });
@@ -389,20 +386,24 @@ export class SparqlEditor extends HTMLElement {
   voidPropertyCompleter = {
     name: "voidProperty",
     bulk: false,
-    get: (yasqe: any, token: any) => {
+    get: async (yasqe: any, token: any) => {
       const cursor = yasqe.getCursor();
       const subj = getSubjectForCursorPosition(yasqe.getValue(), cursor.line, cursor.ch);
-      // TODO: get the URL of the endpoint for SERVICE calls
       const subjTypes = extractAllSubjectsAndTypes(yasqe.getValue());
+      const cursorEndpoint =
+        getServiceUriForCursorPosition(yasqe.getValue(), cursor.line, cursor.ch) || this.endpointUrl();
+      // console.log("cursorEndpoint!", cursorEndpoint);
+      // Make sure the metadata is loaded for the service endpoints
+      await this.getMetadata(cursorEndpoint);
       // console.log("subj, subjTypes, unfiltered hints", subj, subjTypes, hints)
-      if (subj && subjTypes.has(subj) && Object.keys(this.currentEndpoint().void).length > 0) {
+      if (subj && subjTypes.has(subj) && Object.keys(this.meta[cursorEndpoint].void).length > 0) {
         const types = subjTypes.get(subj);
         // console.log("types", types)
         if (types) {
           const suggestPreds = new Set<string>();
           try {
             types.forEach(typeCurie => {
-              Object.keys(this.currentEndpoint().void[this.curieToUri(typeCurie)])
+              Object.keys(this.meta[cursorEndpoint].void[this.curieToUri(typeCurie)])
                 .filter(prop => prop.indexOf(token.autocompletionString) === 0)
                 .forEach(prop => {
                   suggestPreds.add(prop);
@@ -415,7 +416,7 @@ export class SparqlEditor extends HTMLElement {
           if (suggestPreds.size > 0) return Array.from(suggestPreds).sort();
         }
       }
-      return this.currentEndpoint().predicates.filter(iri => iri.indexOf(token.autocompletionString) === 0);
+      return this.meta[cursorEndpoint].predicates.filter(iri => iri.indexOf(token.autocompletionString) === 0);
     },
     isValidCompletionPosition: (yasqe: any) => {
       const token = yasqe.getCompleteToken();

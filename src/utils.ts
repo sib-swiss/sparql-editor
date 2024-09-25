@@ -154,9 +154,8 @@ export function extractAllSubjectsAndTypes(query: string): Map<string, Set<strin
 export function getSubjectForCursorPosition(query: string, lineNumber: number, charNumber: number): string | null {
   // Extract the subject relevant to the cursor position from a SPARQL query
   const lines = query.split("\n");
-  const currentLine = lines[lineNumber];
   // Extract the part of the line up to the cursor position
-  const partOfLine = currentLine.slice(0, charNumber);
+  const partOfLine = lines[lineNumber].slice(0, charNumber);
   const partialQuery = lines.slice(0, lineNumber).join("\n") + "\n" + partOfLine;
   // Put all triple patterns on a single line
   const cleanQuery = partialQuery.replace(/;\s*\n/g, "; ").replace(/;\s*$/g, "; ");
@@ -165,6 +164,39 @@ export function getSubjectForCursorPosition(query: string, lineNumber: number, c
   const subjectMatch = lastLine.match(/\s*([?\w]+|<[^>]+>|\w+:\w*)\s+/);
   if (subjectMatch) {
     return subjectMatch[1];
+  }
+  return null;
+}
+
+export function getServiceUriForCursorPosition(query: string, lineNumber: number, charNumber: number): string | null {
+  const lines = query.split("\n");
+  const partOfLine = lines[lineNumber].slice(0, charNumber);
+  const partialQuery = lines.slice(0, lineNumber).join("\n") + "\n" + partOfLine;
+  const serviceRegex = /SERVICE\s+<([^>]+)>\s*{/gi;
+  let match;
+  // Iterate through all SERVICE blocks in the query
+  while ((match = serviceRegex.exec(query)) !== null) {
+    const serviceUri = match[1];
+    const serviceStart = match.index + match[0].length - 1; // Start of the opening brace '{'
+    // Find the matching closing brace accounting for nested braces
+    let braceDepth = 1;
+    let serviceEnd = serviceStart;
+    for (let i = serviceStart + 1; i < query.length; i++) {
+      if (query[i] === "{") {
+        braceDepth++;
+      } else if (query[i] === "}") {
+        braceDepth--;
+        if (braceDepth === 0) {
+          serviceEnd = i;
+          break;
+        }
+      }
+    }
+    // Check if cursor is inside this SERVICE block
+    const cursorPosition = partialQuery.length;
+    if (cursorPosition >= serviceStart && cursorPosition <= serviceEnd) {
+      return serviceUri;
+    }
   }
   return null;
 }
