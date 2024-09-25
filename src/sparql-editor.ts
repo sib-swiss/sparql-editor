@@ -103,11 +103,11 @@ export class SparqlEditor extends HTMLElement {
       <div id="sparql-editor">
         <button id="sparql-add-prefixes-btn" class="btn" style="margin-bottom: 0.3em;">Add common prefixes</button>
         <button id="sparql-save-example-btn" class="btn" style="margin-bottom: 0.3em;">Save query as example</button>
+        <div id="yasgui"></div>
         <div id="loading-spinner" style="display: flex; justify-content: center; align-items: center; height: 100px; flex-direction: column;">
           <div class="spinner" style="border: 4px solid rgba(0,0,0,0.1); border-left-color: #000; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite;"></div>
           <p style="margin-top: 10px; text-align: center;">Loading editor...</p>
         </div>
-        <div id="yasgui"></div>
       </div>
       <div>
         <div id="sparql-examples"></div>
@@ -168,9 +168,9 @@ export class SparqlEditor extends HTMLElement {
     }
   }
 
+  // Load current endpoint in the YASGUI input box
   async loadCurrentEndpoint(endpoint: string | undefined = this.endpointUrl()) {
-    // Load current endpoint in the YASGUI input box
-    // console.log("Switching endpoint", this.yasgui?.getTab()?.getEndpoint());
+    // console.log("Switching endpoint", endpoint);
     await this.getMetadata(endpoint);
     await this.showExamples();
     // @ts-ignore set default query when new tab
@@ -199,18 +199,12 @@ export class SparqlEditor extends HTMLElement {
     const spinEl = this.shadowRoot?.getElementById("loading-spinner");
     if (spinEl) spinEl.style.display = "none";
 
-    this.yasgui?.on("tabSelect", (yasgui: Yasgui, newTabId: string) => {
-      // The endpoint is not updated when switching tabs, so we need to load it manually
-      this.loadCurrentEndpoint(yasgui.getTab(newTabId)?.getEndpoint());
+    this.yasgui?.on("tabSelect", () => {
+      setTimeout(() => this.loadCurrentEndpoint());
     });
     this.yasgui?.on("endpointHistoryChange", () => {
-      this.loadCurrentEndpoint();
+      setTimeout(() => this.loadCurrentEndpoint());
     });
-
-    // mermaid.initialize({ startOnLoad: false });
-    // await mermaid.run({
-    //     querySelector: '.language-mermaid',
-    // });`<
 
     // Button to add all prefixes to the query
     const addPrefixesBtnEl = this.shadowRoot?.getElementById("sparql-add-prefixes-btn");
@@ -222,32 +216,6 @@ export class SparqlEditor extends HTMLElement {
       this.yasgui?.getTab()?.getYasqe().addPrefixes(sortedPrefixes);
       this.yasgui?.getTab()?.getYasqe().collapsePrefixes(true);
     });
-
-    // TODO: Detect errors in the query and show them in the editor
-    // const parser = new Parser();
-    // // @ts-ignore TS complains for nothing about args of the event, but the tab is properly passed
-    // this.yasgui.getTab()?.getYasqe().on("change", (tab: any) => {
-    //   try {
-    //     const parsedQuery = parser.parse(tab.getValue());
-    //     console.log(parsedQuery);
-    //     // TODO: make this a separate function, recursive
-    //     // @ts-ignore SparqlQuery type definition is completely wrong, as usual, so we need to ignore
-    //     for (const part of parsedQuery.where) {
-    //       if (part["type"] === "bgp") {
-    //         for (const triple of part["triples"]) {
-    //           console.log(triple);
-    //           if (!this.predicatesList.includes(triple["predicate"]["value"])) {
-    //             console.log(`Predicate not valid: ${triple["predicate"]["value"]}`);
-    //           }
-    //         }
-    //       }
-    //     }
-    //     // check if the classes/properties are in the 2 lists
-    //     // If not, pop an error at the line where it is (do a search to find the line)
-    //   } catch {
-    //     return;
-    //   }
-    // })
 
     this.yasgui.on("queryBefore", (_y, tab) => {
       const ye = tab.getYasqe();
@@ -283,6 +251,37 @@ export class SparqlEditor extends HTMLElement {
       // tooltip(ye, warningEl, "Big error!");
       // ye.setGutterMarker(13, "gutterErrorBar", warningEl);
     });
+
+    // TODO: Detect errors in the query and show them in the editor
+    // const parser = new Parser();
+    // // @ts-ignore TS complains for nothing about args of the event, but the tab is properly passed
+    // this.yasgui.getTab()?.getYasqe().on("change", (tab: any) => {
+    //   try {
+    //     const parsedQuery = parser.parse(tab.getValue());
+    //     console.log(parsedQuery);
+    //     // TODO: make this a separate function, recursive
+    //     // @ts-ignore SparqlQuery type definition is completely wrong, as usual, so we need to ignore
+    //     for (const part of parsedQuery.where) {
+    //       if (part["type"] === "bgp") {
+    //         for (const triple of part["triples"]) {
+    //           console.log(triple);
+    //           if (!this.predicatesList.includes(triple["predicate"]["value"])) {
+    //             console.log(`Predicate not valid: ${triple["predicate"]["value"]}`);
+    //           }
+    //         }
+    //       }
+    //     }
+    //     // check if the classes/properties are in the 2 lists
+    //     // If not, pop an error at the line where it is (do a search to find the line)
+    //   } catch {
+    //     return;
+    //   }
+    // })
+
+    // mermaid.initialize({ startOnLoad: false });
+    // await mermaid.run({
+    //     querySelector: '.language-mermaid',
+    // });
 
     // Hack to add Describe links for IRIs in the results without touching the YASR table plugin
     // But it is lost when we change the tab (user need to rerun the query to get the links back)
@@ -486,6 +485,7 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     // Display examples on the main page and in a dialog for the currently selected endpoint
     const exampleQueriesEl = this.shadowRoot?.getElementById("sparql-examples") as HTMLElement;
     exampleQueriesEl.innerHTML = "";
+    if (this.currentEndpoint().examples.length === 0) return;
     // Add title for examples
     const exQueryTitleDiv = document.createElement("div");
     exQueryTitleDiv.style.textAlign = "center";
@@ -594,22 +594,24 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     });
 
     // Add button to open dialog
-    const openExDialogBtn = document.createElement("button");
-    openExDialogBtn.textContent = "See all examples";
-    openExDialogBtn.className = "btn";
-    exampleQueriesEl.appendChild(openExDialogBtn);
+    if (this.currentEndpoint().examples.length > this.examplesOnMainPage) {
+      const openExDialogBtn = document.createElement("button");
+      openExDialogBtn.textContent = "See all examples";
+      openExDialogBtn.className = "btn";
+      exampleQueriesEl.appendChild(openExDialogBtn);
 
-    openExDialogBtn.addEventListener("click", () => {
-      exQueryDialog.showModal();
-      document.body.style.overflow = "hidden";
-      // exQueryDialog.scrollTop = 0;
-    });
-    exDialogCloseBtn.addEventListener("click", () => {
-      exQueryDialog.close();
-    });
-    exQueryDialog.addEventListener("close", () => {
-      document.body.style.overflow = "";
-    });
+      openExDialogBtn.addEventListener("click", () => {
+        exQueryDialog.showModal();
+        document.body.style.overflow = "hidden";
+        // exQueryDialog.scrollTop = 0;
+      });
+      exDialogCloseBtn.addEventListener("click", () => {
+        exQueryDialog.close();
+      });
+      exQueryDialog.addEventListener("close", () => {
+        document.body.style.overflow = "";
+      });
+    }
   }
 
   addPrefixesToQuery(query: string) {
