@@ -74,9 +74,6 @@ export const editorCss = `:host a {
 button.yasqe_share {
   display: none !important;
 }
-.yasgui .controlbar {
-  display: none !important;
-}
 .yasr .rowNumber {
   text-align: left;
 }

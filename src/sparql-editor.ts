@@ -8,24 +8,30 @@ import {editorCss, yasguiCss, yasguiGripInlineCss, highlightjsCss} from "./style
 // import {warning} from "@zazuko/yasqe/src/imgs";
 // import {Parser} from "sparqljs";
 
-type ExampleQuery = {
-  comment: string;
-  query: string;
-};
+import {
+  extractAllSubjectsAndTypes,
+  getSubjectForCursorPosition,
+  getExampleQueries,
+  getPrefixes,
+  getVoidDescription,
+  ExampleQuery,
+} from "./utils";
 
-interface SparqlResultBindings {
+interface EndpointsMetadata {
+  // Endpoint URL
   [key: string]: {
-    value: string;
-    type: string;
+    void: {
+      // Subject class
+      [key: string]: {
+        [key: string]: string[]; // Predicate: object classes/datatypes
+      };
+    };
+    classes: string[];
+    predicates: string[];
+    prefixes: {[key: string]: string};
+    examples: ExampleQuery[];
+    retrievedAt?: Date;
   };
-}
-
-interface VoidDict {
-  // [key: string]: {
-  [key: string]: {
-    [key: string]: string[];
-  };
-  // }
 }
 
 const addSlashAtEnd = (str: any) => (str.endsWith("/") ? str : `${str}/`);
@@ -38,33 +44,48 @@ const capitalize = (str: any) => str.charAt(0).toUpperCase() + str.slice(1).toLo
  * @example <sparql-editor endpoint="https://sparql.uniprot.org/sparql/" examples-on-main-page="10"></sparql-editor>
  */
 export class SparqlEditor extends HTMLElement {
-  endpointUrl: string;
   examplesOnMainPage: number;
   yasgui: Yasgui | undefined;
-  exampleQueries: ExampleQuery[];
   urlParams: any;
-  prefixes: Map<string, string>;
-  voidDescription: VoidDict;
-  classesList: string[];
-  predicatesList: string[];
-  examplesNamespace: string;
+  meta: EndpointsMetadata;
   examplesRepo: string | null;
   examplesRepoAddUrl: string | null;
   addLimit: number | null;
+  // TODO: make exampleQueries a dict with the query IRI as key, so if the window.location matches a key, it will load the query?
+
+  examplesNamespace(): string {
+    return (
+      this.getAttribute("examples-namespace") || addSlashAtEnd(this.endpointUrl()) + ".well-known/sparql-examples/"
+    );
+  }
 
   constructor() {
     super();
     this.attachShadow({mode: "open"});
 
-    this.endpointUrl = this.getAttribute("endpoint") || "";
-    if (this.endpointUrl === "")
+    this.meta = this.loadMetaFromLocalStorage();
+    // console.log("Loaded metadata from localStorage", this.meta);
+    const endpoints = (this.getAttribute("endpoint") || "").split(",");
+    endpoints.forEach(endpoint => {
+      endpoint = endpoint.trim();
+      if (!this.meta[endpoint]) {
+        this.meta[endpoint] = {
+          void: {},
+          classes: [],
+          predicates: [],
+          prefixes: {},
+          examples: [],
+        };
+      }
+    });
+    if (endpoints.length === 0)
       throw new Error("No endpoint provided. Please use the 'endpoint' attribute to specify the SPARQL endpoint URL.");
 
     this.addLimit = Number(this.getAttribute("add-limit")) || null;
     this.examplesOnMainPage = Number(this.getAttribute("examples-on-main-page")) || 10;
-    this.exampleQueries = [];
-    this.examplesNamespace =
-      this.getAttribute("examples-namespace") || addSlashAtEnd(this.endpointUrl) + ".well-known/sparql-examples/";
+    // this.exampleQueries = [];
+    // this.examplesNamespace =
+    //   this.getAttribute("examples-namespace") || addSlashAtEnd(this.endpointUrl) + ".well-known/sparql-examples/";
     this.examplesRepoAddUrl = this.getAttribute("examples-repo-add-url");
     this.examplesRepo = this.getAttribute("examples-repository");
     if (this.examplesRepoAddUrl && !this.examplesRepo) this.examplesRepo = this.examplesRepoAddUrl.split("/new/")[0];
@@ -76,7 +97,26 @@ export class SparqlEditor extends HTMLElement {
       ${highlightjsCss}
       ${editorCss}
 		`;
-
+    if (endpoints.length === 1) {
+      console.log("Only one endpoint, hiding the controlbar");
+      style.textContent += `.yasgui .controlbar {
+  display: none !important;
+}`;
+    } else {
+      Yasgui.defaults.endpointCatalogueOptions = {
+        getData: () => {
+          return Object.keys(this.meta).map(endpoint => ({
+            endpoint: endpoint,
+          }));
+        },
+        keys: [],
+        renderItem: (data, source) => {
+          const contentDiv = document.createElement("div");
+          contentDiv.innerText = data.value.endpoint;
+          source.appendChild(contentDiv);
+        },
+      };
+    }
     const container = document.createElement("div");
     container.className = "container";
     container.innerHTML = `
@@ -93,54 +133,115 @@ export class SparqlEditor extends HTMLElement {
     this.shadowRoot?.appendChild(style);
     this.shadowRoot?.appendChild(container);
 
-    // Initialize prefixes with some defaults
-    this.prefixes = new Map([
-      ["rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#"],
-      ["rdfs", "http://www.w3.org/2000/01/rdf-schema#"],
-      ["xsd", "http://www.w3.org/2001/XMLSchema#"],
-      ["owl", "http://www.w3.org/2002/07/owl#"],
-      ["skos", "http://www.w3.org/2004/02/skos/core#"],
-      ["up", "http://purl.uniprot.org/core/"],
-      ["keywords", "http://purl.uniprot.org/keywords/"],
-      ["uniprotkb", "http://purl.uniprot.org/uniprot/"],
-      ["taxon", "http://purl.uniprot.org/taxonomy/"],
-      ["ec", "http://purl.uniprot.org/enzyme/"],
-      ["bibo", "http://purl.org/ontology/bibo/"],
-      ["dc", "http://purl.org/dc/terms/"],
-      ["faldo", "http://biohackathon.org/resource/faldo#"],
-    ]);
-    this.voidDescription = {};
-    this.classesList = [];
-    this.predicatesList = [];
+    // // Initialize prefixes with some defaults
+    // this.prefixes = new Map([
+    //   ["rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#"],
+    //   ["rdfs", "http://www.w3.org/2000/01/rdf-schema#"],
+    //   ["xsd", "http://www.w3.org/2001/XMLSchema#"],
+    //   ["owl", "http://www.w3.org/2002/07/owl#"],
+    //   ["skos", "http://www.w3.org/2004/02/skos/core#"],
+    //   ["up", "http://purl.uniprot.org/core/"],
+    //   ["keywords", "http://purl.uniprot.org/keywords/"],
+    //   ["uniprotkb", "http://purl.uniprot.org/uniprot/"],
+    //   ["taxon", "http://purl.uniprot.org/taxonomy/"],
+    //   ["ec", "http://purl.uniprot.org/enzyme/"],
+    //   ["bibo", "http://purl.org/ontology/bibo/"],
+    //   ["dc", "http://purl.org/dc/terms/"],
+    //   ["faldo", "http://biohackathon.org/resource/faldo#"],
+    // ]);
 
     // NOTE: autocompleters get are executed when Yasgui is instantiated
     Yasgui.Yasqe.defaults.autocompleters.splice(Yasgui.Yasqe.defaults.autocompleters.indexOf("prefixes"), 1);
+    Yasgui.Yasqe.defaults.autocompleters.splice(Yasgui.Yasqe.defaults.autocompleters.indexOf("class"), 1);
     Yasgui.Yasqe.defaults.autocompleters.splice(Yasgui.Yasqe.defaults.autocompleters.indexOf("property"), 1);
     Yasgui.Yasqe.forkAutocompleter("prefixes", this.prefixesCompleter);
     Yasgui.Yasqe.forkAutocompleter("class", this.voidClassCompleter);
     Yasgui.Yasqe.forkAutocompleter("property", this.voidPropertyCompleter);
     Yasgui.defaults.requestConfig = {
       ...Yasgui.defaults.requestConfig,
-      endpoint: this.endpointUrl,
+      endpoint: endpoints[0],
       method: "GET",
     };
+
     hljs.registerLanguage("ttl", hljsDefineTurtle);
     hljs.registerLanguage("sparql", hljsDefineSparql);
   }
 
+  loadMetaFromLocalStorage(): EndpointsMetadata {
+    const metaString = localStorage.getItem("sparql-editor-meta");
+    return metaString ? JSON.parse(metaString) : {};
+  }
+
+  // Function to save metadata to localStorage
+  saveMetaToLocalStorage() {
+    localStorage.setItem("sparql-editor-meta", JSON.stringify(this.meta));
+  }
+
+  // Get prefixes, VoID and examples
+  async getMetadata(endpoint: string | undefined) {
+    if (!endpoint) return;
+    if (!this.meta[endpoint]) {
+      this.meta[endpoint] = {
+        void: {},
+        classes: [],
+        predicates: [],
+        prefixes: {},
+        examples: [],
+      };
+    }
+    // console.log("get meta", this.meta[endpoint].prefixes.size);
+    // if (Object.keys(this.meta[endpoint].prefixes).length < 1) {
+    if (!this.meta[endpoint].retrievedAt) {
+      console.log(`Getting metadata for ${endpoint}`);
+      [
+        this.meta[endpoint].examples,
+        this.meta[endpoint].prefixes,
+        [this.meta[endpoint].void, this.meta[endpoint].classes, this.meta[endpoint].predicates],
+      ] = await Promise.all([getExampleQueries(endpoint), getPrefixes(endpoint), getVoidDescription(endpoint)]);
+      this.meta[endpoint].retrievedAt = new Date();
+      this.saveMetaToLocalStorage();
+    }
+  }
+
+  async loadCurrentEndpoint(endpoint: string | undefined = this.endpointUrl()) {
+    // Load current endpoint in the YASGUI input box
+    // console.log("Switching endpoint", this.yasgui?.getTab()?.getEndpoint());
+    await this.getMetadata(endpoint);
+    await this.showExamples();
+    // @ts-ignore set default query when new tab
+    this.yasgui.config.yasqe.value =
+      this.addPrefixesToQuery(this.currentEndpoint().examples[0]?.query) || Yasgui.Yasqe.defaults.value;
+    Yasgui.Yasr.defaults.prefixes = this.meta[endpoint].prefixes;
+  }
+
+  // Return the current endpoint URL
+  endpointUrl() {
+    return this.yasgui?.getTab()?.getEndpoint() || Object.keys(this.meta)[0];
+  }
+
+  // Return the object with the current endpoint metadata
+  currentEndpoint() {
+    return this.meta[this.endpointUrl()];
+  }
+
   async connectedCallback() {
-    // Get prefixes and examples, and set default config for YASGUI
-    await Promise.all([this.getExampleQueries(), this.getPrefixes(), this.getVoidDescription()]);
-
-    Yasgui.Yasqe.defaults.value = this.addPrefixesToQuery(this.exampleQueries[0]?.query) || Yasgui.Yasqe.defaults.value;
-    Yasgui.Yasr.defaults.prefixes = Object.fromEntries(this.prefixes);
-
-    // TODO: make exampleQueries a dict with the query IRI as key, so if the window.location matches a key, it will load the query?
-
     // Instantiate YASGUI editor
     const editorEl = this.shadowRoot?.getElementById("yasgui") as HTMLElement;
     this.yasgui = new Yasgui(editorEl, {
       copyEndpointOnNewTab: true,
+    });
+    await this.loadCurrentEndpoint();
+    console.log(this.endpointUrl());
+
+    // TODO: Not perfect, it is only triggered once for each endpoint, not everytime the endpoint changes
+    this.yasgui?.getTab()?.on("endpointChange", async () => {
+      // console.log("Endpoint changed", endpoint, this.currentEndpoint());
+      await this.loadCurrentEndpoint();
+    });
+
+    this.yasgui?.on("tabSelect", async (yasgui: Yasgui, newTabId: string) => {
+      // @ts-ignore
+      this.loadCurrentEndpoint(yasgui.getTab(newTabId).endpointSelect.value);
     });
 
     // mermaid.initialize({ startOnLoad: false });
@@ -151,9 +252,9 @@ export class SparqlEditor extends HTMLElement {
     // Button to add all prefixes to the query
     const addPrefixesBtnEl = this.shadowRoot?.getElementById("sparql-add-prefixes-btn");
     addPrefixesBtnEl?.addEventListener("click", () => {
-      const sortedPrefixes: any = {};
-      for (const key of [...this.prefixes.keys()].sort()) {
-        sortedPrefixes[key] = this.prefixes.get(key);
+      const sortedPrefixes: {[key: string]: string} = {};
+      for (const key of Object.keys(this.currentEndpoint().prefixes).sort()) {
+        sortedPrefixes[key] = this.currentEndpoint().prefixes[key];
       }
       this.yasgui?.getTab()?.getYasqe().addPrefixes(sortedPrefixes);
       this.yasgui?.getTab()?.getYasqe().collapsePrefixes(true);
@@ -187,6 +288,7 @@ export class SparqlEditor extends HTMLElement {
 
     this.yasgui.on("queryBefore", (_y, tab) => {
       const ye = tab.getYasqe();
+      // TODO: improve prefixes handling
       tab.getYasr().config.prefixes = {...Yasgui.Yasr.defaults.prefixes, ...ye.getPrefixesFromQuery()};
 
       if (this.addLimit) {
@@ -238,99 +340,9 @@ export class SparqlEditor extends HTMLElement {
     });
 
     // Button to pop a dialog to save the query as an example in a turtle file
-    const exampleNumberForId = (this.exampleQueries.length + 1).toString().padStart(3, "0");
-    const addExampleBtnEl = this.shadowRoot?.getElementById("sparql-save-example-btn");
-    addExampleBtnEl?.addEventListener("click", () => {
-      const dialog = document.createElement("dialog");
-      dialog.style.width = "400px";
-      dialog.style.padding = "1em";
-      dialog.style.borderRadius = "8px";
-      dialog.style.borderColor = "#cccccc";
-      const exampleRepoLink = this.examplesRepo
-        ? `<a href="${this.examplesRepo}" target="_blank">repository</a>`
-        : "repository";
-      const addToRepoBtn = this.examplesRepoAddUrl
-        ? `<button type="button" class="btn" id="add-to-repo-btn">Add example to repository</button>`
-        : "";
-      dialog.innerHTML = `
-        <form id="example-form" method="dialog">
-          <h3>Save query as example</h3>
-          <p>Download the current query as an example in a turtle file that you can then submit to the ${exampleRepoLink} where all examples are stored.</p>
-          <label for="description">Description:</label><br>
-          <input type="text" id="description" name="description" required style="width: 100%;" maxlength="200"><br><br>
-          <label for="query-uri">Query example filename and URI (no spaces):</label><br>
-          <input type="text" id="example-uri" name="example-uri" required pattern="^[a-zA-Z0-9_-]+$"
-            title="Only alphanumeric characters, underscores, or hyphens are allowed."
-            style="width: 100%;" placeholder="Enter a valid filename" value="${exampleNumberForId}"><br><br>
-          <label for="keywords">Keywords (optional, comma separated):</label><br>
-          <input type="text" id="keywords" name="keywords" style="width: 100%;"><br><br>
-          <button type="submit" class="btn">Download example file</button>
-          ${addToRepoBtn}
-          <button type="button" class="btn" onclick="this.closest('dialog').close()">Cancel</button>
-        </form>
-      `;
-      this.shadowRoot?.appendChild(dialog);
-      dialog.showModal();
-      const descriptionInput = dialog.querySelector("#description") as HTMLInputElement;
-      descriptionInput.focus();
-
-      const generateShacl = () => {
-        const description = (dialog.querySelector("#description") as HTMLTextAreaElement).value;
-        const keywordsStr = (dialog.querySelector("#keywords") as HTMLInputElement).value
-          .split(",")
-          .map((kw: string) => `"${kw.trim()}"`)
-          .join(", ");
-        const queryType = capitalize(this.yasgui?.getTab()?.getYasqe().getQueryType());
-        const keywordsBit = keywordsStr.length > 2 ? `schema:keyword ${keywordsStr} ;\n    ` : "";
-        const exampleUri = (dialog.querySelector("#example-uri") as HTMLInputElement).value;
-        return [
-          `@prefix ex: <${this.examplesNamespace}> .
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix schema: <https://schema.org/> .
-@prefix sh: <http://www.w3.org/ns/shacl#> .
-
-ex:${exampleUri} a sh:SPARQLExecutable${
-            ["Select", "Construct", "Ask"].includes(queryType)
-              ? `,
-        sh:SPARQL${queryType}Executable`
-              : ""
-          } ;
-    rdfs:comment "${description}"@en ;
-    sh:prefixes _:sparql_examples_prefixes ;
-    sh:${queryType.toLowerCase()} """${this.yasgui?.getTab()?.getYasqe().getValue()}""" ;
-    ${keywordsBit}schema:target <${this.endpointUrl}> .`,
-          exampleUri,
-        ];
-      };
-
-      const formEl = dialog.querySelector("#example-form") as HTMLFormElement;
-      formEl.addEventListener("submit", e => {
-        e.preventDefault();
-        const [shaclStr, exampleUri] = generateShacl();
-        const dataStr = `data:text/turtle;charset=utf-8,${encodeURIComponent(shaclStr)}`;
-        const downloadAnchor = document.createElement("a");
-        downloadAnchor.setAttribute("href", dataStr);
-        downloadAnchor.setAttribute("download", `${exampleUri}.ttl`);
-        downloadAnchor.click();
-        dialog.close();
-      });
-
-      if (this.examplesRepoAddUrl) {
-        dialog.querySelector("#add-to-repo-btn")?.addEventListener("click", () => {
-          if (formEl.checkValidity()) {
-            const [shaclStr, exampleUri] = generateShacl();
-            const uploadExampleUrl = `${this.examplesRepoAddUrl}?filename=${exampleUri}.ttl&value=${encodeURIComponent(shaclStr)}`;
-            window.open(uploadExampleUrl, "_blank");
-            // navigator.clipboard.writeText(shaclStr).then(() => {
-            //   window.open(uploadExampleUrl, "_blank");
-            // }).catch(err => {
-            //   console.warn("Failed to copy SHACL: ", err);
-            // });
-          } else {
-            formEl.reportValidity();
-          }
-        });
-      }
+    const saveExampleBtnEl = this.shadowRoot?.getElementById("sparql-save-example-btn");
+    saveExampleBtnEl?.addEventListener("click", () => {
+      this.showSaveExampleDialog();
     });
 
     // Parse query params from URL and auto run query if provided in URL
@@ -357,49 +369,53 @@ ex:${exampleUri} a sh:SPARQLExecutable${
   prefixesCompleter = {
     name: "shaclPrefixes",
     persistenceId: null,
-    bulk: true,
-    get: async () => {
+    bulk: false,
+    get: () => {
       const prefixArray: string[] = [];
-      this.prefixes.forEach((ns, prefix) => prefixArray.push(`${prefix}: <${ns}>`));
+      // this.currentEndpoint().prefixes.forEach((ns, prefix) => prefixArray.push(`${prefix}: <${ns}>`));
+      Object.entries(this.currentEndpoint().prefixes).forEach(([prefix, ns]) => {
+        prefixArray.push(`${prefix}: <${ns}>`);
+      });
       return prefixArray.sort();
     },
   };
   voidClassCompleter = {
     name: "voidClass",
-    bulk: true,
-    get: async (yasqe: any) => {
-      if (this.classesList.length > 0) {
-        delete yasqe.autocompleters["class"];
-      } else {
-        console.warn("No classes found in the VoID description");
-      }
-      return this.classesList;
+    bulk: false,
+    get: (_yasqe: any, token: any) => {
+      return this.currentEndpoint().classes.filter(iri => iri.indexOf(token.autocompletionString) === 0);
     },
   };
   voidPropertyCompleter = {
     name: "voidProperty",
     bulk: false,
-    get: async (yasqe: any) => {
+    get: (yasqe: any, token: any) => {
       const cursor = yasqe.getCursor();
       const subj = getSubjectForCursorPosition(yasqe.getValue(), cursor.line, cursor.ch);
       // TODO: get the URL of the endpoint for SERVICE calls
       const subjTypes = extractAllSubjectsAndTypes(yasqe.getValue());
       // console.log("subj, subjTypes, unfiltered hints", subj, subjTypes, hints)
-      if (subj && subjTypes.has(subj) && Object.keys(this.voidDescription[this.endpointUrl]).length > 0) {
+      if (subj && subjTypes.has(subj) && Object.keys(this.currentEndpoint().void).length > 0) {
         const types = subjTypes.get(subj);
         // console.log("types", types)
         if (types) {
           const suggestPreds = new Set<string>();
-          types.forEach(typeCurie => {
-            Object.keys(this.voidDescription[this.endpointUrl][this.curieToUri(typeCurie)]).forEach(prop =>
-              suggestPreds.add(prop),
-            );
-          });
+          try {
+            types.forEach(typeCurie => {
+              Object.keys(this.currentEndpoint().void[this.curieToUri(typeCurie)])
+                .filter(prop => prop.indexOf(token.autocompletionString) === 0)
+                .forEach(prop => {
+                  suggestPreds.add(prop);
+                });
+            });
+          } catch (error) {
+            console.warn("Error getting properties for autocomplete:", error);
+          }
           // console.log("suggestPreds", suggestPreds)
-          return Array.from(suggestPreds).sort();
+          if (suggestPreds.size > 0) return Array.from(suggestPreds).sort();
         }
       }
-      return this.predicatesList;
+      return this.currentEndpoint().predicates.filter(iri => iri.indexOf(token.autocompletionString) === 0);
     },
     isValidCompletionPosition: (yasqe: any) => {
       const token = yasqe.getCompleteToken();
@@ -409,221 +425,232 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     },
   };
 
-  async getPrefixes() {
-    // Get prefixes from the SPARQL endpoint using SHACL
-    try {
-      const queryResults = await this.queryEndpoint(`PREFIX sh: <http://www.w3.org/ns/shacl#>
-        SELECT DISTINCT ?prefix ?namespace
-        WHERE { [] sh:namespace ?namespace ; sh:prefix ?prefix}
-        ORDER BY ?prefix`);
-      queryResults.forEach(b => {
-        this.prefixes.set(b.prefix.value, b.namespace.value);
-      });
-    } catch (error) {
-      console.warn(`Error retrieving Prefixes from ${this.endpointUrl}:`, error);
-    }
-  }
+  showSaveExampleDialog() {
+    // Create dialog to save the current query as an example in a turtle file
+    const exampleNumberForId = (this.currentEndpoint().examples.length + 1).toString().padStart(3, "0");
+    const dialog = document.createElement("dialog");
+    dialog.style.width = "400px";
+    dialog.style.padding = "1em";
+    dialog.style.borderRadius = "8px";
+    dialog.style.borderColor = "#cccccc";
+    const exampleRepoLink = this.examplesRepo
+      ? `<a href="${this.examplesRepo}" target="_blank">repository</a>`
+      : "repository";
+    const addToRepoBtn = this.examplesRepoAddUrl
+      ? `<button type="button" class="btn" id="add-to-repo-btn">Add example to repository</button>`
+      : "";
+    dialog.innerHTML = `
+      <form id="example-form" method="dialog">
+        <h3>Save query as example</h3>
+        <p>Download the current query as an example in a turtle file that you can then submit to the ${exampleRepoLink} where all examples are stored.</p>
+        <label for="description">Description:</label><br>
+        <input type="text" id="description" name="description" required style="width: 100%;" maxlength="200"><br><br>
+        <label for="query-uri">Query example filename and URI (no spaces):</label><br>
+        <input type="text" id="example-uri" name="example-uri" required pattern="^[a-zA-Z0-9_\\-]+$"
+          title="Only alphanumeric characters, underscores, or hyphens are allowed."
+          style="width: 100%;" placeholder="Enter a valid filename" value="${exampleNumberForId}"><br><br>
+        <label for="keywords">Keywords (optional, comma separated):</label><br>
+        <input type="text" id="keywords" name="keywords" style="width: 100%;"><br><br>
+        <button type="submit" class="btn">Download example file</button>
+        ${addToRepoBtn}
+        <button type="button" class="btn" onclick="this.closest('dialog').close()">Cancel</button>
+      </form>
+    `;
+    this.shadowRoot?.appendChild(dialog);
+    dialog.showModal();
+    const descriptionInput = dialog.querySelector("#description") as HTMLInputElement;
+    descriptionInput.focus();
 
-  async getVoidDescription() {
-    // Get VoID description to get classes and properties for advanced autocomplete
-    try {
-      const queryResults = await this.queryEndpoint(`PREFIX up: <http://purl.uniprot.org/core/>
-        PREFIX void: <http://rdfs.org/ns/void#>
-        PREFIX void-ext: <http://ldf.fi/void-ext#>
-        SELECT DISTINCT ?subjectClass ?prop ?objectClass ?objectDatatype
-        WHERE {
-          {
-            ?cp void:class ?subjectClass ;
-                void:propertyPartition ?pp .
-            ?pp void:property ?prop .
-            OPTIONAL {
-                {
-                    ?pp  void:classPartition [ void:class ?objectClass ] .
-                } UNION {
-                    ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
-                }
-            }
-          } UNION {
-            ?ls void:subjectsTarget ?subjectClass ;
-                void:linkPredicate ?prop ;
-                void:objectsTarget ?objectClass .
-          }
-        }`);
-      const clsSet = new Set<string>();
-      const predSet = new Set<string>();
-      queryResults.forEach(b => {
-        clsSet.add(b.subjectClass.value);
-        predSet.add(b.prop.value);
-        if (!(b.subjectClass.value in this.voidDescription)) this.voidDescription[b.subjectClass.value] = {};
-        if (!(b.prop.value in this.voidDescription[b.subjectClass.value]))
-          this.voidDescription[b.subjectClass.value][b.prop.value] = [];
-        if ("objectClass" in b) {
-          this.voidDescription[b.subjectClass.value][b.prop.value].push(b.objectClass.value);
-          clsSet.add(b.objectClass.value);
+    const generateShacl = () => {
+      const description = (dialog.querySelector("#description") as HTMLTextAreaElement).value;
+      const keywordsStr = (dialog.querySelector("#keywords") as HTMLInputElement).value
+        .split(",")
+        .map((kw: string) => `"${kw.trim()}"`)
+        .join(", ");
+      const queryType = capitalize(this.yasgui?.getTab()?.getYasqe().getQueryType());
+      const keywordsBit = keywordsStr.length > 2 ? `schema:keyword ${keywordsStr} ;\n    ` : "";
+      const exampleUri = (dialog.querySelector("#example-uri") as HTMLInputElement).value;
+      return [
+        `@prefix ex: <${this.examplesNamespace()}> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix schema: <https://schema.org/> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+ex:${exampleUri} a sh:SPARQLExecutable${
+          ["Select", "Construct", "Ask"].includes(queryType)
+            ? `,
+      sh:SPARQL${queryType}Executable`
+            : ""
+        } ;
+  rdfs:comment "${description}"@en ;
+  sh:prefixes _:sparql_examples_prefixes ;
+  sh:${queryType.toLowerCase()} """${this.yasgui?.getTab()?.getYasqe().getValue()}""" ;
+  ${keywordsBit}schema:target <${this.endpointUrl}> .`,
+        exampleUri,
+      ];
+    };
+
+    const formEl = dialog.querySelector("#example-form") as HTMLFormElement;
+    formEl.addEventListener("submit", e => {
+      e.preventDefault();
+      const [shaclStr, exampleUri] = generateShacl();
+      const dataStr = `data:text/turtle;charset=utf-8,${encodeURIComponent(shaclStr)}`;
+      const downloadAnchor = document.createElement("a");
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `${exampleUri}.ttl`);
+      downloadAnchor.click();
+      dialog.close();
+    });
+
+    if (this.examplesRepoAddUrl) {
+      dialog.querySelector("#add-to-repo-btn")?.addEventListener("click", () => {
+        if (formEl.checkValidity()) {
+          const [shaclStr, exampleUri] = generateShacl();
+          const uploadExampleUrl = `${this.examplesRepoAddUrl}?filename=${exampleUri}.ttl&value=${encodeURIComponent(shaclStr)}`;
+          window.open(uploadExampleUrl, "_blank");
+        } else {
+          formEl.reportValidity();
         }
-        if ("objectDatatype" in b)
-          this.voidDescription[b.subjectClass.value][b.prop.value].push(b.objectDatatype.value);
       });
-      this.classesList = Array.from(clsSet).sort();
-      this.predicatesList = Array.from(predSet).sort();
-    } catch (error) {
-      console.warn(`Error retrieving VoID description from ${this.endpointUrl} for autocomplete:`, error);
     }
   }
 
-  async getExampleQueries() {
-    // Retrieve example queries from the SPARQL endpoint
+  async showExamples() {
+    // Display examples on the main page and in a dialog for the currently selected endpoint
     const exampleQueriesEl = this.shadowRoot?.getElementById("sparql-examples") as HTMLElement;
-    try {
-      const queryResults = await this.queryEndpoint(`PREFIX sh: <http://www.w3.org/ns/shacl#>
-        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-        SELECT DISTINCT ?sq ?comment ?query
-        WHERE {
-          ?sq a sh:SPARQLExecutable ;
-            rdfs:comment ?comment ;
-            sh:select|sh:ask|sh:construct|sh:describe ?query .
-        } ORDER BY ?sq`);
-      queryResults.forEach(b => {
-        this.exampleQueries.push({comment: b.comment.value, query: b.query.value});
-      });
-      // console.log(queryResults);
-      if (this.exampleQueries.length === 0) return;
+    exampleQueriesEl.innerHTML = "";
+    // Add title for examples
+    const exQueryTitleDiv = document.createElement("div");
+    exQueryTitleDiv.style.textAlign = "center";
+    const exQueryTitle = document.createElement("h3");
+    exQueryTitle.style.margin = "0.1em";
+    exQueryTitle.style.fontWeight = "200";
+    exQueryTitle.textContent = "Examples";
+    exQueryTitleDiv.appendChild(exQueryTitle);
+    exampleQueriesEl.appendChild(exQueryTitleDiv);
 
-      // Add title for examples
-      const exQueryTitleDiv = document.createElement("div");
-      exQueryTitleDiv.style.textAlign = "center";
-      const exQueryTitle = document.createElement("h3");
-      exQueryTitle.style.margin = "0.1em";
-      exQueryTitle.style.fontWeight = "200";
-      exQueryTitle.textContent = "Examples";
-      exQueryTitleDiv.appendChild(exQueryTitle);
-      exampleQueriesEl.appendChild(exQueryTitleDiv);
+    // Create dialog for examples
+    const exQueryDialog = document.createElement("dialog");
+    // exQueryDialog.style.margin = "1em";
+    // exQueryDialog.style.width = "calc(100vw - 8px)";
+    exQueryDialog.style.width = "100%";
+    exQueryDialog.style.borderColor = "#cccccc";
+    exQueryDialog.style.backgroundColor = "#f5f5f5";
+    exQueryDialog.style.borderRadius = "10px";
 
-      // Create dialog for examples
-      const exQueryDialog = document.createElement("dialog");
-      // exQueryDialog.style.margin = "1em";
-      // exQueryDialog.style.width = "calc(100vw - 8px)";
-      exQueryDialog.style.width = "100%";
-      exQueryDialog.style.borderColor = "#cccccc";
-      exQueryDialog.style.backgroundColor = "#f5f5f5";
-      exQueryDialog.style.borderRadius = "10px";
+    // Add button to close dialog
+    const exDialogCloseBtn = document.createElement("button");
+    exDialogCloseBtn.className = "btn closeBtn";
+    exDialogCloseBtn.textContent = "Close";
+    exDialogCloseBtn.style.position = "fixed";
+    exDialogCloseBtn.style.top = "1.5em";
+    exDialogCloseBtn.style.right = "2em";
+    exQueryDialog.appendChild(exDialogCloseBtn);
+    exampleQueriesEl.appendChild(exQueryDialog);
 
-      // Add button to close dialog
-      const exDialogCloseBtn = document.createElement("button");
-      exDialogCloseBtn.className = "btn closeBtn";
-      exDialogCloseBtn.textContent = "Close";
-      exDialogCloseBtn.style.position = "fixed";
-      exDialogCloseBtn.style.top = "1.5em";
-      exDialogCloseBtn.style.right = "2em";
-      exQueryDialog.appendChild(exDialogCloseBtn);
-      exampleQueriesEl.appendChild(exQueryDialog);
+    // Add examples to the main page and dialog
+    this.currentEndpoint().examples.forEach(async (example, index) => {
+      const exQueryDiv = document.createElement("div");
+      const exQueryP = document.createElement("p");
+      exQueryP.style.fontSize = "0.9em";
+      exQueryP.innerHTML = `${index + 1}. ${example.comment}`;
 
-      // Add examples to the main page and dialog
-      this.exampleQueries.forEach(async (example, index) => {
-        const exQueryDiv = document.createElement("div");
-        const exQueryP = document.createElement("p");
-        exQueryP.style.fontSize = "0.9em";
-        exQueryP.innerHTML = `${index + 1}. ${example.comment}`;
-
-        // Create use button
-        const useBtn = document.createElement("button");
-        useBtn.textContent = "Use";
-        useBtn.style.marginLeft = "0.5em";
-        useBtn.className = "btn sparqlExampleButton";
-        useBtn.addEventListener("click", () => {
-          this.addTab(example.query, index);
-          exQueryDialog.close();
-        });
-        exQueryP.appendChild(useBtn);
-        exQueryDiv.appendChild(exQueryP);
-        exQueryDialog.appendChild(exQueryDiv);
-
-        // Add only the first examples to the main page
-        if (index < this.examplesOnMainPage) {
-          const cloneExQueryDiv = exQueryDiv.cloneNode(true) as HTMLElement;
-          cloneExQueryDiv.className = "main-query-example";
-          // Cloning does not include click event so we need to redo it :(
-          cloneExQueryDiv.lastChild?.lastChild?.addEventListener("click", () => {
-            this.addTab(example.query, index);
-          });
-          exampleQueriesEl.appendChild(cloneExQueryDiv);
-        }
-
-        // Add query to dialog using pre/code (super fast)
-        const exQueryPre = document.createElement("pre");
-        const exQueryCode = document.createElement("code");
-        exQueryCode.className = "language-sparql hljs";
-        exQueryCode.style.borderRadius = "10px";
-        exQueryPre.style.borderRadius = "10px";
-        exQueryPre.style.backgroundColor = "#cccccc";
-        exQueryPre.style.padding = "0.1em";
-        // exQueryCode.textContent = example.query.trim();
-        // hljs.highlightAll(); does not work on web component shadow DOM
-        exQueryCode.innerHTML = hljs.highlight(example.query.trim(), {language: "sparql"}).value;
-        exQueryPre.appendChild(exQueryCode);
-        exQueryDiv.appendChild(exQueryPre);
-
-        // // TODO: Add Mermaid diagram for each example in dialog
-        // try {
-        //   const mermaidCode = document.createElement("code");
-        //   mermaidCode.className = "language-mermaid";
-        //   const mermaidStr = getMermaidFromQuery(this.addPrefixesToQuery(example.query));
-        //   // mermaidCode.textContent = mermaidStr;
-        //   const { svg } = await mermaid.render('graphDiv', mermaidStr);
-        //   mermaidCode.innerHTML = svg;
-        //   exQueryDiv.appendChild(mermaidCode);
-        // } catch (error) {
-        //   console.warn("Error generating Mermaid diagram:", error);
-        //   console.log(this.addPrefixesToQuery(example.query))
-        // }
-
-        // Create a YASQE fancy editor for each example in dialog (super slow)
-        // const exYasqeDiv = document.createElement("div");
-        // exYasqeDiv.id = `exYasqeDiv${index}`;
-        // exQueryDialog.appendChild(exYasqeDiv);
-        // // https://github.com/zazuko/Yasgui/blob/main/packages/yasqe/src/defaults.ts
-        // new Yasqe(exYasqeDiv, {
-        // 	value: example.query,
-        // 	showQueryButton: false,
-        // 	resizeable: false,
-        // 	readOnly: true,
-        // 	queryingDisabled: true,
-        // 	persistent: null,
-        // 	editorHeight: `${example.query.split(/\r\n|\r|\n/).length*2.5}ch`,
-        // 	syntaxErrorCheck: false,
-        // 	createShareableLink: null,
-        // 	consumeShareLink: null,
-        // });
-      });
-
-      // Add button to open dialog
-      const openExDialogBtn = document.createElement("button");
-      openExDialogBtn.textContent = "See all examples";
-      openExDialogBtn.className = "btn";
-      exampleQueriesEl.appendChild(openExDialogBtn);
-
-      openExDialogBtn.addEventListener("click", () => {
-        exQueryDialog.showModal();
-        document.body.style.overflow = "hidden";
-        // exQueryDialog.scrollTop = 0;
-      });
-      exDialogCloseBtn.addEventListener("click", () => {
+      // Create use button
+      const useBtn = document.createElement("button");
+      useBtn.textContent = "Use";
+      useBtn.style.marginLeft = "0.5em";
+      useBtn.className = "btn sparqlExampleButton";
+      useBtn.addEventListener("click", () => {
+        this.addTab(example.query, index);
         exQueryDialog.close();
       });
-      exQueryDialog.addEventListener("close", () => {
-        document.body.style.overflow = "";
-      });
-    } catch (error) {
-      console.warn(`Error fetching or processing example queries from ${this.endpointUrl}:`, error);
-    }
+      exQueryP.appendChild(useBtn);
+      exQueryDiv.appendChild(exQueryP);
+      exQueryDialog.appendChild(exQueryDiv);
+
+      // Add only the first examples to the main page
+      if (index < this.examplesOnMainPage) {
+        const cloneExQueryDiv = exQueryDiv.cloneNode(true) as HTMLElement;
+        cloneExQueryDiv.className = "main-query-example";
+        // Cloning does not include click event so we need to redo it :(
+        cloneExQueryDiv.lastChild?.lastChild?.addEventListener("click", () => {
+          this.addTab(example.query, index);
+        });
+        exampleQueriesEl.appendChild(cloneExQueryDiv);
+      }
+
+      // Add query to dialog using pre/code (super fast)
+      const exQueryPre = document.createElement("pre");
+      const exQueryCode = document.createElement("code");
+      exQueryCode.className = "language-sparql hljs";
+      exQueryCode.style.borderRadius = "10px";
+      exQueryPre.style.borderRadius = "10px";
+      exQueryPre.style.backgroundColor = "#cccccc";
+      exQueryPre.style.padding = "0.1em";
+      // exQueryCode.textContent = example.query.trim();
+      // hljs.highlightAll(); does not work on web component shadow DOM
+      exQueryCode.innerHTML = hljs.highlight(example.query.trim(), {language: "sparql"}).value;
+      exQueryPre.appendChild(exQueryCode);
+      exQueryDiv.appendChild(exQueryPre);
+
+      // // TODO: Add Mermaid diagram for each example in dialog
+      // try {
+      //   const mermaidCode = document.createElement("code");
+      //   mermaidCode.className = "language-mermaid";
+      //   const mermaidStr = getMermaidFromQuery(this.addPrefixesToQuery(example.query));
+      //   // mermaidCode.textContent = mermaidStr;
+      //   const { svg } = await mermaid.render('graphDiv', mermaidStr);
+      //   mermaidCode.innerHTML = svg;
+      //   exQueryDiv.appendChild(mermaidCode);
+      // } catch (error) {
+      //   console.warn("Error generating Mermaid diagram:", error);
+      //   console.log(this.addPrefixesToQuery(example.query))
+      // }
+
+      // Create a YASQE fancy editor for each example in dialog (super slow)
+      // const exYasqeDiv = document.createElement("div");
+      // exYasqeDiv.id = `exYasqeDiv${index}`;
+      // exQueryDialog.appendChild(exYasqeDiv);
+      // // https://github.com/zazuko/Yasgui/blob/main/packages/yasqe/src/defaults.ts
+      // new Yasqe(exYasqeDiv, {
+      // 	value: example.query,
+      // 	showQueryButton: false,
+      // 	resizeable: false,
+      // 	readOnly: true,
+      // 	queryingDisabled: true,
+      // 	persistent: null,
+      // 	editorHeight: `${example.query.split(/\r\n|\r|\n/).length*2.5}ch`,
+      // 	syntaxErrorCheck: false,
+      // 	createShareableLink: null,
+      // 	consumeShareLink: null,
+      // });
+    });
+
+    // Add button to open dialog
+    const openExDialogBtn = document.createElement("button");
+    openExDialogBtn.textContent = "See all examples";
+    openExDialogBtn.className = "btn";
+    exampleQueriesEl.appendChild(openExDialogBtn);
+
+    openExDialogBtn.addEventListener("click", () => {
+      exQueryDialog.showModal();
+      document.body.style.overflow = "hidden";
+      // exQueryDialog.scrollTop = 0;
+    });
+    exDialogCloseBtn.addEventListener("click", () => {
+      exQueryDialog.close();
+    });
+    exQueryDialog.addEventListener("close", () => {
+      document.body.style.overflow = "";
+    });
   }
 
   addPrefixesToQuery(query: string) {
     // Add prefixes to a query without using YASGUI
     // Required to add prefixes to the query before creating the YASGUI editor
-    const sortedKeys = [...this.prefixes.keys()].sort();
+    const sortedKeys = Object.keys(this.currentEndpoint().prefixes).sort();
     for (const key of sortedKeys) {
-      const value = this.prefixes.get(key);
+      const value = this.currentEndpoint().prefixes[key];
       const pref: any = {};
       pref[key] = value;
       const prefix = "PREFIX " + key + " ?: ?<" + value;
@@ -637,9 +664,9 @@ ex:${exampleUri} a sh:SPARQLExecutable${
   addPrefixesToQueryInEditor() {
     // Add prefixes to the query loaded in the YASGUI editor
     const query = this.yasgui?.getTab()?.getYasqe().getValue();
-    const sortedKeys = [...this.prefixes.keys()].sort();
+    const sortedKeys = Object.keys(this.currentEndpoint().prefixes).sort();
     for (const key of sortedKeys) {
-      const value = this.prefixes.get(key);
+      const value = this.currentEndpoint().prefixes[key];
       const pref: any = {};
       pref[key] = value;
       const prefix = "PREFIX " + key + " ?: ?<" + value;
@@ -662,75 +689,18 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     return `?query=${encodeURIComponent(`DESCRIBE <${resourceUrl}>`)}`;
   }
 
-  async queryEndpoint(query: string): Promise<SparqlResultBindings[]> {
-    // We add `&ac=1` to all the queries to exclude these queries from stats
-    const response = await fetch(`${this.endpointUrl}?ac=1&query=${encodeURIComponent(query)}`, {
-      signal: AbortSignal.timeout(5000),
-      headers: {
-        Accept: "application/json",
-      },
-    });
-    // console.log(await response.text());
-    const json = await response.json();
-    return json.results.bindings;
-  }
-
   // Function to convert CURIE to full URI using the prefix map
   curieToUri(curie: string) {
     // if (/^[a-zA-Z][a-zA-Z0-9]*:[a-zA-Z][a-zA-Z0-9_-]*$/.test(curie)) {
     if (/^[a-zA-Z][\w.-]*:[\w.-]+$/.test(curie)) {
       const [prefix, local] = curie.split(":");
-      const namespace = this.prefixes.get(prefix);
+      const namespace = this.currentEndpoint().prefixes[prefix];
       return namespace ? `${namespace}${local}` : curie; // Return as-is if prefix not found
     } else {
       // If it's already a full URI, return as-is
       return curie;
     }
   }
-}
-
-function extractAllSubjectsAndTypes(query: string): Map<string, Set<string>> {
-  // Extract all subjects and their types from a SPARQL query in the process of being written
-  const subjectTypeMap = new Map<string, Set<string>>();
-  // Remove comments and string literals, and prefixes lines to avoid false matches
-  const cleanQuery = query
-    .replace(/^#.*$/gm, "")
-    .replace(/'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"/g, '""')
-    .replace(/^PREFIX\s+.*$/gim, "")
-    .replace(/;\s*\n/g, "; ") // Put all triple patterns on a single line
-    .replace(/;\s*$/g, "; ");
-  // console.log(cleanQuery)
-  const typePattern =
-    /\s*(\?\w+|<[^>]+>|\w+:\w*).*?\s+(?:a|rdf:type|<http:\/\/www\.w3\.org\/1999\/02\/22-rdf-syntax-ns#type>)\s+([^\s.]+(?:\s*,\s*[^\s.]+)*)\s*(?:;|\.)/g;
-  let match;
-  while ((match = typePattern.exec(cleanQuery)) !== null) {
-    const subject = match[1];
-    const types = match[2].split(/\s*,\s*/); // Split types separated by commas
-    if (!subjectTypeMap.has(subject)) {
-      subjectTypeMap.set(subject, new Set());
-    }
-    const subjectTypes = subjectTypeMap.get(subject)!;
-    types.forEach(type => subjectTypes.add(type));
-  }
-  return subjectTypeMap;
-}
-
-function getSubjectForCursorPosition(query: string, lineNumber: number, charNumber: number): string | null {
-  // Extract the subject relevant to the cursor position from a SPARQL query
-  const lines = query.split("\n");
-  const currentLine = lines[lineNumber];
-  // Extract the part of the line up to the cursor position
-  const partOfLine = currentLine.slice(0, charNumber);
-  const partialQuery = lines.slice(0, lineNumber).join("\n") + "\n" + partOfLine;
-  // Put all triple patterns on a single line
-  const cleanQuery = partialQuery.replace(/;\s*\n/g, "; ").replace(/;\s*$/g, "; ");
-  const partialLines = cleanQuery.split("\n");
-  const lastLine = partialLines[partialLines.length - 1];
-  const subjectMatch = lastLine.match(/\s*([?\w]+|<[^>]+>|\w+:\w*)\s+/);
-  if (subjectMatch) {
-    return subjectMatch[1];
-  }
-  return null;
 }
 
 customElements.define("sparql-editor", SparqlEditor);
