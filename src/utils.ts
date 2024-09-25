@@ -212,7 +212,23 @@ export function getServiceUriForCursorPosition(query: string, lineNumber: number
   return null;
 }
 
-// // Initialize prefixes with some defaults
+// NOTE: In case we need to store the counts
+// type VoidDict2 = {
+//   // Subject class
+//   [key: string]: {
+//     count?: number;
+//     predicates: {
+//       [key: string]: {
+//         count?: number;
+//         objectClasses: {
+//           [key: string]: number | null;
+//         };
+//       }
+//     }
+//   };
+// };
+
+// // Initialize prefixes with some defaults?
 // this.prefixes = new Map([
 //   ["rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#"],
 //   ["rdfs", "http://www.w3.org/2000/01/rdf-schema#"],

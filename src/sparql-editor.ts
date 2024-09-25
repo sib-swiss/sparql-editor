@@ -135,13 +135,13 @@ export class SparqlEditor extends HTMLElement {
   }
 
   loadMetaFromLocalStorage(): EndpointsMetadata {
-    const metaString = localStorage.getItem("sparql-editor-meta");
+    const metaString = localStorage.getItem("sparql-editor-metadata");
     return metaString ? JSON.parse(metaString) : {};
   }
 
   // Function to save metadata to localStorage
   saveMetaToLocalStorage() {
-    localStorage.setItem("sparql-editor-meta", JSON.stringify(this.meta));
+    localStorage.setItem("sparql-editor-metadata", JSON.stringify(this.meta));
   }
 
   // Get prefixes, VoID and examples
@@ -332,13 +332,12 @@ export class SparqlEditor extends HTMLElement {
     name: "shaclPrefixes",
     persistenceId: null,
     bulk: false,
-    get: () => {
-      const prefixArray: string[] = [];
-      // this.currentEndpoint().prefixes.forEach((ns, prefix) => prefixArray.push(`${prefix}: <${ns}>`));
-      Object.entries(this.currentEndpoint().prefixes).forEach(([prefix, ns]) => {
-        prefixArray.push(`${prefix}: <${ns}>`);
-      });
-      return prefixArray.sort();
+    get: (_yasqe: any, token: any) => {
+      const prefixToAutocomplete = token.autocompletionString.split(":")[0];
+      if (this.currentEndpoint().prefixes[prefixToAutocomplete]) {
+        return [`${prefixToAutocomplete}: <${this.currentEndpoint().prefixes[prefixToAutocomplete]}>`];
+      }
+      return [];
     },
   };
   voidClassCompleter = {
@@ -357,10 +356,9 @@ export class SparqlEditor extends HTMLElement {
       const subjTypes = extractAllSubjectsAndTypes(yasqe.getValue());
       const cursorEndpoint =
         getServiceUriForCursorPosition(yasqe.getValue(), cursor.line, cursor.ch) || this.endpointUrl();
-      // console.log("cursorEndpoint!", cursorEndpoint);
       // Make sure the metadata is loaded for the service endpoints
       await this.getMetadata(cursorEndpoint);
-      // console.log("subj, subjTypes, unfiltered hints", subj, subjTypes, hints)
+      // console.log("cursorEndpoint, subj, subjTypes, token", cursorEndpoint, subj, subjTypes, token)
       if (subj && subjTypes.has(subj) && Object.keys(this.meta[cursorEndpoint].void).length > 0) {
         const types = subjTypes.get(subj);
         // console.log("types", types)
@@ -395,7 +393,7 @@ export class SparqlEditor extends HTMLElement {
     // Create dialog to save the current query as an example in a turtle file
     const exampleNumberForId = (this.currentEndpoint().examples.length + 1).toString().padStart(3, "0");
     const dialog = document.createElement("dialog");
-    dialog.style.width = "400px";
+    dialog.style.maxWidth = "600px";
     dialog.style.padding = "1em";
     dialog.style.borderRadius = "8px";
     dialog.style.borderColor = "#cccccc";
@@ -417,9 +415,12 @@ export class SparqlEditor extends HTMLElement {
           style="width: 100%;" placeholder="Enter a valid filename" value="${exampleNumberForId}"><br><br>
         <label for="keywords">Keywords (optional, comma separated):</label><br>
         <input type="text" id="keywords" name="keywords" style="width: 100%;"><br><br>
-        <button type="submit" class="btn">Download example file</button>
-        ${addToRepoBtn}
-        <button type="button" class="btn" onclick="this.closest('dialog').close()">Cancel</button>
+        <div align="center">
+          <button type="submit" class="btn">Download example file</button>
+          ${addToRepoBtn}
+          <button type="button" class="btn" id="copy-clipboard-btn">Copy to clipboard</button>
+          <button type="button" class="btn" onclick="this.closest('dialog').close()">Cancel</button>
+        </div>
       </form>
     `;
     this.shadowRoot?.appendChild(dialog);
@@ -466,6 +467,15 @@ ex:${exampleUri} a sh:SPARQLExecutable${
       downloadAnchor.setAttribute("download", `${exampleUri}.ttl`);
       downloadAnchor.click();
       dialog.close();
+    });
+
+    dialog.querySelector("#copy-clipboard-btn")?.addEventListener("click", () => {
+      if (formEl.checkValidity()) {
+        const [shaclStr] = generateShacl();
+        navigator.clipboard.writeText(shaclStr);
+      } else {
+        formEl.reportValidity();
+      }
     });
 
     if (this.examplesRepoAddUrl) {
@@ -594,24 +604,22 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     });
 
     // Add button to open dialog
-    if (this.currentEndpoint().examples.length > this.examplesOnMainPage) {
-      const openExDialogBtn = document.createElement("button");
-      openExDialogBtn.textContent = "See all examples";
-      openExDialogBtn.className = "btn";
-      exampleQueriesEl.appendChild(openExDialogBtn);
+    const openExDialogBtn = document.createElement("button");
+    openExDialogBtn.textContent = "See all examples";
+    openExDialogBtn.className = "btn";
+    exampleQueriesEl.appendChild(openExDialogBtn);
 
-      openExDialogBtn.addEventListener("click", () => {
-        exQueryDialog.showModal();
-        document.body.style.overflow = "hidden";
-        // exQueryDialog.scrollTop = 0;
-      });
-      exDialogCloseBtn.addEventListener("click", () => {
-        exQueryDialog.close();
-      });
-      exQueryDialog.addEventListener("close", () => {
-        document.body.style.overflow = "";
-      });
-    }
+    openExDialogBtn.addEventListener("click", () => {
+      exQueryDialog.showModal();
+      document.body.style.overflow = "hidden";
+      // exQueryDialog.scrollTop = 0;
+    });
+    exDialogCloseBtn.addEventListener("click", () => {
+      exQueryDialog.close();
+    });
+    exQueryDialog.addEventListener("close", () => {
+      document.body.style.overflow = "";
+    });
   }
 
   addPrefixesToQuery(query: string) {
