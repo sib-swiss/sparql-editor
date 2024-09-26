@@ -82,7 +82,7 @@ The editor retrieves metadata about the endpoints by directly querying them, so 
 
 ## 🚀 Use
 
-1. Import from a UNIPROTCDN:
+1. Import from a CDN:
 
    ```html
    <script type="module" src="https://unpkg.com/@sib-swiss/sparql-editor"></script>
@@ -127,7 +127,7 @@ You can also provide other HTML elements to be included under the SPARQL example
 
 ```html
 <sparql-editor
-  endpoint="https://www.bgee.org/sparql/"
+  endpoint="https://www.bgee.org/sparql/,https://sparql.uniprot.org/sparql/"
   examples-repo-add-url="https://github.com/sib-swiss/sparql-examples/new/master/examples/Bgee"
   examples-repository="https://github.com/sib-swiss/sparql-examples"
   examples-namespace="https://sparql.uniprot.org/sparql/.well-known/sparql-examples/"
@@ -184,6 +184,10 @@ npx http-server
 # or
 python -m http.server
 ```
+
+# 🧑‍💻 Contributing
+
+Checkout [CONTRIBUTING.md](https://github.com/sib-swiss/sparql-editor/blob/main/CONTRIBUTING.md) for more details on how to run this in development and make a contribution.
 
 ## 🤝 Credits
 
