@@ -102,6 +102,7 @@ export class SparqlEditor extends HTMLElement {
     container.className = "container";
     container.innerHTML = `
       <div id="sparql-editor">
+        <div id="status-light" title="Loading..." style="display: inline-block; background-color: purple; width: 10px; height: 10px; border-radius: 50%; margin-right: 10px;"></div>
         <button id="sparql-add-prefixes-btn" class="btn" style="margin-bottom: 0.3em;">Add common prefixes</button>
         <button id="sparql-save-example-btn" class="btn" style="margin-bottom: 0.3em;">Save query as example</button>
         <div id="yasgui"></div>
@@ -178,6 +179,32 @@ export class SparqlEditor extends HTMLElement {
     this.yasgui.config.yasqe.value =
       this.addPrefixesToQuery(this.currentEndpoint().examples[0]?.query) || Yasgui.Yasqe.defaults.value;
     Yasgui.Yasr.defaults.prefixes = this.meta[endpoint].prefixes;
+    // Update the statusLight
+    const statusLight = this.shadowRoot?.getElementById("status-light") as HTMLElement;
+    let metaScore = 0;
+    let statusMsg = `In endpoint ${endpoint}\n`;
+    if (Object.keys(this.meta[endpoint].void).length > 0) {
+      metaScore += 1;
+      statusMsg += `✅ Found VoID description for ${this.meta[endpoint].classes.length} classes and ${this.meta[endpoint].predicates.length} properties\n`;
+    } else {
+      statusMsg += `❌ VoID description not found\n`;
+    }
+    if (this.meta[endpoint].examples.length > 0) {
+      metaScore += 1;
+      statusMsg += `✅ Found ${this.meta[endpoint].examples.length} query examples\n`;
+    } else {
+      statusMsg += `❌ Query examples not found\n`;
+    }
+    if (Object.keys(this.meta[endpoint].prefixes).length > 0) {
+      metaScore += 1;
+      statusMsg += `✅ Found ${Object.keys(this.meta[endpoint].prefixes).length} prefixes`;
+    } else {
+      statusMsg += `❌ Prefixes not found`;
+    }
+    if (metaScore === 3) statusLight.style.backgroundColor = "green";
+    else if (metaScore > 0) statusLight.style.backgroundColor = "orange";
+    else statusLight.style.backgroundColor = "red";
+    statusLight.title = statusMsg;
   }
 
   // Return the current endpoint URL
