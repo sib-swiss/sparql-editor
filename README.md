@@ -12,9 +12,9 @@ A standard web component to easily deploy a user-friendly SPARQL query editor fo
 
 The editor retrieves metadata about the endpoints by directly querying them, so all that is needed is to generate and upload some metadata to each endpoints, and it works on top of any triplestore without configuration needed. Reducing the need for complex infrastructure, while making your SPARQL endpoints easier to query for users and machines.
 
-- **Autocomplete possibilities for properties and classes** are automatically pulled from the endpoints based on [VoID description](https://www.w3.org/TR/void/) present in the triplestore (`void:linkPredicate|void:property` and `void:class`). The suggested properties are contextually filtered based on the class of the subject at the cursor's position, and are aware of `SERVICE` clauses, ensuring relevant autocompletion even in federated queries.
+- **Autocomplete possibilities for properties and classes** are automatically pulled from the endpoints based on [VoID description](https://www.w3.org/TR/void/) present in the triplestore (`void:linkPredicate|void:property` and `void:class`). The suggested properties are contextually filtered based on the class of the subject at the cursor's position, and are aware of `SERVICE` clauses, ensuring relevant autocompletion even in federated queries. Checkout the [`void-generator`](https://github.com/JervenBolleman/void-generator) project to automatically generate VoID description for your endpoint.
 
-  Checkout the [`void-generator`](https://github.com/JervenBolleman/void-generator) project to automatically generate VoID description for your endpoint. VoID description is retrieved using this SPARQL query:
+  <details><summary>VoID description is retrieved with a SPARQL query.</summary>
 
   ```SPARQL
   PREFIX void: <http://rdfs.org/ns/void#>
@@ -40,9 +40,11 @@ The editor retrieves metadata about the endpoints by directly querying them, so 
   }
   ```
 
-- **Example SPARQL queries** defined using the SHACL ontology are automatically pulled from the endpoint (queries are defined with `sh:select|sh:ask|sh:construct|sh:describe`, and their human readable description with `rdfs:comment`).
+  </details>
 
-  Checkout the [`sparql-examples`](https://github.com/sib-swiss/sparql-examples) project for more details. The example queries are retrieved with this SPARQL query:
+- **Example SPARQL queries** defined using the SHACL ontology are automatically pulled from the endpoint (queries are defined with `sh:select|sh:ask|sh:construct|sh:describe`, and their human readable description with `rdfs:comment`). Checkout the [`sparql-examples`](https://github.com/sib-swiss/sparql-examples) project for more details.
+
+  <details><summary>The example queries are retrieved with a SPARQL query.</summary>
 
   ```SPARQL
   PREFIX sh: <http://www.w3.org/ns/shacl#>
@@ -55,9 +57,11 @@ The editor retrieves metadata about the endpoints by directly querying them, so 
   } ORDER BY ?sq
   ```
 
+  </details>
+
 - **Prefixes** are automatically pulled from the endpoint using their definition defined with the [SHACL ontology](https://www.w3.org/TR/shacl/) (`sh:prefix`/`sh:namespace`).
 
-  The prefixes/namespaces are retrieved with this query:
+  <details><summary>The prefixes/namespaces are retrieved with a SPARQL query.</summary>
 
   ```SPARQL
   PREFIX sh: <http://www.w3.org/ns/shacl#>
@@ -65,6 +69,8 @@ The editor retrieves metadata about the endpoints by directly querying them, so 
   WHERE { [] sh:namespace ?namespace ; sh:prefix ?prefix }
   ORDER BY ?prefix
   ```
+
+  </details>
 
 👆️ You can **try it** for a few SPARQL endpoints of the SIB, such as UniProt and Bgee, here: **[sib-swiss.github.io/sparql-editor](https://sib-swiss.github.io/sparql-editor)**
 
@@ -76,7 +82,7 @@ The editor retrieves metadata about the endpoints by directly querying them, so 
 
 ## 🚀 Use
 
-1. Import from a CDN:
+1. Import from a UNIPROTCDN:
 
    ```html
    <script type="module" src="https://unpkg.com/@sib-swiss/sparql-editor"></script>
@@ -134,7 +140,7 @@ You can also provide other HTML elements to be included under the SPARQL example
 </sparql-editor>
 ```
 
-## 📝 Basic example
+### 📝 Basic example
 
 No need for a complex project you can integrate SPARQL editor in any HTML page by importing from a CDN!
 
@@ -178,70 +184,6 @@ npx http-server
 # or
 python -m http.server
 ```
-
-## 🛠️ Development
-
-> Requirement: [NodeJS](https://nodejs.org/en) installed.
-
-Clone the repository obviously, and get into the repository root folder.
-
-Install:
-
-```bash
-npm install
-```
-
-Run in development:
-
-```bash
-npm run dev
-```
-
-Auto format code with prettier:
-
-```bash
-npm run fmt
-```
-
-Lint with eslint (we recommend to install the [`ESLint`](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) extension on VSCode):
-
-```bash
-npm run lint
-```
-
-Build for production in the `dist` folder:
-
-```bash
-npm run build
-```
-
-Run the [demo pages](https://sib-swiss.github.io/sparql-editor) locally:
-
-```bash
-npm run demo
-```
-
-Update dependencies to the latest available versions:
-
-```bash
-npm run upgrade
-```
-
-## 🏷️ Release
-
-To create a new release:
-
-- Login with `npm adduser` if not already done
-
-- Upgrade version in `package.json`
-
-- Run release script:
-
-  ```bash
-  npm run release
-  ```
-
-- Create release on GitHub
 
 ## 🤝 Credits
 

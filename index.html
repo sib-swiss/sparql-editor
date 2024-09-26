@@ -16,12 +16,23 @@
 
   <body>
     <div>
-      <!-- UNIPROT -->
+      <!-- MULTI -->
       <sparql-editor
         endpoint="https://sparql.uniprot.org/sparql/,https://www.bgee.org/sparql/,https://sparql.omabrowser.org/sparql/,https://beta.sparql.swisslipids.org/,https://sparql.rhea-db.org/sparql/,https://biosoda.unil.ch/graphdb/repositories/emi-dbgi,https://hamap.expasy.org/sparql/,https://rdf.metanetx.org/sparql/"
         examples-repo-add-url="https://github.com/sib-swiss/sparql-examples/new/master/examples/UniProt"
         add-limit="1000"
       >
+        <h4>Metadata-based SPARQL editor</h4>
+        <p>Metadata used by this editor are automatically retrieved by querying the endpoints:</p>
+        <ul>
+          <li>Context-aware autocomplete for classes and predicates based on the content of the endpoints</li>
+          <li>Example queries</li>
+          <li>Commonly used prefixes</li>
+        </ul>
+        <p>
+          See the <a href="https://github.com/sib-swiss/sparql-editor" target="_blank">repository</a> for more details,
+          or the <a href="check">check page</a> to check if an endpoint contains the necessary metadata.
+        </p>
         <h4>About</h4>
         <p>
           This SPARQL endpoint contains all UniProt data. It is free to access and supports the

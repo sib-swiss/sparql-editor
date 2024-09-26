@@ -102,7 +102,7 @@ export class SparqlEditor extends HTMLElement {
     container.className = "container";
     container.innerHTML = `
       <div id="sparql-editor">
-        <div id="status-light" title="Loading..." style="display: inline-block; background-color: purple; width: 10px; height: 10px; border-radius: 50%; margin-right: 10px;"></div>
+        <div id="status-light" title="Loading..." style="display: inline-block; background-color: purple; width: 10px; height: 10px; border-radius: 50%; margin: 0 0.3em;"></div>
         <button id="sparql-add-prefixes-btn" class="btn" style="margin-bottom: 0.3em;">Add common prefixes</button>
         <button id="sparql-save-example-btn" class="btn" style="margin-bottom: 0.3em;">Save query as example</button>
         <div id="yasgui"></div>
@@ -185,9 +185,9 @@ export class SparqlEditor extends HTMLElement {
     let statusMsg = `In endpoint ${endpoint}\n`;
     if (Object.keys(this.meta[endpoint].void).length > 0) {
       metaScore += 1;
-      statusMsg += `✅ Found VoID description for ${this.meta[endpoint].classes.length} classes and ${this.meta[endpoint].predicates.length} properties\n`;
+      statusMsg += `✅ Found VoID-based autocomplete for ${this.meta[endpoint].classes.length} classes and ${this.meta[endpoint].predicates.length} properties\n`;
     } else {
-      statusMsg += `❌ VoID description not found\n`;
+      statusMsg += `❌ VoID description not found for autocomplete\n`;
     }
     if (this.meta[endpoint].examples.length > 0) {
       metaScore += 1;
@@ -702,6 +702,10 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     this.yasgui?.addTab(true, {
       ...Yasgui.Tab.getDefaults(),
       name: `Query ${index + 1}`,
+      requestConfig: {
+        ...Yasgui.defaults.requestConfig,
+        endpoint: this.endpointUrl(),
+      },
       yasqe: {value: query},
     });
     this.addPrefixesToQueryInEditor();
