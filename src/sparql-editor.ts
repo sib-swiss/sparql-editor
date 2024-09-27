@@ -191,7 +191,7 @@ export class SparqlEditor extends HTMLElement {
     // Update the statusLight
     const statusLight = this.shadowRoot?.getElementById("status-light") as HTMLElement;
     let metaScore = 0;
-    let statusMsg = `In endpoint ${endpoint}\n`;
+    let statusMsg = `📡 Endpoint ${endpoint}\n\n`;
     if (Object.keys(this.meta[endpoint].void).length > 0) {
       metaScore += 1;
       statusMsg += `✅ Found VoID-based autocomplete for ${this.meta[endpoint].classes.length} classes and ${this.meta[endpoint].predicates.length} properties\n`;
@@ -630,24 +630,6 @@ ex:${exampleUri} a sh:SPARQLExecutable${
       //   console.warn("Error generating Mermaid diagram:", error);
       //   console.log(this.addPrefixesToQuery(example.query))
       // }
-
-      // Create a YASQE fancy editor for each example in dialog (super slow)
-      // const exYasqeDiv = document.createElement("div");
-      // exYasqeDiv.id = `exYasqeDiv${index}`;
-      // exQueryDialog.appendChild(exYasqeDiv);
-      // // https://github.com/zazuko/Yasgui/blob/main/packages/yasqe/src/defaults.ts
-      // new Yasqe(exYasqeDiv, {
-      // 	value: example.query,
-      // 	showQueryButton: false,
-      // 	resizeable: false,
-      // 	readOnly: true,
-      // 	queryingDisabled: true,
-      // 	persistent: null,
-      // 	editorHeight: `${example.query.split(/\r\n|\r|\n/).length*2.5}ch`,
-      // 	syntaxErrorCheck: false,
-      // 	createShareableLink: null,
-      // 	consumeShareLink: null,
-      // });
     });
 
     // Add button to open dialog
