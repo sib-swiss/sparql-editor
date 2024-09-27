@@ -99,7 +99,9 @@ export class SparqlEditor extends HTMLElement {
     container.className = "container";
     container.innerHTML = `
       <div id="sparql-editor">
-        <div id="status-light" title="Loading..." style="display: inline-block; background-color: purple; width: 10px; height: 10px; border-radius: 50%; margin: 0 0.3em;"></div>
+        <a id="status-link" href="" target="_blank" title="Loading..." style="display: inline-flex; width: 16px; height: 16px;">
+          <div id="status-light" style="width: 10px; height: 10px; background-color: purple; border-radius: 50%; margin: 0 auto;"></div>
+        </a>
         <button id="sparql-add-prefixes-btn" class="btn" style="margin-bottom: 0.3em;">Add common prefixes</button>
         <button id="sparql-save-example-btn" class="btn" style="margin-bottom: 0.3em;">Save query as example</button>
         <div id="yasgui"></div>
@@ -213,7 +215,9 @@ export class SparqlEditor extends HTMLElement {
     if (metaScore === 3) statusLight.style.backgroundColor = "green";
     else if (metaScore > 0) statusLight.style.backgroundColor = "orange";
     else statusLight.style.backgroundColor = "red";
-    statusLight.title = statusMsg;
+    const statusLink = this.shadowRoot?.getElementById("status-link") as HTMLAnchorElement;
+    statusLink.title = statusMsg;
+    statusLink.href = `https://sib-swiss.github.io/sparql-editor/check?url=${endpoint}`;
   }
 
   async connectedCallback() {

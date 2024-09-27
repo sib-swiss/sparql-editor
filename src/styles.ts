@@ -51,6 +51,15 @@ export const editorCss = `:host a {
     font-family: Arial, sans-serif;
 }
 
+:host #status-link {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    cursor: pointer;
+    padding: 3px;
+}
+
 @keyframes spin {
     to { transform: rotate(360deg); }
 }

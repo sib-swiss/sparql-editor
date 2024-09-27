@@ -26,6 +26,16 @@
     </div>
 
     <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Prefill the input field with the 'url' parameter from the URL if available
+        const queryParams = new URLSearchParams(window.location.search);
+        if (queryParams.get("url")) {
+          const sparqlInput = document.getElementById("sparqlEndpoint");
+          sparqlInput.value = queryParams.get("url");
+          runChecks();
+        }
+      });
+
       document.getElementById("sparqlForm").addEventListener("submit", function (event) {
         event.preventDefault();
         runChecks();
