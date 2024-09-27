@@ -33,15 +33,26 @@ export class SparqlEditor extends HTMLElement {
   yasgui: Yasgui | undefined;
   urlParams: any;
   meta: EndpointsMetadata;
+  endpoints: string[];
   examplesRepo: string | null;
   examplesRepoAddUrl: string | null;
   addLimit: number | null;
   // TODO: make exampleQueries a dict with the query IRI as key, so if the window.location matches a key, it will load the query?
 
-  examplesNamespace(): string {
+  examplesNamespace() {
     return (
       this.getAttribute("examples-namespace") || addSlashAtEnd(this.endpointUrl()) + ".well-known/sparql-examples/"
     );
+  }
+
+  // Return the current endpoint URL
+  endpointUrl() {
+    return this.yasgui?.getTab()?.getEndpoint() || Object.keys(this.meta)[0];
+  }
+
+  // Return the object with the current endpoint metadata
+  currentEndpoint() {
+    return this.meta[this.endpointUrl()];
   }
 
   constructor() {
@@ -50,8 +61,8 @@ export class SparqlEditor extends HTMLElement {
 
     this.meta = this.loadMetaFromLocalStorage();
     // console.log("Loaded metadata from localStorage", this.meta);
-    const endpoints = (this.getAttribute("endpoint") || "").split(",");
-    endpoints.forEach(endpoint => {
+    this.endpoints = (this.getAttribute("endpoint") || "").split(",");
+    this.endpoints.forEach(endpoint => {
       endpoint = endpoint.trim();
       if (!this.meta[endpoint]) {
         this.meta[endpoint] = {
@@ -63,7 +74,7 @@ export class SparqlEditor extends HTMLElement {
         };
       }
     });
-    if (endpoints.length === 0)
+    if (this.endpoints.length === 0)
       throw new Error("No endpoint provided. Please use the 'endpoint' attribute to specify the SPARQL endpoint URL.");
 
     this.addLimit = Number(this.getAttribute("add-limit")) || null;
@@ -79,24 +90,10 @@ export class SparqlEditor extends HTMLElement {
       ${highlightjsCss}
       ${editorCss}
 		`;
-    if (endpoints.length === 1) {
+    if (this.endpoints.length === 1) {
       style.textContent += `.yasgui .controlbar {
   display: none !important;
 }`;
-    } else {
-      Yasgui.defaults.endpointCatalogueOptions = {
-        getData: () => {
-          return Object.keys(this.meta).map(endpoint => ({
-            endpoint: endpoint,
-          }));
-        },
-        keys: [],
-        renderItem: (data, source) => {
-          const contentDiv = document.createElement("div");
-          contentDiv.innerText = data.value.endpoint;
-          source.appendChild(contentDiv);
-        },
-      };
     }
     const container = document.createElement("div");
     container.className = "container";
@@ -128,8 +125,20 @@ export class SparqlEditor extends HTMLElement {
     Yasgui.Yasqe.forkAutocompleter("property", this.voidPropertyCompleter);
     Yasgui.defaults.requestConfig = {
       ...Yasgui.defaults.requestConfig,
-      endpoint: endpoints[0],
+      endpoint: this.endpoints[0],
       method: "GET",
+    };
+    Yasgui.defaults.endpointCatalogueOptions = {
+      ...Yasgui.defaults.endpointCatalogueOptions,
+      getData: () =>
+        this.endpoints.map(endpoint => ({
+          endpoint: endpoint,
+        })),
+      renderItem: (data, source) => {
+        const contentDiv = document.createElement("div");
+        contentDiv.innerText = data.value.endpoint;
+        source.appendChild(contentDiv);
+      },
     };
 
     hljs.registerLanguage("ttl", hljsDefineTurtle);
@@ -207,22 +216,15 @@ export class SparqlEditor extends HTMLElement {
     statusLight.title = statusMsg;
   }
 
-  // Return the current endpoint URL
-  endpointUrl() {
-    return this.yasgui?.getTab()?.getEndpoint() || Object.keys(this.meta)[0];
-  }
-
-  // Return the object with the current endpoint metadata
-  currentEndpoint() {
-    return this.meta[this.endpointUrl()];
-  }
-
   async connectedCallback() {
     // Instantiate YASGUI editor
     const editorEl = this.shadowRoot?.getElementById("yasgui") as HTMLElement;
     this.yasgui = new Yasgui(editorEl, {
+      // Prevents conflicts when deploying multiple editors in the same domain:
+      persistenceId: `yasgui_${window.location.pathname.replace(/\//g, "")}`,
       copyEndpointOnNewTab: true,
     });
+
     await this.loadCurrentEndpoint();
     const spinEl = this.shadowRoot?.getElementById("loading-spinner");
     if (spinEl) spinEl.style.display = "none";
@@ -650,7 +652,7 @@ ex:${exampleUri} a sh:SPARQLExecutable${
 
     // Add button to open dialog
     const openExDialogBtn = document.createElement("button");
-    openExDialogBtn.textContent = "See all examples";
+    openExDialogBtn.textContent = "Show all examples";
     openExDialogBtn.className = "btn";
     exampleQueriesEl.appendChild(openExDialogBtn);
 
