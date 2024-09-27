@@ -7,37 +7,37 @@
 // .yasr .dataTable {
 //   font-size: 0.9em;
 // }
-export const editorCss = `:host a {
+export const editorCss = `#sparql-editor-container a {
   text-decoration: none;
   color: #00709b;
 }
-:host a:hover {
+#sparql-editor-container a:hover {
   filter: brightness(60%);
 }
-:host button {
+#sparql-editor-container button {
   cursor: pointer;
 }
-:host .container {
+#sparql-editor-container .container {
   display: flex;
   flex-direction: row;
 }
-:host #sparql-editor {
+#sparql-editor-container #sparql-editor {
   flex: 0 0 60%;
   margin-right: 1em;
 }
-:host #sparql-examples {
+#sparql-editor-container #sparql-examples {
   flex-grow: 1;
   border-left: 1px solid #ccc;
   padding-left: 1em;
 }
 @media (max-width: 600px) {
-  :host .container {
+  #sparql-editor-container .container {
     flex-direction: column;
   }
-  :host #sparql-editor {
+  #sparql-editor-container #sparql-editor {
     margin-right: 0;
   }
-  :host #sparql-examples {
+  #sparql-editor-container #sparql-examples {
     border-left: none;
     padding-left: 0;
     border-top: 1px solid #ccc;
@@ -45,7 +45,7 @@ export const editorCss = `:host a {
   }
 }
 
-:host {
+#sparql-editor-container {
     --btn-color: #e30613;
     --btn-bg-color: #f8bca5;
     font-family: Arial, sans-serif;
@@ -55,7 +55,7 @@ export const editorCss = `:host a {
     to { transform: rotate(360deg); }
 }
 
-:host button.btn {
+#sparql-editor-container button.btn {
   background-color: var(--btn-bg-color);
   color: var(--btn-color);
   border: none;
@@ -65,11 +65,11 @@ export const editorCss = `:host a {
   cursor: pointer;
   transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
-:host button.btn:hover {
+#sparql-editor-container button.btn:hover {
   filter: brightness(90%);
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2); /* Larger shadow on hover */
 }
-:host button.btn:active {
+#sparql-editor-container button.btn:active {
   filter: brightness(80%);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Reset shadow on click */
 }
@@ -237,7 +237,7 @@ code.hljs {
 
 // https://unpkg.com/@zazuko/yasgui@latest/build/yasgui.min.css
 // NOTE: you'll need to fix \25BE and \25B8 to \\25BE and \\25B8 (▼ and ▲ in CodeMirror)
-// Also replace all :root with :host
+// Also replace all :root with #sparql-editor-container
 export const yasguiCss = `.yasr .yasr_btn {
     background: inherit;
     border: none;
@@ -508,7 +508,7 @@ export const yasguiCss = `.yasr .yasr_btn {
 .yasr .dataTables_wrapper div.dataTables_paginate.paging_simple_numbers a.paginate_button:active {
     box-shadow: none;
 }
-:host {
+#sparql-editor-container {
     --dt-row-selected: 13, 110, 253;
     --dt-row-selected-text: 255, 255, 255;
     --dt-row-selected-link: 9, 10, 11;
@@ -517,7 +517,7 @@ export const yasguiCss = `.yasr .yasr_btn {
     --dt-column-ordering: 0, 0, 0;
     --dt-html-background: #fff;
 }
-:host.dark {
+#sparql-editor-container.dark {
     --dt-html-background: #212529;
 }
 table.dataTable td.dt-control {
@@ -537,11 +537,11 @@ table.dataTable tr.dt-hasChild td.dt-control:before {
     border-style: solid;
     border-width: 10px 5px 0;
 }
-:host[data-bs-theme="dark"] table.dataTable td.dt-control:before,
+#sparql-editor-container[data-bs-theme="dark"] table.dataTable td.dt-control:before,
 html.dark table.dataTable td.dt-control:before {
     border-left-color: hsla(0, 0%, 100%, 0.5);
 }
-:host[data-bs-theme="dark"] table.dataTable tr.dt-hasChild td.dt-control:before,
+#sparql-editor-container[data-bs-theme="dark"] table.dataTable tr.dt-hasChild td.dt-control:before,
 html.dark table.dataTable tr.dt-hasChild td.dt-control:before {
     border-left-color: transparent;
     border-top-color: hsla(0, 0%, 100%, 0.5);
@@ -666,14 +666,14 @@ div.dt-scroll-body > table.dataTable > thead > tr > td,
 div.dt-scroll-body > table.dataTable > thead > tr > th {
     overflow: hidden;
 }
-:host.dark table.dataTable thead > tr > td.dt-orderable-asc:hover,
-:host.dark table.dataTable thead > tr > td.dt-orderable-desc:hover,
-:host.dark table.dataTable thead > tr > th.dt-orderable-asc:hover,
-:host.dark table.dataTable thead > tr > th.dt-orderable-desc:hover,
-:host[data-bs-theme="dark"] table.dataTable thead > tr > td.dt-orderable-asc:hover,
-:host[data-bs-theme="dark"] table.dataTable thead > tr > td.dt-orderable-desc:hover,
-:host[data-bs-theme="dark"] table.dataTable thead > tr > th.dt-orderable-asc:hover,
-:host[data-bs-theme="dark"] table.dataTable thead > tr > th.dt-orderable-desc:hover {
+#sparql-editor-container.dark table.dataTable thead > tr > td.dt-orderable-asc:hover,
+#sparql-editor-container.dark table.dataTable thead > tr > td.dt-orderable-desc:hover,
+#sparql-editor-container.dark table.dataTable thead > tr > th.dt-orderable-asc:hover,
+#sparql-editor-container.dark table.dataTable thead > tr > th.dt-orderable-desc:hover,
+#sparql-editor-container[data-bs-theme="dark"] table.dataTable thead > tr > td.dt-orderable-asc:hover,
+#sparql-editor-container[data-bs-theme="dark"] table.dataTable thead > tr > td.dt-orderable-desc:hover,
+#sparql-editor-container[data-bs-theme="dark"] table.dataTable thead > tr > th.dt-orderable-asc:hover,
+#sparql-editor-container[data-bs-theme="dark"] table.dataTable thead > tr > th.dt-orderable-desc:hover {
     outline: 2px solid hsla(0, 0%, 100%, 0.05);
 }
 div.dt-processing {
