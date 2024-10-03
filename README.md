@@ -12,11 +12,13 @@ A standard web component to easily deploy a user-friendly [SPARQL](https://www.w
 
 The editor retrieves metadata about the endpoints by directly querying them, so all that is needed is to generate and upload some metadata to each endpoints, and it works on top of any triplestore without configuration needed. Reducing the need for complex infrastructure, while making your SPARQL endpoints easier to query for users and machines.
 
-👆️ **Try it** with [SIB](https://www.sib.swiss/) endpoints, such as UniProt and Bgee, at **[sib-swiss.github.io/sparql-editor](https://sib-swiss.github.io/sparql-editor)**
+> [!TIP]
+>
+> 👆️ **Try it** with [SIB](https://www.sib.swiss/) endpoints, such as UniProt and Bgee, at **[sib-swiss.github.io/sparql-editor](https://sib-swiss.github.io/sparql-editor)**
 
-- **✨ Autocomplete possibilities for properties and classes** are automatically pulled from the endpoints based on the [VoID description](https://www.w3.org/TR/void/) present in the triplestore. The suggested properties are contextually filtered based on the class of the subject at the cursor's position, and are aware of `SERVICE` clauses, ensuring relevant autocompletion even in federated queries 😎. Checkout the [`void-generator`](https://github.com/JervenBolleman/void-generator) project to automatically generate VoID description for your endpoint.
+- **✨ Autocomplete possibilities for properties and classes** are automatically pulled from the endpoints based on the [VoID description](https://www.w3.org/TR/void/) present in the triplestore. The suggested properties are contextually filtered based on the class of the subject at the cursor's position, and are aware of `SERVICE` clauses, ensuring relevant autocompletion even in federated queries. Checkout the [`void-generator`](https://github.com/JervenBolleman/void-generator) project to automatically generate VoID description for your endpoint.
 
-  <details><summary>VoID description is retrieved with a SPARQL query.</summary>
+  <details><summary>Click here to see the SPARQL query used to retrieve the VoID description.</summary>
 
   ```SPARQL
   PREFIX void: <http://rdfs.org/ns/void#>
@@ -44,9 +46,9 @@ The editor retrieves metadata about the endpoints by directly querying them, so 
 
   </details>
 
-- **📜 Example SPARQL queries** defined using the SHACL ontology are automatically pulled from the endpoint (queries are defined with `sh:select|sh:ask|sh:construct|sh:describe`, and their human readable description with `rdfs:comment`). Checkout the [`sparql-examples`](https://github.com/sib-swiss/sparql-examples) project for more details.
+- **📜 Example SPARQL queries** defined using the [SHACL ontology](https://www.w3.org/TR/shacl/) are automatically pulled from the endpoint. Checkout the [`sparql-examples`](https://github.com/sib-swiss/sparql-examples) project for more details.
 
-  <details><summary>The example queries are retrieved with a SPARQL query.</summary>
+  <details><summary>Click here to see the SPARQL query used to retrieve the example queries.</summary>
 
   ```SPARQL
   PREFIX sh: <http://www.w3.org/ns/shacl#>
@@ -61,9 +63,9 @@ The editor retrieves metadata about the endpoints by directly querying them, so 
 
   </details>
 
-- **🏷️ Prefixes** are automatically pulled from the endpoint using their definition defined with the [SHACL ontology](https://www.w3.org/TR/shacl/) (`sh:prefix`/`sh:namespace`).
+- **🏷️ Prefixes** are automatically pulled from the endpoint using their definition defined with the SHACL ontology (`sh:prefix`/`sh:namespace`).
 
-  <details><summary>The prefixes/namespaces are retrieved with a SPARQL query.</summary>
+  <details><summary>Click here to see the SPARQL query used to retrieve the prefixes/namespaces.</summary>
 
   ```SPARQL
   PREFIX sh: <http://www.w3.org/ns/shacl#>
