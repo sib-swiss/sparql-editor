@@ -13,17 +13,21 @@ cd sparql-editor
 
 > Requirement: [NodeJS](https://nodejs.org/en) installed.
 
+Install dependencies:
+
 ```bash
 npm i
 ```
 
-Update dependencies to the latest available versions:
+Upgrade dependencies to the latest available versions:
 
 ```bash
 npm run upgrade
 ```
 
 ## 🛠️ Run in development
+
+Run the `index.html` page in development with auto reload when change to the code:
 
 ```bash
 npm run dev
@@ -35,7 +39,19 @@ Run the [demo pages](https://sib-swiss.github.io/sparql-editor) locally:
 npm run demo
 ```
 
+## 🧪 Run tests
+
+Basic tests have been defined using `vitest`
+
+```bash
+npm test
+```
+
 ## 🧹 Format and lint
+
+> [!TIP]
+>
+> This will be done automatically when you commit through a pre-commit hook.
 
 Auto format code with prettier:
 

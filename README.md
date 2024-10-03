@@ -8,11 +8,13 @@
 
 </div>
 
-A standard web component to easily deploy a user-friendly SPARQL query editor for one or more endpoints. Built on the popular [YASGUI editor](https://github.com/zazuko/Yasgui), it provides context-aware autocomplete for classes and predicates based on the content of the endpoints.
+A standard web component to easily deploy a user-friendly [SPARQL](https://www.w3.org/TR/sparql12-query/) query editor for one or more endpoints. Built on the popular [YASGUI editor](https://github.com/zazuko/Yasgui), it provides context-aware autocomplete for classes and predicates based on the content of the endpoints.
 
 The editor retrieves metadata about the endpoints by directly querying them, so all that is needed is to generate and upload some metadata to each endpoints, and it works on top of any triplestore without configuration needed. Reducing the need for complex infrastructure, while making your SPARQL endpoints easier to query for users and machines.
 
-- **Autocomplete possibilities for properties and classes** are automatically pulled from the endpoints based on [VoID description](https://www.w3.org/TR/void/) present in the triplestore (`void:linkPredicate|void:property` and `void:class`). The suggested properties are contextually filtered based on the class of the subject at the cursor's position, and are aware of `SERVICE` clauses, ensuring relevant autocompletion even in federated queries. Checkout the [`void-generator`](https://github.com/JervenBolleman/void-generator) project to automatically generate VoID description for your endpoint.
+👆️ **Try it** with [SIB](https://www.sib.swiss/) endpoints, such as UniProt and Bgee, at **[sib-swiss.github.io/sparql-editor](https://sib-swiss.github.io/sparql-editor)**
+
+- **✨ Autocomplete possibilities for properties and classes** are automatically pulled from the endpoints based on the [VoID description](https://www.w3.org/TR/void/) present in the triplestore. The suggested properties are contextually filtered based on the class of the subject at the cursor's position, and are aware of `SERVICE` clauses, ensuring relevant autocompletion even in federated queries 😎. Checkout the [`void-generator`](https://github.com/JervenBolleman/void-generator) project to automatically generate VoID description for your endpoint.
 
   <details><summary>VoID description is retrieved with a SPARQL query.</summary>
 
@@ -42,7 +44,7 @@ The editor retrieves metadata about the endpoints by directly querying them, so 
 
   </details>
 
-- **Example SPARQL queries** defined using the SHACL ontology are automatically pulled from the endpoint (queries are defined with `sh:select|sh:ask|sh:construct|sh:describe`, and their human readable description with `rdfs:comment`). Checkout the [`sparql-examples`](https://github.com/sib-swiss/sparql-examples) project for more details.
+- **📜 Example SPARQL queries** defined using the SHACL ontology are automatically pulled from the endpoint (queries are defined with `sh:select|sh:ask|sh:construct|sh:describe`, and their human readable description with `rdfs:comment`). Checkout the [`sparql-examples`](https://github.com/sib-swiss/sparql-examples) project for more details.
 
   <details><summary>The example queries are retrieved with a SPARQL query.</summary>
 
@@ -59,7 +61,7 @@ The editor retrieves metadata about the endpoints by directly querying them, so 
 
   </details>
 
-- **Prefixes** are automatically pulled from the endpoint using their definition defined with the [SHACL ontology](https://www.w3.org/TR/shacl/) (`sh:prefix`/`sh:namespace`).
+- **🏷️ Prefixes** are automatically pulled from the endpoint using their definition defined with the [SHACL ontology](https://www.w3.org/TR/shacl/) (`sh:prefix`/`sh:namespace`).
 
   <details><summary>The prefixes/namespaces are retrieved with a SPARQL query.</summary>
 
@@ -71,8 +73,6 @@ The editor retrieves metadata about the endpoints by directly querying them, so 
   ```
 
   </details>
-
-👆️ You can **try it** for a few SPARQL endpoints of the SIB, such as UniProt and Bgee, here: **[sib-swiss.github.io/sparql-editor](https://sib-swiss.github.io/sparql-editor)**
 
 ![Screenshot gene](demo/screenshot_gene.png)
 
@@ -185,7 +185,7 @@ npx http-server
 python -m http.server
 ```
 
-# 🧑‍💻 Contributing
+## 🧑‍💻 Contributing
 
 Checkout [CONTRIBUTING.md](https://github.com/sib-swiss/sparql-editor/blob/main/CONTRIBUTING.md) for more details on how to run this in development and make a contribution.
 

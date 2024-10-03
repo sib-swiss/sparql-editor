@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import {defineConfig} from "vite";
 import typescript from "@rollup/plugin-typescript";
 import terser from "@rollup/plugin-terser";
