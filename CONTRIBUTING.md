@@ -75,18 +75,13 @@ npm run build
 
 ## 🏷️ Release
 
-To create a new release, you will need to login on your machine once with `npm adduser` if not already done, then:
+To create a new release, you will need to login on your machine once with `npm adduser` if not already done.
 
-- Upgrade version in `package.json`:
+Running the following script will upgrade version in `package.json`, generate changelog, create a tag, and trigger publish:
 
-  ```bash
-  npm version patch | minor | major
-  ```
+```bash
+npm version patch
+# Or minor / major
+```
 
-- Run release script:
-
-  ```bash
-  npm run release
-  ```
-
-> You will need to go through NPM 2FA, then a tag will be automatically created and pushed.
+> You will need to go through NPM 2FA to publish.

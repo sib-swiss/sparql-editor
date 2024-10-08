@@ -23,12 +23,7 @@
     "test": "npm run lint && vitest run",
     "upgrade": "npx npm-check-updates -u && npm install",
     "prepare": "husky",
-    "release": "version=v$(npm pkg get version | tr -d \\\") && echo $version && npm run lint && npm run build && npm publish && npm run changelog && git tag -a $version -m \"$version\" && git push origin $version",
-    "autorelease": "echo $version && sed -i \"s/^\\\"version\\\": \\\"[0-9]*\\.[0-9]*\\.[0-9]*\\\"\\$/\\\"version\\\": \\\"$version\\\"/\" \"package.json\"",
-    "version": "auto-changelog -p && git add CHANGELOG.md"
-  },
-  "scripts-info": {
-    "version": "changelog"
+    "version": "npm run lint && npm run build && auto-changelog -p && git add CHANGELOG.md && git push origin v$(npm pkg get version | tr -d \\\") && npm publish"
   },
   "dependencies": {
     "@zazuko/yasgui": "^4.3.3",
