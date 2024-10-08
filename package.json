@@ -23,7 +23,8 @@
     "test": "npm run lint && vitest run",
     "upgrade": "npx npm-check-updates -u && npm install",
     "prepare": "husky",
-    "version": "npm run lint && npm run build && auto-changelog -p && git add CHANGELOG.md && git push origin v$(npm pkg get version | tr -d \\\") && npm publish"
+    "version": "npm run lint && npm run build && auto-changelog -p && git add CHANGELOG.md && npm publish",
+    "postpublish": "git push origin v$(npm pkg get version | tr -d \\\")"
   },
   "dependencies": {
     "@zazuko/yasgui": "^4.3.3",
