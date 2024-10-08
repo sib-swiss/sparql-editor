@@ -123,6 +123,38 @@ export async function getVoidDescription(endpoint: string): Promise<[VoidDict, s
   return [voidDescription, Array.from(clsSet).sort(), Array.from(predSet).sort()];
 }
 
+const virtuosoNamespace = "http://www.openlinksw.com/schemas/virtrdf#";
+// If no VoID description found we just get the list of classes
+export async function getClassesFallback(endpoint: string) {
+  try {
+    const queryResults = await queryEndpoint(
+      `SELECT DISTINCT ?cls
+      WHERE { [] a ?cls . }`,
+      endpoint,
+    );
+    return queryResults.filter(b => !b.cls.value.startsWith(virtuosoNamespace)).map(b => b.cls.value);
+  } catch (error) {
+    console.warn(`Error retrieving classes from ${endpoint} for autocomplete:`, error);
+  }
+  return [];
+}
+
+// If no VoID description found we just get the list of predicates
+export async function getPredicatesFallback(endpoint: string) {
+  try {
+    const queryResults = await queryEndpoint(
+      `SELECT DISTINCT ?pred
+      WHERE { [] ?pred [] . }`,
+      endpoint,
+    );
+    // Filter out the Virtuoso-specific predicates
+    return queryResults.filter(b => !b.pred.value.startsWith(virtuosoNamespace)).map(b => b.pred.value);
+  } catch (error) {
+    console.warn(`Error retrieving predicates from ${endpoint} for autocomplete:`, error);
+  }
+  return ["http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "http://www.w3.org/2000/01/rdf-schema#label"];
+}
+
 // Retrieve example queries from the SPARQL endpoint
 export async function getExampleQueries(endpoint: string): Promise<ExampleQuery[]> {
   const exampleQueries: ExampleQuery[] = [];
@@ -240,19 +272,20 @@ export function getServiceUriForCursorPosition(query: string, lineNumber: number
 //   };
 // };
 
-// // Initialize prefixes with some defaults?
-// this.prefixes = new Map([
-//   ["rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#"],
-//   ["rdfs", "http://www.w3.org/2000/01/rdf-schema#"],
-//   ["xsd", "http://www.w3.org/2001/XMLSchema#"],
-//   ["owl", "http://www.w3.org/2002/07/owl#"],
-//   ["skos", "http://www.w3.org/2004/02/skos/core#"],
-//   ["up", "http://purl.uniprot.org/core/"],
-//   ["keywords", "http://purl.uniprot.org/keywords/"],
-//   ["uniprotkb", "http://purl.uniprot.org/uniprot/"],
-//   ["taxon", "http://purl.uniprot.org/taxonomy/"],
-//   ["ec", "http://purl.uniprot.org/enzyme/"],
-//   ["bibo", "http://purl.org/ontology/bibo/"],
-//   ["dc", "http://purl.org/dc/terms/"],
-//   ["faldo", "http://biohackathon.org/resource/faldo#"],
-// ]);
+// Initialize prefixes with some defaults?
+export const defaultPrefixes = {
+  rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+  rdfs: "http://www.w3.org/2000/01/rdf-schema#",
+  xsd: "http://www.w3.org/2001/XMLSchema#",
+  owl: "http://www.w3.org/2002/07/owl#",
+  skos: "http://www.w3.org/2004/02/skos/core#",
+  foaf: "http://xmlns.com/foaf/0.1/",
+  up: "http://purl.uniprot.org/core/",
+  keywords: "http://purl.uniprot.org/keywords/",
+  uniprotkb: "http://purl.uniprot.org/uniprot/",
+  taxon: "http://purl.uniprot.org/taxonomy/",
+  ec: "http://purl.uniprot.org/enzyme/",
+  bibo: "http://purl.org/ontology/bibo/",
+  dc: "http://purl.org/dc/terms/",
+  faldo: "http://biohackathon.org/resource/faldo#",
+};

@@ -18,6 +18,9 @@ import {
   EndpointsMetadata,
   getServiceUriForCursorPosition,
   compressUri,
+  defaultPrefixes,
+  getClassesFallback,
+  getPredicatesFallback,
 } from "./utils";
 
 type Autocompleter = {name: string} & Partial<CompleterConfig>;
@@ -166,6 +169,16 @@ export class SparqlEditor extends HTMLElement {
         [this.meta[endpoint].void, this.meta[endpoint].classes, this.meta[endpoint].predicates],
       ] = await Promise.all([getExampleQueries(endpoint), getPrefixes(endpoint), getVoidDescription(endpoint)]);
       this.meta[endpoint].retrievedAt = new Date().toISOString();
+
+      if (Object.keys(this.meta[endpoint].prefixes).length === 0) {
+        this.meta[endpoint].prefixes = defaultPrefixes;
+      }
+      if (Object.keys(this.meta[endpoint].void).length === 0) {
+        [this.meta[endpoint].classes, this.meta[endpoint].predicates] = await Promise.all([
+          getClassesFallback(endpoint),
+          getPredicatesFallback(endpoint),
+        ]);
+      }
       this.saveMetaToLocalStorage();
     }
   }
@@ -188,6 +201,12 @@ export class SparqlEditor extends HTMLElement {
       statusMsg += `✅ Found VoID-based autocomplete for ${this.meta[endpoint].classes.length} classes and ${this.meta[endpoint].predicates.length} properties\n`;
     } else {
       statusMsg += `❌ VoID description not found for autocomplete\n`;
+      if (this.meta[endpoint].classes.length > 0) {
+        statusMsg += `  Found ${this.meta[endpoint].classes.length} classes\n`;
+      }
+      if (this.meta[endpoint].predicates.length > 2) {
+        statusMsg += `  Found ${this.meta[endpoint].predicates.length} predicates\n`;
+      }
     }
     if (this.meta[endpoint].examples.length > 0) {
       metaScore += 1;
@@ -195,7 +214,10 @@ export class SparqlEditor extends HTMLElement {
     } else {
       statusMsg += `❌ Query examples not found\n`;
     }
-    if (Object.keys(this.meta[endpoint].prefixes).length > 0) {
+
+    if (Object.keys(this.meta[endpoint].prefixes).length === Object.keys(defaultPrefixes).length) {
+      statusMsg += `⚠️ Using ${Object.keys(this.meta[endpoint].prefixes).length} default prefixes`;
+    } else if (Object.keys(this.meta[endpoint].prefixes).length > 0) {
       metaScore += 1;
       statusMsg += `✅ Found ${Object.keys(this.meta[endpoint].prefixes).length} prefixes`;
     } else {
