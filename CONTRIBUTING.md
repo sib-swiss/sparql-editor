@@ -41,7 +41,7 @@ npm run demo
 
 ## 🧪 Run tests
 
-Basic tests have been defined using `vitest`
+Run linting and basic tests with `vitest`:
 
 ```bash
 npm test
@@ -77,7 +77,11 @@ npm run build
 
 To create a new release, you will need to login on your machine once with `npm adduser` if not already done, then:
 
-- Upgrade version in `package.json`
+- Upgrade version in `package.json`:
+
+  ```bash
+  npm version patch | minor | major
+  ```
 
 - Run release script:
 

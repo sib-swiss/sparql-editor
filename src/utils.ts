@@ -6,7 +6,7 @@ export type EndpointsMetadata = {
     predicates: string[];
     prefixes: {[key: string]: string};
     examples: ExampleQuery[];
-    retrievedAt?: Date;
+    retrievedAt?: string;
   };
 };
 
@@ -123,8 +123,8 @@ export async function getVoidDescription(endpoint: string): Promise<[VoidDict, s
   return [voidDescription, Array.from(clsSet).sort(), Array.from(predSet).sort()];
 }
 
+// Retrieve example queries from the SPARQL endpoint
 export async function getExampleQueries(endpoint: string): Promise<ExampleQuery[]> {
-  // Retrieve example queries from the SPARQL endpoint
   const exampleQueries: ExampleQuery[] = [];
   try {
     const queryResults = await queryEndpoint(
@@ -148,8 +148,8 @@ export async function getExampleQueries(endpoint: string): Promise<ExampleQuery[
   return exampleQueries;
 }
 
+// Extract all subjects and their types from a SPARQL query in the process of being written
 export function extractAllSubjectsAndTypes(query: string): Map<string, Set<string>> {
-  // Extract all subjects and their types from a SPARQL query in the process of being written
   const subjectTypeMap = new Map<string, Set<string>>();
   // Remove comments and string literals, and prefixes lines to avoid false matches
   const cleanQuery = query
@@ -174,8 +174,8 @@ export function extractAllSubjectsAndTypes(query: string): Map<string, Set<strin
   return subjectTypeMap;
 }
 
+// Extract the subject relevant to the cursor position from a SPARQL query
 export function getSubjectForCursorPosition(query: string, lineNumber: number, charNumber: number): string | null {
-  // Extract the subject relevant to the cursor position from a SPARQL query
   const lines = query.split("\n");
   // Extract the part of the line up to the cursor position
   const partOfLine = lines[lineNumber].slice(0, charNumber);

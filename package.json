@@ -25,32 +25,35 @@
     "prepare": "husky",
     "release": "version=v$(npm pkg get version | tr -d \\\") && echo $version && npm run lint && npm run build && npm publish && npm run changelog && git tag -a $version -m \"$version\" && git push origin $version",
     "autorelease": "echo $version && sed -i \"s/^\\\"version\\\": \\\"[0-9]*\\.[0-9]*\\.[0-9]*\\\"\\$/\\\"version\\\": \\\"$version\\\"/\" \"package.json\"",
-    "changelog": "auto-changelog -p && git add CHANGELOG.md && git commit -m \"chore: update changelog\" && git push"
+    "version": "auto-changelog -p && git add CHANGELOG.md"
+  },
+  "scripts-info": {
+    "version": "changelog"
   },
   "dependencies": {
     "@zazuko/yasgui": "^4.3.3",
     "highlight.js": "^11.10.0",
-    "mermaid": "^11.2.1",
+    "mermaid": "^11.3.0",
     "sparqljs": "^3.7.3"
   },
   "devDependencies": {
-    "@eslint/js": "^9.11.1",
+    "@eslint/js": "^9.12.0",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^12.1.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.5.0",
     "@types/eslint__js": "^8.42.3",
-    "@types/node": "^22.7.4",
+    "@types/node": "^22.7.5",
     "@types/sparqljs": "^3.1.11",
     "auto-changelog": "^2.5.0",
-    "eslint": "^9.11.1",
+    "eslint": "^9.12.0",
     "husky": "^9.1.6",
     "jsdom": "^25.0.1",
     "lint-staged": "^15.2.10",
     "prettier": "^3.3.3",
     "tslib": "^2.7.0",
     "typescript": "^5.6.2",
-    "typescript-eslint": "^8.8.0",
+    "typescript-eslint": "^8.8.1",
     "vite": "^5.4.8",
     "vitest": "^2.1.2"
   },

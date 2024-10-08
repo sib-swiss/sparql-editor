@@ -1,4 +1,5 @@
 import Yasgui from "@zazuko/yasgui";
+import {CompleterConfig, AutocompletionToken} from "@zazuko/yasqe/build/ts/src/autocompleters";
 import hljs from "highlight.js/lib/core";
 
 import {hljsDefineTurtle, hljsDefineSparql} from "./highlight-sparql";
@@ -19,8 +20,9 @@ import {
   compressUri,
 } from "./utils";
 
-const addSlashAtEnd = (str: any) => (str.endsWith("/") ? str : `${str}/`);
-const capitalize = (str: any) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+type Autocompleter = {name: string} & Partial<CompleterConfig>;
+const addSlashAtEnd = (str: string) => (str.endsWith("/") ? str : `${str}/`);
+const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 
 /**
  * Custom element to create a SPARQL editor for a given endpoint using YASGUI
@@ -31,9 +33,8 @@ const capitalize = (str: any) => str.charAt(0).toUpperCase() + str.slice(1).toLo
 export class SparqlEditor extends HTMLElement {
   examplesOnMainPage: number;
   yasgui: Yasgui | undefined;
-  urlParams: any;
-  meta: EndpointsMetadata;
   endpoints: string[];
+  meta: EndpointsMetadata;
   examplesRepo: string | null;
   examplesRepoAddUrl: string | null;
   addLimit: number | null;
@@ -47,7 +48,7 @@ export class SparqlEditor extends HTMLElement {
 
   // Return the current endpoint URL
   endpointUrl() {
-    return this.yasgui?.getTab()?.getEndpoint() || Object.keys(this.meta)[0];
+    return this.yasgui?.getTab()?.getEndpoint() || this.endpoints[0];
   }
 
   // Return the object with the current endpoint metadata
@@ -61,19 +62,7 @@ export class SparqlEditor extends HTMLElement {
 
     this.meta = this.loadMetaFromLocalStorage();
     // console.log("Loaded metadata from localStorage", this.meta);
-    this.endpoints = (this.getAttribute("endpoint") || "").split(",");
-    this.endpoints.forEach(endpoint => {
-      endpoint = endpoint.trim();
-      if (!this.meta[endpoint]) {
-        this.meta[endpoint] = {
-          void: {},
-          classes: [],
-          predicates: [],
-          prefixes: {},
-          examples: [],
-        };
-      }
-    });
+    this.endpoints = (this.getAttribute("endpoint") || "").split(",").map(e => e.trim());
     if (this.endpoints.length === 0)
       throw new Error("No endpoint provided. Please use the 'endpoint' attribute to specify the SPARQL endpoint URL.");
 
@@ -104,6 +93,7 @@ export class SparqlEditor extends HTMLElement {
         </a>
         <button id="sparql-add-prefixes-btn" class="btn" style="margin-bottom: 0.3em;">Add common prefixes</button>
         <button id="sparql-save-example-btn" class="btn" style="margin-bottom: 0.3em;">Save query as example</button>
+        <button id="sparql-clear-cache-btn" class="btn" style="margin-bottom: 0.3em;">Clear cache</button>
         <div id="yasgui"></div>
         <div id="loading-spinner" style="display: flex; justify-content: center; align-items: center; height: 100px; flex-direction: column;">
           <div class="spinner" style="border: 4px solid rgba(0,0,0,0.1); border-left-color: #000; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite;"></div>
@@ -147,12 +137,11 @@ export class SparqlEditor extends HTMLElement {
     hljs.registerLanguage("sparql", hljsDefineSparql);
   }
 
+  // Load and save metadata to localStorage
   loadMetaFromLocalStorage(): EndpointsMetadata {
     const metaString = localStorage.getItem("sparql-editor-metadata");
     return metaString ? JSON.parse(metaString) : {};
   }
-
-  // Function to save metadata to localStorage
   saveMetaToLocalStorage() {
     localStorage.setItem("sparql-editor-metadata", JSON.stringify(this.meta));
   }
@@ -170,19 +159,19 @@ export class SparqlEditor extends HTMLElement {
       };
     }
     if (!this.meta[endpoint].retrievedAt) {
-      // console.log(`Getting metadata for ${endpoint}`);
+      // Run the 3 async queries in parallel
       [
         this.meta[endpoint].examples,
         this.meta[endpoint].prefixes,
         [this.meta[endpoint].void, this.meta[endpoint].classes, this.meta[endpoint].predicates],
       ] = await Promise.all([getExampleQueries(endpoint), getPrefixes(endpoint), getVoidDescription(endpoint)]);
-      this.meta[endpoint].retrievedAt = new Date();
+      this.meta[endpoint].retrievedAt = new Date().toISOString();
       this.saveMetaToLocalStorage();
     }
   }
 
   // Load current endpoint in the YASGUI input box
-  async loadCurrentEndpoint(endpoint: string | undefined = this.endpointUrl()) {
+  async loadCurrentEndpoint(endpoint: string = this.endpointUrl()) {
     // console.log("Switching endpoint", endpoint);
     await this.getMetadata(endpoint);
     await this.showExamples();
@@ -238,6 +227,14 @@ export class SparqlEditor extends HTMLElement {
     });
     this.yasgui?.on("endpointHistoryChange", () => {
       setTimeout(() => this.loadCurrentEndpoint());
+    });
+
+    // Button to clear and update cache of SPARQL endpoints metadata
+    const clearCacheBtnEl = this.shadowRoot?.getElementById("sparql-clear-cache-btn");
+    clearCacheBtnEl?.addEventListener("click", () => {
+      localStorage.removeItem("sparql-editor-metadata");
+      this.meta = {};
+      this.loadCurrentEndpoint();
     });
 
     // Button to add all prefixes to the query
@@ -341,53 +338,48 @@ export class SparqlEditor extends HTMLElement {
       this.showSaveExampleDialog();
     });
 
-    // Parse query params from URL and auto run query if provided in URL
-    // NOTE: Yasqe already automatically load query param in the editor and run the query
+    // NOTE: Yasqe already automatically loads search params from the URL in the editor and run the query
     // But it does not trigger the .on("query") event, so it does not add limit
-    this.urlParams = {};
+    // http://localhost:3000/?endpoint=https://sparql.uniprot.org/sparql/&query=select%20*%20where%20{?s%20?p%20?o%20.}
     if (window.location.search) {
-      const regex = /[?&]([^=&]+)=([^&]*)/g;
-      let match;
-      while ((match = regex.exec(window.location.search)) !== null) {
-        const key = decodeURIComponent(match[1]);
-        const value = decodeURIComponent(match[2]);
-        this.urlParams[key] = value;
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.get("query")) {
+        this.addPrefixesToQueryInEditor();
+        this.yasgui.getTab()?.getYasqe().query();
       }
-    }
-    if (this.urlParams["query"]) {
-      this.addPrefixesToQueryInEditor();
-      this.yasgui.getTab()?.getYasqe().query();
     }
   }
 
   // Original autocompleters: https://github.com/zazuko/Yasgui/blob/main/packages/yasqe/src/autocompleters/classes.ts#L8
   // Fork examples: https://github.com/zazuko/Yasgui/blob/main/webpack/pages/yasqe.html#L61
-  prefixesCompleter = {
+  prefixesCompleter: Autocompleter = {
     name: "shaclPrefixes",
     persistenceId: null,
     bulk: false,
-    get: (_yasqe: any, token: any) => {
-      const prefixToAutocomplete = token.autocompletionString.split(":")[0];
-      if (this.currentEndpoint().prefixes[prefixToAutocomplete]) {
+    get: (_yasqe, token) => {
+      const prefixToAutocomplete = token?.autocompletionString?.split(":")[0];
+      if (prefixToAutocomplete && this.currentEndpoint().prefixes[prefixToAutocomplete]) {
         return [`${prefixToAutocomplete}: <${this.currentEndpoint().prefixes[prefixToAutocomplete]}>`];
       }
       return [];
     },
   };
-  voidClassCompleter = {
+  voidClassCompleter: Autocompleter = {
     name: "voidClass",
     bulk: false,
-    get: (_yasqe: any, token: any) => {
-      return this.currentEndpoint().classes.filter(iri => iri.indexOf(token.autocompletionString) === 0);
+    get: (_yasqe, token) => {
+      if (token?.autocompletionString !== undefined)
+        return this.currentEndpoint().classes.filter(iri => iri.indexOf(token.autocompletionString!) === 0);
+      return this.currentEndpoint().classes;
     },
-    postProcessSuggestion: (yasqe: any, token: any, suggestedString: string) => {
+    postProcessSuggestion: (_yasqe, token, suggestedString) => {
       return this.postProcessSuggestion(token, suggestedString);
     },
   };
-  voidPropertyCompleter = {
+  voidPropertyCompleter: Autocompleter = {
     name: "voidProperty",
     bulk: false,
-    get: async (yasqe: any, token: any) => {
+    get: async (yasqe, token) => {
       const cursor = yasqe.getCursor();
       const subj = getSubjectForCursorPosition(yasqe.getValue(), cursor.line, cursor.ch);
       const subjTypes = extractAllSubjectsAndTypes(yasqe.getValue());
@@ -402,13 +394,15 @@ export class SparqlEditor extends HTMLElement {
         if (types) {
           const suggestPreds = new Set<string>();
           try {
-            types.forEach(typeCurie => {
-              Object.keys(this.meta[cursorEndpoint].void[this.curieToUri(typeCurie)])
-                .filter(prop => prop.indexOf(token.autocompletionString) === 0)
-                .forEach(prop => {
-                  suggestPreds.add(prop);
-                });
-            });
+            if (token?.autocompletionString !== undefined) {
+              types.forEach(typeCurie => {
+                Object.keys(this.meta[cursorEndpoint].void[this.curieToUri(typeCurie)])
+                  .filter(prop => prop.indexOf(token.autocompletionString!) === 0)
+                  .forEach(prop => {
+                    suggestPreds.add(prop);
+                  });
+              });
+            }
           } catch (error) {
             console.warn("Error getting properties for autocomplete:", error);
           }
@@ -416,25 +410,27 @@ export class SparqlEditor extends HTMLElement {
           if (suggestPreds.size > 0) return Array.from(suggestPreds).sort();
         }
       }
-      return this.meta[cursorEndpoint].predicates.filter(iri => iri.indexOf(token.autocompletionString) === 0);
+      if (token?.autocompletionString !== undefined)
+        return this.meta[cursorEndpoint].predicates.filter(iri => iri.indexOf(token.autocompletionString!) === 0);
+      return this.meta[cursorEndpoint].predicates;
     },
-    isValidCompletionPosition: (yasqe: any) => {
-      const token = yasqe.getCompleteToken();
+    isValidCompletionPosition: yasqe => {
+      const token: any = yasqe.getCompleteToken();
       if (token.string[0] === "?" || token.string[0] === "$") return false; // we are typing a var
       if (token.state.possibleCurrent.indexOf("a") >= 0) return true; // predicate pos
       return false;
     },
-    postProcessSuggestion: (yasqe: any, token: any, suggestedString: string) => {
+    postProcessSuggestion: (_yasqe, token, suggestedString) => {
       return this.postProcessSuggestion(token, suggestedString);
     },
   };
 
-  postProcessSuggestion(token: any, suggestedString: string) {
+  postProcessSuggestion(token: AutocompletionToken, suggestedString: string) {
     if (token.tokenPrefix && token.autocompletionString && token.tokenPrefixUri) {
       // we need to get the suggested string back to prefixed form
       suggestedString = token.tokenPrefix + suggestedString.substring(token.tokenPrefixUri.length);
     } else {
-      // Convert the suggested string to prefixed form when possible
+      // Convert the suggested URI to prefixed form when possible
       suggestedString = compressUri(this.currentEndpoint().prefixes, suggestedString) || "<" + suggestedString + ">";
     }
     return suggestedString;
@@ -485,7 +481,7 @@ export class SparqlEditor extends HTMLElement {
         .split(",")
         .map((kw: string) => `"${kw.trim()}"`)
         .join(", ");
-      const queryType = capitalize(this.yasgui?.getTab()?.getYasqe().getQueryType());
+      const queryType = capitalize(this.yasgui?.getTab()?.getYasqe().getQueryType() || "Select");
       const keywordsBit = keywordsStr.length > 2 ? `schema:keyword ${keywordsStr} ;\n    ` : "";
       const exampleUri = (dialog.querySelector("#example-uri") as HTMLInputElement).value;
       return [
@@ -503,7 +499,7 @@ ex:${exampleUri} a sh:SPARQLExecutable${
   rdfs:comment "${description}"@en ;
   sh:prefixes _:sparql_examples_prefixes ;
   sh:${queryType.toLowerCase()} """${this.yasgui?.getTab()?.getYasqe().getValue()}""" ;
-  ${keywordsBit}schema:target <${this.endpointUrl}> .`,
+  ${keywordsBit}schema:target <${this.endpointUrl()}> .`,
         exampleUri,
       ];
     };
@@ -661,7 +657,7 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     const sortedKeys = Object.keys(this.currentEndpoint().prefixes).sort();
     for (const key of sortedKeys) {
       const value = this.currentEndpoint().prefixes[key];
-      const pref: any = {};
+      const pref: {[index: string]: string} = {};
       pref[key] = value;
       const prefix = "PREFIX " + key + " ?: ?<" + value;
       if (!new RegExp(prefix, "g").test(query) && new RegExp("[(| |\u00a0|/|^]" + key + ":", "g").test(query)) {
@@ -677,7 +673,7 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     const sortedKeys = Object.keys(this.currentEndpoint().prefixes).sort();
     for (const key of sortedKeys) {
       const value = this.currentEndpoint().prefixes[key];
-      const pref: any = {};
+      const pref: {[index: string]: string} = {};
       pref[key] = value;
       const prefix = "PREFIX " + key + " ?: ?<" + value;
       if (!new RegExp(prefix, "g").test(query) && new RegExp("[(| |\u00a0|/|^]" + key + ":", "g").test(query)) {
