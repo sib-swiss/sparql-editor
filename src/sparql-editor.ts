@@ -61,7 +61,6 @@ export class SparqlEditor extends HTMLElement {
 
   constructor() {
     super();
-    this.attachShadow({mode: "open"});
 
     this.meta = this.loadMetaFromLocalStorage();
     // console.log("Loaded metadata from localStorage", this.meta);
@@ -87,10 +86,9 @@ export class SparqlEditor extends HTMLElement {
   display: none !important;
 }`;
     }
-    const container = document.createElement("div");
-    container.className = "container";
-    container.innerHTML = `
-      <div id="sparql-editor">
+    this.className = "sparql-editor-container";
+    this.innerHTML = `
+      <div id="sparql-text-editor">
         <a id="status-link" href="" target="_blank" title="Loading..." style="display: inline-flex; width: 16px; height: 16px;">
           <div id="status-light" style="width: 10px; height: 10px; background-color: purple; border-radius: 50%; margin: 0 auto;"></div>
         </a>
@@ -108,10 +106,9 @@ export class SparqlEditor extends HTMLElement {
         <slot></slot>
       </div>
     `;
-    this.shadowRoot?.appendChild(style);
-    this.shadowRoot?.appendChild(container);
+    this.appendChild(style);
 
-    // NOTE: autocompleters get are executed when Yasgui is instantiated
+    // NOTE: autocompleters are executed when Yasgui is instantiated
     Yasgui.Yasqe.defaults.autocompleters.splice(Yasgui.Yasqe.defaults.autocompleters.indexOf("prefixes"), 1);
     Yasgui.Yasqe.defaults.autocompleters.splice(Yasgui.Yasqe.defaults.autocompleters.indexOf("class"), 1);
     Yasgui.Yasqe.defaults.autocompleters.splice(Yasgui.Yasqe.defaults.autocompleters.indexOf("property"), 1);
@@ -193,7 +190,7 @@ export class SparqlEditor extends HTMLElement {
       this.addPrefixesToQuery(this.currentEndpoint().examples[0]?.query) || Yasgui.Yasqe.defaults.value;
     Yasgui.Yasr.defaults.prefixes = this.meta[endpoint].prefixes;
     // Update the statusLight
-    const statusLight = this.shadowRoot?.getElementById("status-light") as HTMLElement;
+    const statusLight = this.querySelector("#status-light") as HTMLElement;
     let metaScore = 0;
     let statusMsg = `📡 Endpoint ${endpoint}\n\n`;
     if (Object.keys(this.meta[endpoint].void).length > 0) {
@@ -226,14 +223,14 @@ export class SparqlEditor extends HTMLElement {
     if (metaScore === 3) statusLight.style.backgroundColor = "green";
     else if (metaScore > 0) statusLight.style.backgroundColor = "orange";
     else statusLight.style.backgroundColor = "red";
-    const statusLink = this.shadowRoot?.getElementById("status-link") as HTMLAnchorElement;
+    const statusLink = this.querySelector("#status-link") as HTMLAnchorElement;
     statusLink.title = statusMsg;
     statusLink.href = `https://sib-swiss.github.io/sparql-editor/check?url=${endpoint}`;
   }
 
   async connectedCallback() {
     // Instantiate YASGUI editor
-    const editorEl = this.shadowRoot?.getElementById("yasgui") as HTMLElement;
+    const editorEl = this.querySelector("#yasgui") as HTMLElement;
     this.yasgui = new Yasgui(editorEl, {
       // Prevents conflicts when deploying multiple editors in the same domain:
       persistenceId: `yasgui_${window.location.pathname.replace(/\//g, "")}`,
@@ -241,7 +238,7 @@ export class SparqlEditor extends HTMLElement {
     });
 
     await this.loadCurrentEndpoint();
-    const spinEl = this.shadowRoot?.getElementById("loading-spinner");
+    const spinEl = this.querySelector("#loading-spinner") as HTMLElement;
     if (spinEl) spinEl.style.display = "none";
 
     this.yasgui?.on("tabSelect", () => {
@@ -252,7 +249,7 @@ export class SparqlEditor extends HTMLElement {
     });
 
     // Button to clear and update cache of SPARQL endpoints metadata
-    const clearCacheBtnEl = this.shadowRoot?.getElementById("sparql-clear-cache-btn");
+    const clearCacheBtnEl = this.querySelector("#sparql-clear-cache-btn");
     clearCacheBtnEl?.addEventListener("click", () => {
       localStorage.removeItem("sparql-editor-metadata");
       this.meta = {};
@@ -260,7 +257,7 @@ export class SparqlEditor extends HTMLElement {
     });
 
     // Button to add all prefixes to the query
-    const addPrefixesBtnEl = this.shadowRoot?.getElementById("sparql-add-prefixes-btn");
+    const addPrefixesBtnEl = this.querySelector("#sparql-add-prefixes-btn");
     addPrefixesBtnEl?.addEventListener("click", () => {
       const sortedPrefixes: {[key: string]: string} = {};
       for (const key of Object.keys(this.currentEndpoint().prefixes).sort()) {
@@ -342,7 +339,7 @@ export class SparqlEditor extends HTMLElement {
     // https://datatables.net/extensions/buttons/
     this.yasgui.on("queryResponse", async () => {
       await new Promise(resolve => setTimeout(resolve, 0));
-      const iriCells = this.shadowRoot?.querySelectorAll(".dataTable a.iri") as NodeListOf<HTMLAnchorElement>;
+      const iriCells = this.querySelectorAll(".dataTable a.iri") as NodeListOf<HTMLAnchorElement>;
       iriCells?.forEach(iriCell => {
         if (iriCell.href.startsWith("http://www.w3.org/2001/XMLSchema#")) return;
         const describeBtn = document.createElement("a");
@@ -355,7 +352,7 @@ export class SparqlEditor extends HTMLElement {
     });
 
     // Button to pop a dialog to save the query as an example in a turtle file
-    const saveExampleBtnEl = this.shadowRoot?.getElementById("sparql-save-example-btn");
+    const saveExampleBtnEl = this.querySelector("#sparql-save-example-btn");
     saveExampleBtnEl?.addEventListener("click", () => {
       this.showSaveExampleDialog();
     });
@@ -492,7 +489,7 @@ export class SparqlEditor extends HTMLElement {
         </div>
       </form>
     `;
-    this.shadowRoot?.appendChild(dialog);
+    this.appendChild(dialog);
     dialog.showModal();
     const descriptionInput = dialog.querySelector("#description") as HTMLInputElement;
     descriptionInput.focus();
@@ -562,7 +559,7 @@ ex:${exampleUri} a sh:SPARQLExecutable${
 
   async showExamples() {
     // Display examples on the main page and in a dialog for the currently selected endpoint
-    const exampleQueriesEl = this.shadowRoot?.getElementById("sparql-examples") as HTMLElement;
+    const exampleQueriesEl = this.querySelector("#sparql-examples") as HTMLElement;
     exampleQueriesEl.innerHTML = "";
     if (this.currentEndpoint().examples.length === 0) return;
     // Add title for examples
@@ -656,7 +653,7 @@ ex:${exampleUri} a sh:SPARQLExecutable${
 
     // Add button to open dialog
     const openExDialogBtn = document.createElement("button");
-    openExDialogBtn.textContent = "Show all examples";
+    openExDialogBtn.textContent = `Browse ${this.currentEndpoint().examples.length} examples`;
     openExDialogBtn.className = "btn";
     exampleQueriesEl.appendChild(openExDialogBtn);
 

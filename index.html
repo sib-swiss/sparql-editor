@@ -16,9 +16,14 @@
 
   <body>
     <div>
-      <!-- MULTI -->
       <sparql-editor
-        endpoint="https://sparql.uniprot.org/sparql/,https://www.bgee.org/sparql/,https://sparql.omabrowser.org/sparql/,https://beta.sparql.swisslipids.org/,https://sparql.rhea-db.org/sparql/,https://biosoda.unil.ch/graphdb/repositories/emi-dbgi,https://hamap.expasy.org/sparql/,https://rdf.metanetx.org/sparql/"
+        endpoint="https://sparql.uniprot.org/sparql/,https://www.bgee.org/sparql/,https://sparql.omabrowser.org/sparql/,https://beta.sparql.swisslipids.org/,https://sparql.rhea-db.org/sparql/,https://biosoda.unil.ch/graphdb/repositories/emi-dbgi,https://hamap.expasy.org/sparql/,https://rdf.metanetx.org/sparql/,https://idsm.elixir-czech.cz/sparql/endpoint/idsm"
+        examples-repo-add-url="https://github.com/sib-swiss/sparql-examples/new/master/examples/UniProt"
+        add-limit="1000"
+      ></sparql-editor>
+      <!-- MULTI with children -->
+      <!-- <sparql-editor
+        endpoint="https://sparql.uniprot.org/sparql/,https://www.bgee.org/sparql/,https://sparql.omabrowser.org/sparql/,https://beta.sparql.swisslipids.org/,https://sparql.rhea-db.org/sparql/,https://biosoda.unil.ch/graphdb/repositories/emi-dbgi,https://hamap.expasy.org/sparql/,https://rdf.metanetx.org/sparql/,https://idsm.elixir-czech.cz/sparql/endpoint/idsm"
         examples-repo-add-url="https://github.com/sib-swiss/sparql-examples/new/master/examples/UniProt"
         add-limit="1000"
       >
@@ -52,7 +57,7 @@
           </li>
           <li><a href="/.well-known/void">Statistics and diagrams</a></li>
         </ol>
-      </sparql-editor>
+      </sparql-editor> -->
 
       <!-- BGEE -->
       <!-- <sparql-editor endpoint="https://www.bgee.org/sparql/">

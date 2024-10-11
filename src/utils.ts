@@ -42,11 +42,11 @@ export function compressUri(prefixes: {[key: string]: string}, uri: string): str
 }
 
 export async function queryEndpoint(query: string, endpoint: string): Promise<SparqlResultBindings[]> {
-  // We add `&ac=1` to all the queries to exclude these queries from stats
+  // We add `ac=1&` to all the queries to exclude these queries from stats of SIB endpoints
   const response = await fetch(`${endpoint}?ac=1&query=${encodeURIComponent(query)}`, {
     signal: AbortSignal.timeout(5000),
     headers: {
-      Accept: "application/json",
+      Accept: "application/sparql-results+json",
     },
   });
   // console.log(await response.text());
@@ -286,6 +286,10 @@ export const defaultPrefixes = {
   taxon: "http://purl.uniprot.org/taxonomy/",
   ec: "http://purl.uniprot.org/enzyme/",
   bibo: "http://purl.org/ontology/bibo/",
-  dc: "http://purl.org/dc/terms/",
+  dc: "http://purl.org/dc/elements/1.1/",
+  dct: "http://purl.org/dc/terms/",
+  obo: "http://purl.obolibrary.org/obo/",
   faldo: "http://biohackathon.org/resource/faldo#",
+  sio: "http://semanticscience.org/resource/",
+  sd: "http://www.w3.org/ns/sparql-service-description#",
 };
