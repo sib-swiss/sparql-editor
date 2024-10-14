@@ -501,7 +501,7 @@ export class SparqlEditor extends HTMLElement {
         .map((kw: string) => `"${kw.trim()}"`)
         .join(", ");
       const queryType = capitalize(this.yasgui?.getTab()?.getYasqe().getQueryType() || "Select");
-      const keywordsBit = keywordsStr.length > 2 ? `schema:keyword ${keywordsStr} ;\n    ` : "";
+      const keywordsBit = keywordsStr.length > 2 ? `schema:keywords ${keywordsStr} ;\n  ` : "";
       const exampleUri = (dialog.querySelector("#example-uri") as HTMLInputElement).value;
       return [
         `@prefix ex: <${this.examplesNamespace()}> .
@@ -510,10 +510,7 @@ export class SparqlEditor extends HTMLElement {
 @prefix sh: <http://www.w3.org/ns/shacl#> .
 
 ex:${exampleUri} a sh:SPARQLExecutable${
-          ["Select", "Construct", "Ask"].includes(queryType)
-            ? `,
-      sh:SPARQL${queryType}Executable`
-            : ""
+          ["Select", "Construct", "Ask"].includes(queryType) ? `, sh:SPARQL${queryType}Executable` : ""
         } ;
   rdfs:comment "${description}"@en ;
   sh:prefixes _:sparql_examples_prefixes ;
