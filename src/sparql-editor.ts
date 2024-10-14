@@ -712,7 +712,7 @@ ex:${exampleUri} a sh:SPARQLExecutable${
   }
 
   createDescribeUrl(resourceUrl: string) {
-    return `?query=${encodeURIComponent(`DESCRIBE <${resourceUrl}>`)}`;
+    return `?query=${encodeURIComponent(`DESCRIBE <${resourceUrl}>`)}&endpoint=${this.endpointUrl()}`;
   }
 
   // Function to convert CURIE to full URI using the prefix map
