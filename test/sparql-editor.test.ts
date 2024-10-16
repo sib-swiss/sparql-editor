@@ -47,7 +47,7 @@ describe("sparql-editor", () => {
       ></sparql-editor>
     `;
 
-    const sparqlEditor = document.querySelector("sparql-editor") as HTMLElement & {shadowRoot: ShadowRoot};
+    const sparqlEditor = document.querySelector("sparql-editor") as HTMLElement;
     await customElements.whenDefined("sparql-editor");
     // Wait for the element to pull examples
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -57,24 +57,21 @@ describe("sparql-editor", () => {
     expect(sparqlEditor?.getAttribute("endpoint")).toBe("https://sparql.uniprot.org/sparql/");
     expect(sparqlEditor?.getAttribute("examples-on-main-page")).toBe("10");
 
-    // Check shadow DOM
-    const shadowRoot = sparqlEditor.shadowRoot;
-    expect(shadowRoot).not.toBeNull();
-    expect(shadowRoot.querySelector("#sparql-editor")).toBeInTheDocument();
-    expect(shadowRoot.querySelector("#yasgui")).toBeInTheDocument();
+    // Check DOM
+    expect(sparqlEditor.querySelector("#yasgui")).toBeInTheDocument();
 
-    const button = shadowRoot.querySelector("#sparql-add-prefixes-btn") as HTMLButtonElement;
+    const button = sparqlEditor.querySelector("#sparql-add-prefixes-btn");
     expect(button).toBeInTheDocument();
     expect(button).toHaveTextContent("Add common prefixes");
 
     // Check YASGUI components. Not working when ran inside GH actions
-    // const yasqeEditor = shadowRoot?.querySelectorAll(".yasqe");
+    // const yasqeEditor = sparqlEditor?.querySelectorAll(".yasqe");
     // expect(yasqeEditor?.length).toBe(1);
-    // const yasrResult = shadowRoot?.querySelectorAll(".yasr");
+    // const yasrResult = sparqlEditor?.querySelectorAll(".yasr");
     // expect(yasrResult?.length).toBe(1);
 
     // Check examples pulled successfully
-    const examplesOnMainPage = shadowRoot?.querySelectorAll(".main-query-example");
+    const examplesOnMainPage = sparqlEditor.querySelectorAll(".main-query-example");
     expect(examplesOnMainPage?.length).toBe(10);
   });
 });
