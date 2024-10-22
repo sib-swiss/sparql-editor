@@ -179,14 +179,14 @@ export class SparqlEditor extends HTMLElement {
   }
 
   // Load current endpoint in the YASGUI input box
-  async loadCurrentEndpoint(endpoint: string = this.endpointUrl(), forceExamplesReload: boolean = false) {
+  async loadCurrentEndpoint(endpoint: string = this.endpointUrl()) {
     // console.log("Switching endpoint", endpoint);
     await this.getMetadata(endpoint);
-    await this.showExamples(forceExamplesReload);
-    // @ts-ignore set default query when new tab
-    this.yasgui.config.yasqe.value =
-      this.addPrefixesToQuery(this.currentEndpoint().examples[0]?.query) || Yasgui.Yasqe.defaults.value;
-
+    if (this.yasgui) {
+      // @ts-ignore set default query when new tab
+      this.yasgui.config.yasqe.value =
+        this.addPrefixesToQuery(this.currentEndpoint().examples[0]?.query) || Yasgui.Yasqe.defaults.value;
+    }
     Yasgui.Yasr.defaults.prefixes = this.meta[endpoint].prefixes;
     // Update the statusLight
     const statusLight = this.querySelector("#status-light") as HTMLElement;
@@ -228,6 +228,10 @@ export class SparqlEditor extends HTMLElement {
   }
 
   async connectedCallback() {
+    await this.loadCurrentEndpoint();
+    Yasgui.Yasqe.defaults.value =
+      this.addPrefixesToQuery(this.currentEndpoint().examples[0]?.query) || Yasgui.Yasqe.defaults.value;
+
     // Instantiate YASGUI editor
     const editorEl = this.querySelector("#yasgui") as HTMLElement;
     this.yasgui = new Yasgui(editorEl, {
@@ -235,16 +239,22 @@ export class SparqlEditor extends HTMLElement {
       persistenceId: `yasgui_${window.location.pathname.replace(/\//g, "")}`,
       copyEndpointOnNewTab: true,
     });
+    await this.showExamples();
 
-    await this.loadCurrentEndpoint();
     const spinEl = this.querySelector("#loading-spinner") as HTMLElement;
     if (spinEl) spinEl.style.display = "none";
 
     this.yasgui?.on("tabSelect", () => {
-      setTimeout(() => this.loadCurrentEndpoint());
+      setTimeout(() => {
+        this.loadCurrentEndpoint();
+        this.showExamples();
+      });
     });
     this.yasgui?.on("endpointHistoryChange", () => {
-      setTimeout(() => this.loadCurrentEndpoint(this.endpointUrl(), true));
+      setTimeout(() => {
+        this.loadCurrentEndpoint();
+        this.showExamples(true);
+      });
     });
     this.yasgui?.on("tabAdd", () => {
       setTimeout(() => this.showExamples());
