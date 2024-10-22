@@ -1,6 +1,6 @@
 {
   "name": "@sib-swiss/sparql-editor",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A standard web component to easily deploy a user-friendly SPARQL query editor for one or more endpoints. Built on the popular YASGUI editor, it provides context-aware autocomplete for classes and predicates based on the content of the endpoints.",
   "license": "MIT",
   "author": {
