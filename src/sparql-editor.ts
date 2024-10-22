@@ -19,6 +19,7 @@ import {
   getServiceUriForCursorPosition,
   compressUri,
   defaultPrefixes,
+  generateTabLabel,
   getClassesFallback,
   getPredicatesFallback,
 } from "./utils";
@@ -69,7 +70,7 @@ export class SparqlEditor extends HTMLElement {
       throw new Error("No endpoint provided. Please use the 'endpoint' attribute to specify the SPARQL endpoint URL.");
 
     this.addLimit = Number(this.getAttribute("add-limit")) || null;
-    this.examplesOnMainPage = Number(this.getAttribute("examples-on-main-page")) || 10;
+    this.examplesOnMainPage = Number(this.getAttribute("examples-on-main-page")) || 8;
     this.examplesRepoAddUrl = this.getAttribute("examples-repo-add-url");
     this.examplesRepo = this.getAttribute("examples-repository");
     if (this.examplesRepoAddUrl && !this.examplesRepo) this.examplesRepo = this.examplesRepoAddUrl.split("/new/")[0];
@@ -88,22 +89,19 @@ export class SparqlEditor extends HTMLElement {
     }
     this.className = "sparql-editor-container";
     this.innerHTML = `
-      <div id="sparql-text-editor">
+      <div style="width: 100%;">
         <a id="status-link" href="" target="_blank" title="Loading..." style="display: inline-flex; width: 16px; height: 16px;">
           <div id="status-light" style="width: 10px; height: 10px; background-color: purple; border-radius: 50%; margin: 0 auto;"></div>
         </a>
         <button id="sparql-add-prefixes-btn" class="btn" style="margin-bottom: 0.3em;">Add common prefixes</button>
         <button id="sparql-save-example-btn" class="btn" style="margin-bottom: 0.3em;">Save query as example</button>
+        <button id="sparql-examples-top-btn" class="btn" style="margin-bottom: 0.3em;">Browse examples</button>
         <button id="sparql-clear-cache-btn" class="btn" style="margin-bottom: 0.3em;">Clear cache</button>
         <div id="yasgui"></div>
         <div id="loading-spinner" style="display: flex; justify-content: center; align-items: center; height: 100px; flex-direction: column;">
           <div class="spinner" style="border: 4px solid rgba(0,0,0,0.1); border-left-color: #000; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite;"></div>
           <p style="margin-top: 10px; text-align: center;">Loading editor...</p>
         </div>
-      </div>
-      <div>
-        <div id="sparql-examples"></div>
-        <slot></slot>
       </div>
     `;
     this.appendChild(style);
@@ -181,13 +179,14 @@ export class SparqlEditor extends HTMLElement {
   }
 
   // Load current endpoint in the YASGUI input box
-  async loadCurrentEndpoint(endpoint: string = this.endpointUrl()) {
+  async loadCurrentEndpoint(endpoint: string = this.endpointUrl(), forceExamplesReload: boolean = false) {
     // console.log("Switching endpoint", endpoint);
     await this.getMetadata(endpoint);
-    await this.showExamples();
+    await this.showExamples(forceExamplesReload);
     // @ts-ignore set default query when new tab
     this.yasgui.config.yasqe.value =
       this.addPrefixesToQuery(this.currentEndpoint().examples[0]?.query) || Yasgui.Yasqe.defaults.value;
+
     Yasgui.Yasr.defaults.prefixes = this.meta[endpoint].prefixes;
     // Update the statusLight
     const statusLight = this.querySelector("#status-light") as HTMLElement;
@@ -245,7 +244,10 @@ export class SparqlEditor extends HTMLElement {
       setTimeout(() => this.loadCurrentEndpoint());
     });
     this.yasgui?.on("endpointHistoryChange", () => {
-      setTimeout(() => this.loadCurrentEndpoint());
+      setTimeout(() => this.loadCurrentEndpoint(this.endpointUrl(), true));
+    });
+    this.yasgui?.on("tabAdd", () => {
+      setTimeout(() => this.showExamples());
     });
 
     // Button to clear and update cache of SPARQL endpoints metadata
@@ -554,20 +556,37 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     }
   }
 
-  async showExamples() {
+  async showExamples(forceReload: boolean = false) {
     // Display examples on the main page and in a dialog for the currently selected endpoint
-    const exampleQueriesEl = this.querySelector("#sparql-examples") as HTMLElement;
+    const existingExampleQueriesEl = this.querySelector(".active .sparql-examples") as HTMLButtonElement;
+    const examplesTopBtnEl = this.querySelector("#sparql-examples-top-btn") as HTMLButtonElement;
+    const btnTextContent = `Browse ${this.currentEndpoint().examples.length} examples`;
+    if (this.currentEndpoint().examples.length === 0) {
+      existingExampleQueriesEl?.remove();
+      examplesTopBtnEl.style.display = "none";
+      return;
+    } else {
+      examplesTopBtnEl.textContent = btnTextContent;
+      examplesTopBtnEl.style.display = "inline-block";
+    }
+    if (existingExampleQueriesEl && !forceReload) {
+      return;
+    }
+    if (existingExampleQueriesEl) existingExampleQueriesEl?.remove();
+    const yasqeEl = this.querySelector(".active .yasqe") as HTMLElement;
+    const yasqeElParent = yasqeEl.parentElement as HTMLElement;
+    const exampleQueriesEl = document.createElement("div");
+    exampleQueriesEl.className = "sparql-examples";
     exampleQueriesEl.innerHTML = "";
-    if (this.currentEndpoint().examples.length === 0) return;
-    // Add title for examples
-    const exQueryTitleDiv = document.createElement("div");
-    exQueryTitleDiv.style.textAlign = "center";
-    const exQueryTitle = document.createElement("h3");
-    exQueryTitle.style.margin = "0.1em";
-    exQueryTitle.style.fontWeight = "200";
-    exQueryTitle.textContent = "Examples";
-    exQueryTitleDiv.appendChild(exQueryTitle);
-    exampleQueriesEl.appendChild(exQueryTitleDiv);
+    // TODO: remove title for examples?
+    // const exQueryTitleDiv = document.createElement("div");
+    // exQueryTitleDiv.style.textAlign = "center";
+    // const exQueryTitle = document.createElement("h3");
+    // exQueryTitle.style.margin = "0.1em";
+    // exQueryTitle.style.fontWeight = "200";
+    // exQueryTitle.textContent = "Examples";
+    // exQueryTitleDiv.appendChild(exQueryTitle);
+    // exampleQueriesEl.appendChild(exQueryTitleDiv);
 
     // Create dialog for examples
     const exQueryDialog = document.createElement("dialog");
@@ -586,7 +605,7 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     exDialogCloseBtn.style.top = "1.5em";
     exDialogCloseBtn.style.right = "2em";
     exQueryDialog.appendChild(exDialogCloseBtn);
-    exampleQueriesEl.appendChild(exQueryDialog);
+    yasqeElParent.appendChild(exQueryDialog);
 
     // Add examples to the main page and dialog
     this.currentEndpoint().examples.forEach(async (example, index) => {
@@ -601,7 +620,7 @@ ex:${exampleUri} a sh:SPARQLExecutable${
       useBtn.style.marginLeft = "0.5em";
       useBtn.className = "btn sparqlExampleButton";
       useBtn.addEventListener("click", () => {
-        this.addTab(example.query, index);
+        this.addTab(example.query, example.comment);
         exQueryDialog.close();
       });
       exQueryP.appendChild(useBtn);
@@ -614,7 +633,7 @@ ex:${exampleUri} a sh:SPARQLExecutable${
         cloneExQueryDiv.className = "main-query-example";
         // Cloning does not include click event so we need to redo it :(
         cloneExQueryDiv.lastChild?.lastChild?.addEventListener("click", () => {
-          this.addTab(example.query, index);
+          this.addTab(example.query, example.comment);
         });
         exampleQueriesEl.appendChild(cloneExQueryDiv);
       }
@@ -650,10 +669,14 @@ ex:${exampleUri} a sh:SPARQLExecutable${
 
     // Add button to open dialog
     const openExDialogBtn = document.createElement("button");
-    openExDialogBtn.textContent = `Browse ${this.currentEndpoint().examples.length} examples`;
+    openExDialogBtn.textContent = btnTextContent;
     openExDialogBtn.className = "btn";
     exampleQueriesEl.appendChild(openExDialogBtn);
 
+    examplesTopBtnEl.addEventListener("click", () => {
+      exQueryDialog.showModal();
+      document.body.style.overflow = "hidden";
+    });
     openExDialogBtn.addEventListener("click", () => {
       exQueryDialog.showModal();
       document.body.style.overflow = "hidden";
@@ -665,6 +688,20 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     exQueryDialog.addEventListener("close", () => {
       document.body.style.overflow = "";
     });
+
+    // Add the examples next to the YASQE editor
+    // yasqeEl.style.height = "100%";
+    yasqeEl.style.width = "100%";
+    exampleQueriesEl.style.width = "50%";
+    yasqeElParent.style.display = "flex";
+    yasqeElParent.appendChild(exampleQueriesEl);
+    const yasqe = this.yasgui?.getTab()?.getYasqe();
+    yasqe?.expandEditor();
+    // if (exampleQueriesEl.offsetHeight > 0) {
+    //   Yasgui.Yasqe.defaults.editorHeight = `${exampleQueriesEl.offsetHeight}px`;
+    //   const yasqe = this.yasgui?.getTab()?.getYasqe();
+    //   yasqe?.expandEditor();
+    // }
   }
 
   addPrefixesToQuery(query: string) {
@@ -698,10 +735,10 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     }
   }
 
-  addTab(query: string, index: number) {
+  addTab(query: string, label: string) {
     this.yasgui?.addTab(true, {
       ...Yasgui.Tab.getDefaults(),
-      name: `Query ${index + 1}`,
+      name: generateTabLabel(label),
       requestConfig: {
         ...Yasgui.defaults.requestConfig,
         endpoint: this.endpointUrl(),

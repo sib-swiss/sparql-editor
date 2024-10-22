@@ -256,6 +256,45 @@ export function getServiceUriForCursorPosition(query: string, lineNumber: number
   return null;
 }
 
+// Automatically generates a tab label from a query description by removing small words and stopwords
+export function generateTabLabel(description: string): string {
+  // const stopwords = ['all', 'with', 'and', 'the', 'on', 'of', 'in', 'for', 'a', 'an', 'entries', 'annotated'];
+  const ignoreStopwords = [
+    "select",
+    "that",
+    "with",
+    "entries",
+    "annotated",
+    "were",
+    "triples",
+    "relate",
+    "entry",
+    "each",
+    "using",
+    "where",
+    "find",
+    "list",
+    "sometimes",
+    "known",
+    "their",
+    "them",
+    "from",
+    "these",
+  ];
+  // Remove HTML tags and parenthesis
+  const words = description
+    .replace(/<\/?[^>]+(>|$)/g, "")
+    .replace(/[(),]/gm, "")
+    .split(" ");
+  const filteredWords = words.filter(word => !ignoreStopwords.includes(word.toLowerCase()) && word.length > 3);
+  const label = filteredWords.slice(0, 3).join(" ");
+  const capitalizedLabel = label
+    .split(" ")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+  return capitalizedLabel;
+}
+
 // NOTE: In case we need to store the counts
 // type VoidDict2 = {
 //   // Subject class

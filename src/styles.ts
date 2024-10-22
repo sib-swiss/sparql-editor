@@ -21,29 +21,38 @@ export const editorCss = `.sparql-editor-container a {
   display: flex;
   flex-direction: row;
 }
-.sparql-editor-container #sparql-text-editor {
-  flex: 0 0 60%;
-  margin-right: 1em;
-}
-.sparql-editor-container #sparql-examples {
-  flex-grow: 1;
-  border-left: 1px solid #ccc;
+.sparql-editor-container .sparql-examples {
   padding-left: 1em;
 }
 @media (max-width: 600px) {
   .sparql-editor-container {
     flex-direction: column;
   }
-  .sparql-editor-container #sparql-text-editor {
-    margin-right: 0;
+  .sparql-editor-container .sparql-examples {
+    display: none;
   }
-  .sparql-editor-container #sparql-examples {
-    border-left: none;
-    padding-left: 0;
-    border-top: 1px solid #ccc;
-    padding-top: 1em;
+  .sparql-editor-container #sparql-examples-top-btn {
+    display: inline-block;
+  }
+//   .sparql-editor-container .sparql-examples {
+//     border-left: none;
+//     padding-left: 0;
+//     border-top: 1px solid #ccc;
+//     padding-top: 1em;
+//   }
+}
+@media (min-width: 600px) {
+  // .sparql-editor-container {
+  //   flex-direction: column;
+  // }
+  // .sparql-editor-container .sparql-examples {
+  //   display: none;
+  // }
+  .sparql-editor-container #sparql-examples-top-btn {
+    display: none !important;
   }
 }
+
 
 .sparql-editor-container {
     --btn-color: #e30613;
