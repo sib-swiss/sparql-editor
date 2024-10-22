@@ -181,6 +181,10 @@ export class SparqlEditor extends HTMLElement {
   // Load current endpoint in the YASGUI input box
   async loadCurrentEndpoint(endpoint: string = this.endpointUrl()) {
     // console.log("Switching endpoint", endpoint);
+    const statusLight = this.querySelector("#status-light") as HTMLElement;
+    const statusLink = this.querySelector("#status-link") as HTMLAnchorElement;
+    statusLight.style.backgroundColor = "purple";
+    statusLink.title = "Loading...";
     await this.getMetadata(endpoint);
     if (this.yasgui) {
       // @ts-ignore set default query when new tab
@@ -189,7 +193,6 @@ export class SparqlEditor extends HTMLElement {
     }
     Yasgui.Yasr.defaults.prefixes = this.meta[endpoint].prefixes;
     // Update the statusLight
-    const statusLight = this.querySelector("#status-light") as HTMLElement;
     let metaScore = 0;
     let statusMsg = `📡 Endpoint ${endpoint}\n\n`;
     if (Object.keys(this.meta[endpoint].void).length > 0) {
@@ -222,7 +225,6 @@ export class SparqlEditor extends HTMLElement {
     if (metaScore === 3) statusLight.style.backgroundColor = "green";
     else if (metaScore > 0) statusLight.style.backgroundColor = "orange";
     else statusLight.style.backgroundColor = "red";
-    const statusLink = this.querySelector("#status-link") as HTMLAnchorElement;
     statusLink.title = statusMsg;
     statusLink.href = `https://sib-swiss.github.io/sparql-editor/check?url=${endpoint}`;
   }
@@ -245,15 +247,15 @@ export class SparqlEditor extends HTMLElement {
     if (spinEl) spinEl.style.display = "none";
 
     this.yasgui?.on("tabSelect", () => {
-      setTimeout(() => {
-        this.loadCurrentEndpoint();
-        this.showExamples();
+      setTimeout(async () => {
+        await this.loadCurrentEndpoint();
+        await this.showExamples();
       });
     });
     this.yasgui?.on("endpointHistoryChange", () => {
-      setTimeout(() => {
-        this.loadCurrentEndpoint();
-        this.showExamples(true);
+      setTimeout(async () => {
+        await this.loadCurrentEndpoint();
+        await this.showExamples(true);
       });
     });
     this.yasgui?.on("tabAdd", () => {
@@ -262,10 +264,11 @@ export class SparqlEditor extends HTMLElement {
 
     // Button to clear and update cache of SPARQL endpoints metadata
     const clearCacheBtnEl = this.querySelector("#sparql-clear-cache-btn");
-    clearCacheBtnEl?.addEventListener("click", () => {
+    clearCacheBtnEl?.addEventListener("click", async () => {
       localStorage.removeItem("sparql-editor-metadata");
       this.meta = {};
-      this.loadCurrentEndpoint();
+      await this.loadCurrentEndpoint();
+      await this.showExamples(true);
     });
 
     // Button to add all prefixes to the query
