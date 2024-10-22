@@ -12,58 +12,59 @@
   </head>
 
   <body>
-    <div>
-      <sparql-editor
-        endpoint="https://sparql.omabrowser.org/sparql/"
-        examples-repo-add-url="https://github.com/sib-swiss/sparql-examples/new/master/examples/OMA"
-      >
-        <h4 class="space-margin space-top">About OMA SPARQL Endpoint</h4>
-        <p class="query-text space-margin">
-          The OMA SPARQL endpoint is reachable by using your preferable programming language or SPARQL interface through
-          the following URL address:
-          <a href="https://sparql.omabrowser.org/sparql">https://sparql.omabrowser.org/sparql</a>.
-        </p>
-        <p class="query-text space-margin">
-          The OMA SPARQL endpoint is updated in sync with the <a href="https://omabrowser.org">OMA Browser</a>. The data
-          of the current release as well of the previous releases
-          <a href="https://omabrowser.org/oma/current">can be downloaded</a> from the download section of the OMA
-          Browser as turtle files (look out for <em>OMA Browser in RDF</em>).
-        </p>
-        <p></p>
+    <sparql-editor
+      endpoint="https://sparql.omabrowser.org/sparql/"
+      examples-repo-add-url="https://github.com/sib-swiss/sparql-examples/new/master/examples/OMA"
+    ></sparql-editor>
 
-        <h4 class="space-margin">RDF Serialisation and Ontologies</h4>
-        <p class="query-text space-margin">
-          The RDF serialisation of the OMA Hierarchical Orthologous Groups is based on the
-          <a href="https://qfo.github.io/OrthologyOntology/">ORTH ontology specification</a> in the context of the Quest
-          for Orthologs (QfO) consortium (see GitHub repository
-          <a href="https://github.com/qfo/OrthologyOntology">here</a>).
-        </p>
-        <p></p>
-        <p class="query-text space-margin space-bottom">
-          To cross-reference other resources, this SPARQL endpoint contains annotation property assertions defined by a
-          first draft of the life-sciences cross-reference (LSCR) ontology that is available to download at the Quest
-          for Orthologs github repository <a href="https://github.com/qfo/OrthologyOntology">here</a> -
-          <a href="https://github.com/qfo/OrthologyOntology/blob/master/lscr.ttl">lscr.ttl</a> file.
-        </p>
+    <div class="info-box">
+      <h4 class="space-margin space-top">About OMA SPARQL Endpoint</h4>
+      <p class="query-text space-margin">
+        The OMA SPARQL endpoint is reachable by using your preferable programming language or SPARQL interface through
+        the following URL address:
+        <a href="https://sparql.omabrowser.org/sparql">https://sparql.omabrowser.org/sparql</a>.
+      </p>
+      <p class="query-text space-margin">
+        The OMA SPARQL endpoint is updated in sync with the <a href="https://omabrowser.org">OMA Browser</a>. The data
+        of the current release as well of the previous releases
+        <a href="https://omabrowser.org/oma/current">can be downloaded</a> from the download section of the OMA Browser
+        as turtle files (look out for <em>OMA Browser in RDF</em>).
+      </p>
+      <p></p>
 
-        <h4>Other SPARQL editors for SIB endpoints</h4>
-        <ul>
-          <li><a href="/sparql-editor/uniprot">UniProt - protein knowledgebase</a></li>
-          <li><a href="/sparql-editor/bgee">Bgee - gene expression</a></li>
-          <li><a href="/sparql-editor/oma">OMA - Ortholog MAtrix</a></li>
-          <li>
-            <a href="/sparql-editor/swisslipids">SwissLipids - A knowledge resource for lipids and their biology</a>
-          </li>
-          <li>
-            <a href="/sparql-editor/rhea"
-              >Rhea - expert-curated knowledgebase of chemical and transport reactions of biological interest</a
-            >
-          </li>
-          <li><a href="/sparql-editor/hamap">HAMAP - High-quality Automated and Manual Annotation of Proteins</a></li>
-          <li><a href="/sparql-editor/dbgi">DBGI - The Digital Botanical Garden Initiative</a></li>
-        </ul>
-        <p>You can check if an endpoint contains the <a href="/sparql-editor/check">necessary metadata here</a>.</p>
-      </sparql-editor>
+      <h4 class="space-margin">RDF Serialisation and Ontologies</h4>
+      <p class="query-text space-margin">
+        The RDF serialisation of the OMA Hierarchical Orthologous Groups is based on the
+        <a href="https://qfo.github.io/OrthologyOntology/">ORTH ontology specification</a> in the context of the Quest
+        for Orthologs (QfO) consortium (see GitHub repository
+        <a href="https://github.com/qfo/OrthologyOntology">here</a>).
+      </p>
+      <p></p>
+      <p class="query-text space-margin space-bottom">
+        To cross-reference other resources, this SPARQL endpoint contains annotation property assertions defined by a
+        first draft of the life-sciences cross-reference (LSCR) ontology that is available to download at the Quest for
+        Orthologs github repository <a href="https://github.com/qfo/OrthologyOntology">here</a> -
+        <a href="https://github.com/qfo/OrthologyOntology/blob/master/lscr.ttl">lscr.ttl</a> file.
+      </p>
+
+      <h4>Other SPARQL editors for SIB endpoints</h4>
+      <ul>
+        <li><a href="/sparql-editor">Editor for multiple endpoints</a></li>
+        <li><a href="/sparql-editor/uniprot">UniProt - protein knowledgebase</a></li>
+        <li><a href="/sparql-editor/bgee">Bgee - gene expression</a></li>
+        <li><a href="/sparql-editor/oma">OMA - Ortholog MAtrix</a></li>
+        <li>
+          <a href="/sparql-editor/swisslipids">SwissLipids - A knowledge resource for lipids and their biology</a>
+        </li>
+        <li>
+          <a href="/sparql-editor/rhea"
+            >Rhea - expert-curated knowledgebase of chemical and transport reactions of biological interest</a
+          >
+        </li>
+        <li><a href="/sparql-editor/hamap">HAMAP - High-quality Automated and Manual Annotation of Proteins</a></li>
+        <li><a href="/sparql-editor/dbgi">DBGI - The Digital Botanical Garden Initiative</a></li>
+      </ul>
+      <p>You can check if an endpoint contains the <a href="/sparql-editor/check">necessary metadata here</a>.</p>
     </div>
   </body>
 </html>

@@ -6,3 +6,29 @@ a:hover {
   filter: brightness(60%);
   text-decoration: underline;
 }
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+}
+.info-box {
+  max-width: 800px;
+  margin: 2em auto;
+  text-align: left;
+  padding: 0.5em 1em;
+  background-color: white;
+  /* background-color: #f4f4f4; */
+  border: 1px solid #ccc;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+h2 {
+  text-align: center;
+}
+p,
+ul,
+li {
+  text-align: left;
+}
+ul {
+  padding-left: 1.5em;
+}

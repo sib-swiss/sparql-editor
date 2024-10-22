@@ -12,53 +12,42 @@
   </head>
 
   <body>
-    <div>
-      <!-- <h1 align="center">💫 SPARQL editor for SIB endpoints</h1> -->
+    <sparql-editor
+      endpoint="https://sparql.uniprot.org/sparql/,https://www.bgee.org/sparql/,https://sparql.omabrowser.org/sparql/,https://beta.sparql.swisslipids.org/,https://sparql.rhea-db.org/sparql/,https://biosoda.unil.ch/graphdb/repositories/emi-dbgi,https://hamap.expasy.org/sparql/,https://rdf.metanetx.org/sparql/,https://sparql.orthodb.org/sparql"
+      examples-repository="https://github.com/sib-swiss/sparql-examples"
+    ></sparql-editor>
 
-      <sparql-editor
-        endpoint="https://sparql.uniprot.org/sparql/,https://www.bgee.org/sparql/,https://sparql.omabrowser.org/sparql/,https://beta.sparql.swisslipids.org/,https://sparql.rhea-db.org/sparql/,https://biosoda.unil.ch/graphdb/repositories/emi-dbgi,https://hamap.expasy.org/sparql/,https://rdf.metanetx.org/sparql/,https://sparql.orthodb.org/sparql"
-        examples-repository="https://github.com/sib-swiss/sparql-examples"
-      >
-        <h4>Metadata-based SPARQL editor</h4>
-        <p>Metadata used by this editor are automatically retrieved by querying the endpoints:</p>
-        <ul>
-          <li>Context-aware autocomplete for classes and predicates based on the content of the endpoints</li>
-          <li>Example queries</li>
-          <li>Commonly used prefixes</li>
-        </ul>
-        <p>
-          See the <a href="https://github.com/sib-swiss/sparql-editor" target="_blank">repository</a> for more details,
-          or the <a href="check">check page</a> to check if an endpoint contains the necessary metadata.
-        </p>
-        <h4>Editors for specific SIB endpoints</h4>
-        <ul>
-          <li><a href="uniprot">UniProt - protein knowledgebase</a></li>
-          <li><a href="bgee">Bgee - gene expression</a></li>
-          <li><a href="oma">OMA - Ortholog MAtrix</a></li>
-          <li>
-            <a href="swisslipids">SwissLipids - A knowledge resource for lipids and their biology</a>
-          </li>
-          <li>
-            <a href="rhea"
-              >Rhea - expert-curated knowledgebase of chemical and transport reactions of biological interest</a
-            >
-          </li>
-          <li><a href="hamap">HAMAP - High-quality Automated and Manual Annotation of Proteins</a></li>
-          <li><a href="dbgi">DBGI - The Digital Botanical Garden Initiative</a></li>
-        </ul>
-      </sparql-editor>
+    <div class="info-box">
+      <h2>💫 Metadata-based SPARQL editor 📝</h2>
+      <p>Metadata used by this editor are automatically retrieved by querying the endpoints. It features:</p>
+      <ul>
+        <li>Context-aware autocomplete for classes and predicates based on the content of the endpoints</li>
+        <li>Example queries</li>
+        <li>Commonly used prefixes</li>
+      </ul>
+      <p>
+        See the
+        <b><a href="https://github.com/sib-swiss/sparql-editor" target="_blank">source code repository</a></b> for more
+        details on how to generate and upload the required descriptive metadata to your endpoints, or to deploy this web
+        component yourself.
+      </p>
+      <p>Go to the <a href="check">check page</a> to check if an endpoint contains the necessary metadata.</p>
+      <p>You can also navigate editors focusing on specific SIB endpoints:</p>
+      <ul>
+        <li><a href="uniprot">UniProt - protein knowledgebase</a></li>
+        <li><a href="bgee">Bgee - gene expression</a></li>
+        <li><a href="oma">OMA - Ortholog MAtrix</a></li>
+        <li>
+          <a href="swisslipids">SwissLipids - A knowledge resource for lipids and their biology</a>
+        </li>
+        <li>
+          <a href="rhea"
+            >Rhea - expert-curated knowledgebase of chemical and transport reactions of biological interest</a
+          >
+        </li>
+        <li><a href="hamap">HAMAP - High-quality Automated and Manual Annotation of Proteins</a></li>
+        <li><a href="dbgi">DBGI - The Digital Botanical Garden Initiative</a></li>
+      </ul>
     </div>
   </body>
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      /* display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f4; */
-    }
-  </style>
 </html>

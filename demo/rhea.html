@@ -12,54 +12,53 @@
   </head>
 
   <body>
-    <div>
-      <sparql-editor
-        endpoint="https://sparql.rhea-db.org/sparql/"
-        examples-repo-add-url="https://github.com/sib-swiss/sparql-examples/new/master/examples/Rhea"
-      >
-        <h4>About</h4>
-        <p>
-          This SPARQL endpoint contains Rhea reactions data (see
-          <a href="https://www.rhea-db.org/statistics">statistics</a>), and a snapshot of ChEBI data matching the Rhea
-          release. It is free to access and supports the SPARQL 1.1 Standard.
-        </p>
-        <p>
-          The query timeout is 45 minutes. All triples are available in the default graph. There are two named graphs:
-          <a href="http://sparql.rhea-db.org/rhea">Rhea</a> and <a href="http://sparql.rhea-db.org/chebi"> ChEBI</a>.
-        </p>
-        <h4>Documentation</h4>
-        <ol>
-          <li>
-            <a href="/.well-known/void">Statistics</a> and
-            <a href="https://ftp.expasy.org/databases/rhea/rdf/rhea_rdf_documentation.pdf">diagrams</a>
-          </li>
-          <li>
-            <a href="https://github.com/sib-swiss/sparql-training/tree/master/rhea"
-              >Tutorial on using SPARQL with Rhea</a
-            >
-          </li>
-          <li><a href="/.well-known/sparql-examples/">Example queries</a></li>
-          <li><a href="https://www.rhea-db.org/statistics">Release data</a></li>
-        </ol>
+    <sparql-editor
+      endpoint="https://sparql.rhea-db.org/sparql/"
+      examples-repo-add-url="https://github.com/sib-swiss/sparql-examples/new/master/examples/Rhea"
+    ></sparql-editor>
 
-        <h4>Other SPARQL editors for SIB endpoints</h4>
-        <ul>
-          <li><a href="/sparql-editor/uniprot">UniProt - protein knowledgebase</a></li>
-          <li><a href="/sparql-editor/bgee">Bgee - gene expression</a></li>
-          <li><a href="/sparql-editor/oma">OMA - Ortholog MAtrix</a></li>
-          <li>
-            <a href="/sparql-editor/swisslipids">SwissLipids - A knowledge resource for lipids and their biology</a>
-          </li>
-          <li>
-            <a href="/sparql-editor/rhea"
-              >Rhea - expert-curated knowledgebase of chemical and transport reactions of biological interest</a
-            >
-          </li>
-          <li><a href="/sparql-editor/hamap">HAMAP - High-quality Automated and Manual Annotation of Proteins</a></li>
-          <li><a href="/sparql-editor/dbgi">DBGI - The Digital Botanical Garden Initiative</a></li>
-        </ul>
-        <p>You can check if an endpoint contains the <a href="/sparql-editor/check">necessary metadata here</a>.</p>
-      </sparql-editor>
+    <div class="info-box">
+      <h4>About</h4>
+      <p>
+        This SPARQL endpoint contains Rhea reactions data (see
+        <a href="https://www.rhea-db.org/statistics">statistics</a>), and a snapshot of ChEBI data matching the Rhea
+        release. It is free to access and supports the SPARQL 1.1 Standard.
+      </p>
+      <p>
+        The query timeout is 45 minutes. All triples are available in the default graph. There are two named graphs:
+        <a href="http://sparql.rhea-db.org/rhea">Rhea</a> and <a href="http://sparql.rhea-db.org/chebi"> ChEBI</a>.
+      </p>
+      <h4>Documentation</h4>
+      <ol>
+        <li>
+          <a href="/.well-known/void">Statistics</a> and
+          <a href="https://ftp.expasy.org/databases/rhea/rdf/rhea_rdf_documentation.pdf">diagrams</a>
+        </li>
+        <li>
+          <a href="https://github.com/sib-swiss/sparql-training/tree/master/rhea">Tutorial on using SPARQL with Rhea</a>
+        </li>
+        <li><a href="/.well-known/sparql-examples/">Example queries</a></li>
+        <li><a href="https://www.rhea-db.org/statistics">Release data</a></li>
+      </ol>
+
+      <h4>Other SPARQL editors for SIB endpoints</h4>
+      <ul>
+        <li><a href="/sparql-editor">Editor for multiple endpoints</a></li>
+        <li><a href="/sparql-editor/uniprot">UniProt - protein knowledgebase</a></li>
+        <li><a href="/sparql-editor/bgee">Bgee - gene expression</a></li>
+        <li><a href="/sparql-editor/oma">OMA - Ortholog MAtrix</a></li>
+        <li>
+          <a href="/sparql-editor/swisslipids">SwissLipids - A knowledge resource for lipids and their biology</a>
+        </li>
+        <li>
+          <a href="/sparql-editor/rhea"
+            >Rhea - expert-curated knowledgebase of chemical and transport reactions of biological interest</a
+          >
+        </li>
+        <li><a href="/sparql-editor/hamap">HAMAP - High-quality Automated and Manual Annotation of Proteins</a></li>
+        <li><a href="/sparql-editor/dbgi">DBGI - The Digital Botanical Garden Initiative</a></li>
+      </ul>
+      <p>You can check if an endpoint contains the <a href="/sparql-editor/check">necessary metadata here</a>.</p>
     </div>
   </body>
 </html>

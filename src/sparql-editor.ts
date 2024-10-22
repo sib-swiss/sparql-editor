@@ -690,18 +690,16 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     });
 
     // Add the examples next to the YASQE editor
-    // yasqeEl.style.height = "100%";
     yasqeEl.style.width = "100%";
     exampleQueriesEl.style.width = "50%";
+    exampleQueriesEl.style.height = "fit-content";
     yasqeElParent.style.display = "flex";
     yasqeElParent.appendChild(exampleQueriesEl);
-    const yasqe = this.yasgui?.getTab()?.getYasqe();
-    yasqe?.expandEditor();
-    // if (exampleQueriesEl.offsetHeight > 0) {
-    //   Yasgui.Yasqe.defaults.editorHeight = `${exampleQueriesEl.offsetHeight}px`;
-    //   const yasqe = this.yasgui?.getTab()?.getYasqe();
-    //   yasqe?.expandEditor();
-    // }
+    if (exampleQueriesEl.offsetHeight > 0) {
+      // Yasgui.Yasqe.defaults.editorHeight = `${exampleQueriesEl.offsetHeight}px`;
+      const yasqe = this.yasgui?.getTab()?.getYasqe();
+      yasqe?.setSize(null, `${exampleQueriesEl.offsetHeight}px`);
+    }
   }
 
   addPrefixesToQuery(query: string) {

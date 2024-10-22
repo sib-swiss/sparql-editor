@@ -280,6 +280,9 @@ export function generateTabLabel(description: string): string {
     "them",
     "from",
     "these",
+    "what",
+    "used",
+    "have",
   ];
   // Remove HTML tags and parenthesis
   const words = description
