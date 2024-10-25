@@ -71,7 +71,7 @@ describe("sparql-editor", () => {
     // expect(yasrResult?.length).toBe(1);
 
     // Check examples pulled successfully
-    const examplesOnMainPage = sparqlEditor.querySelectorAll(".main-query-example");
+    const examplesOnMainPage = sparqlEditor.querySelectorAll(".sparql-main-examples");
     expect(examplesOnMainPage?.length).toBe(10);
   });
 });

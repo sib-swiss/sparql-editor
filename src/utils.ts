@@ -27,6 +27,7 @@ type SparqlResultBindings = {
 type ExampleQuery = {
   comment: string;
   query: string;
+  index: number;
 };
 
 // Replace the longest prefix in a URI with its corresponding prefix
@@ -170,8 +171,8 @@ export async function getExampleQueries(endpoint: string): Promise<ExampleQuery[
       } ORDER BY ?sq`,
       endpoint,
     );
-    queryResults.forEach(b => {
-      exampleQueries.push({comment: b.comment.value, query: b.query.value});
+    queryResults.forEach((b, index) => {
+      exampleQueries.push({comment: b.comment.value, query: b.query.value, index: index + 1});
     });
     // console.log(queryResults);
   } catch (error) {
@@ -254,6 +255,15 @@ export function getServiceUriForCursorPosition(query: string, lineNumber: number
     }
   }
   return null;
+}
+
+export function createUseButton() {
+  // Create use button
+  const useBtn = document.createElement("button");
+  useBtn.textContent = "Use";
+  useBtn.style.marginLeft = "0.5em";
+  useBtn.className = "btn use-sparql-example-btn";
+  return useBtn;
 }
 
 // Automatically generates a tab label from a query description by removing small words and stopwords

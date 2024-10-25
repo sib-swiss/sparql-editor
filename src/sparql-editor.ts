@@ -22,6 +22,7 @@ import {
   generateTabLabel,
   getClassesFallback,
   getPredicatesFallback,
+  createUseButton,
 } from "./utils";
 
 type Autocompleter = {name: string} & Partial<CompleterConfig>;
@@ -606,9 +607,17 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     // exQueryDialog.style.margin = "1em";
     // exQueryDialog.style.width = "calc(100vw - 8px)";
     exQueryDialog.style.width = "100%";
+    exQueryDialog.style.height = "100%";
     exQueryDialog.style.borderColor = "#cccccc";
     exQueryDialog.style.backgroundColor = "#f5f5f5";
     exQueryDialog.style.borderRadius = "10px";
+
+    // Add search bar for examples
+    const searchInput = document.createElement("input");
+    searchInput.type = "text";
+    searchInput.placeholder = "Search examples...";
+    searchInput.className = "sparql-search-examples-input";
+    exQueryDialog.appendChild(searchInput);
 
     // Add button to close dialog
     const exDialogCloseBtn = document.createElement("button");
@@ -620,64 +629,87 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     exQueryDialog.appendChild(exDialogCloseBtn);
     yasqeElParent.appendChild(exQueryDialog);
 
-    // Add examples to the main page and dialog
-    this.currentEndpoint().examples.forEach(async (example, index) => {
-      const exQueryDiv = document.createElement("div");
-      const exQueryP = document.createElement("p");
-      exQueryP.style.fontSize = "0.9em";
-      exQueryP.innerHTML = `${index + 1}. ${example.comment}`;
+    // Add examples to the main page
+    this.currentEndpoint()
+      .examples.slice(0, this.examplesOnMainPage)
+      .forEach(example => {
+        const exQueryDiv = document.createElement("div");
+        exQueryDiv.className = "sparql-main-examples";
+        const exQueryP = document.createElement("p");
+        exQueryP.style.fontSize = "0.9em";
+        exQueryP.innerHTML = `${example.index}. ${example.comment}`;
 
-      // Create use button
-      const useBtn = document.createElement("button");
-      useBtn.textContent = "Use";
-      useBtn.style.marginLeft = "0.5em";
-      useBtn.className = "btn sparqlExampleButton";
-      useBtn.addEventListener("click", () => {
-        this.addTab(example.query, example.comment);
-        exQueryDialog.close();
-      });
-      exQueryP.appendChild(useBtn);
-      exQueryDiv.appendChild(exQueryP);
-      exQueryDialog.appendChild(exQueryDiv);
-
-      // Add only the first examples to the main page
-      if (index < this.examplesOnMainPage) {
-        const cloneExQueryDiv = exQueryDiv.cloneNode(true) as HTMLElement;
-        cloneExQueryDiv.className = "main-query-example";
-        // Cloning does not include click event so we need to redo it :(
-        cloneExQueryDiv.lastChild?.lastChild?.addEventListener("click", () => {
+        // Create use button
+        const useBtn = createUseButton();
+        useBtn.addEventListener("click", () => {
           this.addTab(example.query, example.comment);
         });
-        exampleQueriesEl.appendChild(cloneExQueryDiv);
-      }
+        exQueryP.appendChild(useBtn);
+        exQueryDiv.appendChild(exQueryP);
+        exampleQueriesEl.appendChild(exQueryDiv);
+      });
 
-      // Add query to dialog using pre/code (super fast)
-      const exQueryPre = document.createElement("pre");
-      const exQueryCode = document.createElement("code");
-      exQueryCode.className = "language-sparql hljs";
-      exQueryCode.style.borderRadius = "10px";
-      exQueryPre.style.borderRadius = "10px";
-      exQueryPre.style.backgroundColor = "#cccccc";
-      exQueryPre.style.padding = "0.1em";
-      // exQueryCode.textContent = example.query.trim();
-      // hljs.highlightAll(); does not work on web component shadow DOM
-      exQueryCode.innerHTML = hljs.highlight(example.query.trim(), {language: "sparql"}).value;
-      exQueryPre.appendChild(exQueryCode);
-      exQueryDiv.appendChild(exQueryPre);
+    // Function to display and filter examples in the dialog
+    const displayExamples = (filteredExamples: any[]) => {
+      // Clear the dialog content before adding filtered examples
+      exQueryDialog.querySelectorAll(".sparql-all-examples").forEach(item => item.remove());
 
-      // // TODO: Add Mermaid diagram for each example in dialog
-      // try {
-      //   const mermaidCode = document.createElement("code");
-      //   mermaidCode.className = "language-mermaid";
-      //   const mermaidStr = getMermaidFromQuery(this.addPrefixesToQuery(example.query));
-      //   // mermaidCode.textContent = mermaidStr;
-      //   const { svg } = await mermaid.render('graphDiv', mermaidStr);
-      //   mermaidCode.innerHTML = svg;
-      //   exQueryDiv.appendChild(mermaidCode);
-      // } catch (error) {
-      //   console.warn("Error generating Mermaid diagram:", error);
-      //   console.log(this.addPrefixesToQuery(example.query))
-      // }
+      filteredExamples.forEach(example => {
+        const exQueryDiv = document.createElement("div");
+        exQueryDiv.className = "sparql-all-examples";
+        const exQueryP = document.createElement("p");
+        exQueryP.style.fontSize = "0.9em";
+        exQueryP.innerHTML = `${example.index}. ${example.comment}`;
+
+        // Create use button
+        const useBtn = createUseButton();
+        useBtn.addEventListener("click", () => {
+          this.addTab(example.query, example.comment);
+          exQueryDialog.close();
+        });
+        exQueryP.appendChild(useBtn);
+        exQueryDiv.appendChild(exQueryP);
+
+        // Add query to dialog using pre/code
+        const exQueryPre = document.createElement("pre");
+        const exQueryCode = document.createElement("code");
+        exQueryCode.className = "language-sparql hljs";
+        exQueryCode.style.borderRadius = "10px";
+        exQueryPre.style.borderRadius = "10px";
+        exQueryPre.style.backgroundColor = "#cccccc";
+        exQueryPre.style.padding = "0.1em";
+        exQueryCode.innerHTML = hljs.highlight(example.query.trim(), {language: "sparql"}).value;
+        exQueryPre.appendChild(exQueryCode);
+        exQueryDiv.appendChild(exQueryPre);
+
+        exQueryDialog.appendChild(exQueryDiv);
+
+        // // TODO: Add Mermaid diagram for each example in dialog
+        // try {
+        //   const mermaidCode = document.createElement("code");
+        //   mermaidCode.className = "language-mermaid";
+        //   const mermaidStr = getMermaidFromQuery(this.addPrefixesToQuery(example.query));
+        //   // mermaidCode.textContent = mermaidStr;
+        //   const { svg } = await mermaid.render('graphDiv', mermaidStr);
+        //   mermaidCode.innerHTML = svg;
+        //   exQueryDiv.appendChild(mermaidCode);
+        // } catch (error) {
+        //   console.warn("Error generating Mermaid diagram:", error);
+        //   console.log(this.addPrefixesToQuery(example.query))
+        // }
+      });
+    };
+
+    // Add examples initially
+    displayExamples(this.currentEndpoint().examples);
+
+    // Add event listener for search input
+    searchInput.addEventListener("input", () => {
+      const searchTerm = searchInput.value.toLowerCase();
+      const filteredExamples = this.currentEndpoint().examples.filter(example => {
+        return example.comment.toLowerCase().includes(searchTerm) || example.query.toLowerCase().includes(searchTerm);
+      });
+      displayExamples(filteredExamples);
     });
 
     // Add button to open dialog

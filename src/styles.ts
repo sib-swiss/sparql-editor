@@ -24,6 +24,12 @@ export const editorCss = `.sparql-editor-container a {
 .sparql-editor-container .sparql-examples {
   padding-left: 1em;
 }
+.sparql-editor-container input.sparql-search-examples-input {
+  width: 300px;
+  padding: 0.5em;
+  border-radius: 5px;
+}
+
 @media (max-width: 600px) {
   .sparql-editor-container {
     flex-direction: column;
@@ -34,20 +40,11 @@ export const editorCss = `.sparql-editor-container a {
   .sparql-editor-container #sparql-examples-top-btn {
     display: inline-block;
   }
-//   .sparql-editor-container .sparql-examples {
-//     border-left: none;
-//     padding-left: 0;
-//     border-top: 1px solid #ccc;
-//     padding-top: 1em;
-//   }
+  .sparql-editor-container input.sparql-search-examples-input {
+    width: 100%;
+  }
 }
 @media (min-width: 600px) {
-  // .sparql-editor-container {
-  //   flex-direction: column;
-  // }
-  // .sparql-editor-container .sparql-examples {
-  //   display: none;
-  // }
   .sparql-editor-container #sparql-examples-top-btn {
     display: none !important;
   }
