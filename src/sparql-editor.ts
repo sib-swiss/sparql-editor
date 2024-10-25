@@ -68,7 +68,7 @@ export class SparqlEditor extends HTMLElement {
     this.endpoints = (this.getAttribute("endpoint") || "").split(",").map(e => e.trim());
     // NOTE: will need to be removed at some point I guess
     // Check if examples contain the index field, if not reset cache
-    if (this.currentEndpoint().examples?.some(example => example.index === undefined)) {
+    if (this.currentEndpoint() && this.currentEndpoint().examples?.some(example => example.index === undefined)) {
       localStorage.removeItem("sparql-editor-metadata");
       this.meta = {};
     }
