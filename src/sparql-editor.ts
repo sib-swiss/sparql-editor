@@ -65,6 +65,12 @@ export class SparqlEditor extends HTMLElement {
     super();
 
     this.meta = this.loadMetaFromLocalStorage();
+    // NOTE: will need to be removed at some point I guess
+    // Check if examples contain the index field, if not reset cache
+    if (this.currentEndpoint().examples?.some(example => example.index === undefined)) {
+      localStorage.removeItem("sparql-editor-metadata");
+      this.meta = {};
+    }
     // console.log("Loaded metadata from localStorage", this.meta);
     this.endpoints = (this.getAttribute("endpoint") || "").split(",").map(e => e.trim());
     if (this.endpoints.length === 0)
