@@ -65,6 +65,7 @@ export class SparqlEditor extends HTMLElement {
     super();
 
     this.meta = this.loadMetaFromLocalStorage();
+    this.endpoints = (this.getAttribute("endpoint") || "").split(",").map(e => e.trim());
     // NOTE: will need to be removed at some point I guess
     // Check if examples contain the index field, if not reset cache
     if (this.currentEndpoint().examples?.some(example => example.index === undefined)) {
@@ -72,7 +73,6 @@ export class SparqlEditor extends HTMLElement {
       this.meta = {};
     }
     // console.log("Loaded metadata from localStorage", this.meta);
-    this.endpoints = (this.getAttribute("endpoint") || "").split(",").map(e => e.trim());
     if (this.endpoints.length === 0)
       throw new Error("No endpoint provided. Please use the 'endpoint' attribute to specify the SPARQL endpoint URL.");
 
