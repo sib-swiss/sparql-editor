@@ -17,7 +17,6 @@ body {
   text-align: left;
   padding: 0.5em 1em;
   background-color: white;
-  /* background-color: #f4f4f4; */
   border: 1px solid #ccc;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
@@ -31,4 +30,21 @@ li {
 }
 ul {
   padding-left: 1.5em;
+}
+
+#loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+  flex-direction: column;
+  color: #555;
+}
+.spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-left-color: #000;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  animation: spin 1s linear infinite;
 }

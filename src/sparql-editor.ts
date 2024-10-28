@@ -105,10 +105,6 @@ export class SparqlEditor extends HTMLElement {
         <button id="sparql-examples-top-btn" class="btn" style="margin-bottom: 0.3em;">Browse examples</button>
         <button id="sparql-clear-cache-btn" class="btn" style="margin-bottom: 0.3em;">Clear cache</button>
         <div id="yasgui"></div>
-        <div id="loading-spinner" style="display: flex; justify-content: center; align-items: center; height: 100px; flex-direction: column;">
-          <div class="spinner" style="border: 4px solid rgba(0,0,0,0.1); border-left-color: #000; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite;"></div>
-          <p style="margin-top: 10px; text-align: center;">Loading editor...</p>
-        </div>
       </div>
     `;
     this.appendChild(style);
@@ -249,9 +245,6 @@ export class SparqlEditor extends HTMLElement {
       copyEndpointOnNewTab: true,
     });
     await this.showExamples();
-
-    const spinEl = this.querySelector("#loading-spinner") as HTMLElement;
-    if (spinEl) spinEl.style.display = "none";
 
     this.yasgui?.on("tabSelect", () => {
       setTimeout(async () => {

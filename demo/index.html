@@ -23,6 +23,11 @@
   </head>
 
   <body>
+    <div id="loading-spinner">
+      <div class="spinner"></div>
+      <p style="margin-top: 10px; text-align: center">Loading editor...</p>
+    </div>
+
     <sparql-editor
       endpoint="https://sparql.uniprot.org/sparql/,https://www.bgee.org/sparql/,https://sparql.omabrowser.org/sparql/,https://beta.sparql.swisslipids.org/,https://sparql.rhea-db.org/sparql/,https://biosoda.unil.ch/graphdb/repositories/emi-dbgi,https://hamap.expasy.org/sparql/,https://rdf.metanetx.org/sparql/,https://sparql.orthodb.org/sparql"
       examples-repository="https://github.com/sib-swiss/sparql-examples"
@@ -61,4 +66,9 @@
       </ul>
     </div>
   </body>
+  <script>
+    window.onload = function () {
+      document.getElementById("loading-spinner").style.display = "none";
+    };
+  </script>
 </html>

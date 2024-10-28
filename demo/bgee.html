@@ -12,6 +12,11 @@
   </head>
 
   <body>
+    <div id="loading-spinner">
+      <div class="spinner"></div>
+      <p style="margin-top: 10px; text-align: center">Loading editor...</p>
+    </div>
+
     <sparql-editor
       endpoint="https://www.bgee.org/sparql/"
       examples-repository="https://github.com/sib-swiss/sparql-examples"
@@ -49,4 +54,9 @@
       <p>You can check if an endpoint contains the <a href="/sparql-editor/check">necessary metadata here</a>.</p>
     </div>
   </body>
+  <script>
+    window.onload = function () {
+      document.getElementById("loading-spinner").style.display = "none";
+    };
+  </script>
 </html>
