@@ -1,7 +1,6 @@
 /// <reference types="vitest/config" />
 import {defineConfig} from "vite";
 import typescript from "@rollup/plugin-typescript";
-import terser from "@rollup/plugin-terser";
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -16,28 +15,10 @@ export default defineConfig({
       name: "@sib-swiss/sparql-editor",
       fileName: "sparql-editor",
     },
-    minify: true,
     sourcemap: true,
     cssCodeSplit: true,
-
     rollupOptions: {
-      output: [
-        {
-          entryFileNames: "[name].js",
-          format: "es",
-        },
-        // UMD is for older systems that don't support ES modules
-        {
-          entryFileNames: "[name].min.js",
-          name: "SparqlEditor",
-          format: "umd",
-        },
-      ],
-      plugins: [
-        typescript(),
-        terser(), // Minify
-      ],
-      external: [],
+      plugins: [typescript()],
     },
   },
   test: {
