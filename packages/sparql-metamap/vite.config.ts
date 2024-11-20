@@ -11,9 +11,9 @@ export default defineConfig({
     outDir: "dist",
     target: ["es2015"],
     lib: {
-      entry: "src/sparql-editor.ts",
-      name: "@sib-swiss/sparql-editor",
-      fileName: "sparql-editor",
+      entry: "src/sparql-metamap.ts",
+      name: "@sib-swiss/sparql-metamap",
+      fileName: "sparql-metamap",
     },
     sourcemap: true,
     cssCodeSplit: true,

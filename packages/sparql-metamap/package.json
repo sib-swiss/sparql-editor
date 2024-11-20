@@ -1,0 +1,61 @@
+{
+  "name": "@sib-swiss/sparql-metamap",
+  "version": "0.0.1",
+  "description": "A standard web component to easily deploy a user-friendly network visualization for one or more endpoints.",
+  "license": "MIT",
+  "author": {
+    "name": "Vincent Emonet",
+    "email": "vincent.emonet@gmail.com"
+  },
+  "type": "module",
+  "main": "dist/sparql-metamap.umd.cjs",
+  "module": "dist/sparql-metamap.js",
+  "types": "dist/src/sparql-metamap.d.ts",
+  "files": [
+    "dist/*",
+    "../../LICENSE"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test": "npm run lint && vitest run",
+    "upgrade": "npx npm-check-updates -u && npm install"
+  },
+  "dependencies": {
+    "@sigma/edge-curve": "^3.0.0-beta.16",
+    "@sigma/node-image": "^3.0.0-beta.16",
+    "@types/cytoscape-dagre": "^2.3.3",
+    "cytoscape": "^3.30.3",
+    "cytoscape-cola": "^2.5.1",
+    "cytoscape-cose-bilkent": "^4.1.0",
+    "cytoscape-dagre": "^2.5.0",
+    "cytoscape-elk": "^2.2.0",
+    "cytoscape-fcose": "^2.2.0",
+    "cytoscape-node-html-label": "^1.2.2",
+    "cytoscape-popper": "^4.0.1",
+    "cytoscape-spread": "^3.0.0",
+    "graphology": "^0.25.4",
+    "graphology-layout-force": "^0.2.4",
+    "graphology-layout-forceatlas2": "^0.10.1",
+    "highlight.js": "^11.10.0",
+    "iwanthue": "^2.0.0",
+    "sigma": "^3.0.0-beta.38",
+    "sparqljs": "^3.7.3",
+    "vis-network": "^9.1.9"
+  },
+  "keywords": [
+    "SPARQL",
+    "Network visualization",
+    "semantic web",
+    "RDF",
+    "Linked Data"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sib-swiss/sparql-editor.git"
+  },
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  }
+}
