@@ -76,11 +76,11 @@ The editor retrieves metadata about the endpoints by directly querying them, so 
 
   </details>
 
-![Screenshot gene](demo/screenshot_gene.png)
+![Screenshot gene](packages/demo/src/screenshot_gene.png)
 
 ---
 
-![Screenshot expression](demo/screenshot_expression.png)
+![Screenshot expression](packages/demo/src/screenshot_expression.png)
 
 ## 🚀 Use
 

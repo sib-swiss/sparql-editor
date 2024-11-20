@@ -3,21 +3,37 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>MetaNetX SPARQL editor</title>
-    <meta name="description" content="SPARQL editor for the MetaNetX endpoint at the SIB" />
+    <title>Bgee SPARQL editor</title>
+    <meta name="description" content="SPARQL editor for Bgee at the SIB" />
     <link rel="icon" type="image/png" href="sib-logo.png" />
     <link rel="stylesheet" href="styles.css" />
 
-    <script type="module" src="https://unpkg.com/@sib-swiss/sparql-editor"></script>
+    <script type="module" src="../../sparql-editor/dist/sparql-editor.js"></script>
   </head>
 
   <body>
+    <div id="loading-spinner">
+      <div class="spinner"></div>
+      <p style="margin-top: 10px; text-align: center">Loading editor...</p>
+    </div>
+
     <sparql-editor
-      endpoint="https://rdf.metanetx.org/sparql/"
-      examples-repo-add-url="https://github.com/sib-swiss/sparql-examples/new/master/examples/MetaNetX"
+      endpoint="https://www.bgee.org/sparql/"
+      examples-repository="https://github.com/sib-swiss/sparql-examples"
+      examples-repo-add-url="https://github.com/sib-swiss/sparql-examples/new/master/examples/Bgee"
     ></sparql-editor>
 
     <div class="info-box">
+      <h4>About</h4>
+      <p>
+        Tutorial and documentation:
+        <a href="https://purl.org/sib-rdf/bgee-tutorial">Querying the Bgee knowledge graph</a>
+      </p>
+      <p>
+        Ontology (data schema): <a href="https://purl.org/genex/documentation">GenEx semantic model specification</a>
+      </p>
+      <p>Support: <a href="https://github.com/BgeeDB/bgee_pipeline/issues">open an issue here</a></p>
+
       <h4>Other SPARQL editors for SIB endpoints</h4>
       <ul>
         <li><a href="/sparql-editor">Editor for multiple endpoints</a></li>
@@ -33,14 +49,14 @@
           >
         </li>
         <li><a href="/sparql-editor/hamap">HAMAP - High-quality Automated and Manual Annotation of Proteins</a></li>
-        <li>
-          <a href="/sparql-editor/metanetx"
-            >MetaNetX - Automated Model Construction and Genome Annotation for Large-Scale Metabolic Networks</a
-          >
-        </li>
         <li><a href="/sparql-editor/dbgi">DBGI - The Digital Botanical Garden Initiative</a></li>
       </ul>
       <p>You can check if an endpoint contains the <a href="/sparql-editor/check">necessary metadata here</a>.</p>
     </div>
   </body>
+  <script>
+    window.onload = function () {
+      document.getElementById("loading-spinner").style.display = "none";
+    };
+  </script>
 </html>

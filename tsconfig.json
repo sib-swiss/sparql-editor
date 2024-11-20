@@ -18,8 +18,12 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "sparql-editor": ["packages/sparql-editor/src"]
+    }
   },
-  "include": ["src/**/*", "test/**/*"],
+  "include": ["packages/*/src"],
   "exclude": ["node_modules", "dist"]
 }

@@ -3,44 +3,34 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>SPARQL editor dev</title>
-    <meta name="description" content="SPARQL editor demo page" />
+    <title>SwissLipids SPARQL editor</title>
+    <meta name="description" content="SPARQL editor for the SwissLipids endpoint at the SIB" />
     <link rel="icon" type="image/png" href="sib-logo.png" />
     <link rel="stylesheet" href="styles.css" />
 
-    <script type="module" src="https://unpkg.com/@sib-swiss/sparql-editor"></script>
+    <script type="module" src="../../sparql-editor/dist/sparql-editor.js"></script>
   </head>
 
   <body>
-    <div id="loading-spinner">
-      <div class="spinner"></div>
-      <p style="margin-top: 10px; text-align: center">Loading editor...</p>
-    </div>
-
     <sparql-editor
-      endpoint="https://sparql.uniprot.org/sparql/"
-      examples-repo-add-url="https://github.com/sib-swiss/sparql-examples/new/master/examples/UniProt"
+      endpoint="https://beta.sparql.swisslipids.org/"
+      examples-repo-add-url="https://github.com/sib-swiss/sparql-examples/new/master/examples/SwissLipids"
     ></sparql-editor>
 
     <div class="info-box">
       <h4>About</h4>
       <p>
-        This SPARQL endpoint contains all UniProt data. It is free to access and supports the
+        This SPARQL endpoint contains all SwissLipids data. It is free to access and supports the
         <a href="http://www.w3.org/TR/sparql11-query/">SPARQL 1.1 Standard</a>.
       </p>
       <p>
-        There are 186,631,773,819 triples in this release (2024_04). The query timeout is 45 minutes. All triples are
-        available in the default graph. There are 22 named graphs.
+        There are 15,271,348 triples in this release (2024_08_30). The query timeout is 45 minutes. All triples are
+        available in the default graph. There are 3 named graphs.
       </p>
       <h4>Documentation</h4>
       <ol>
-        <li><a href="http://purl.uniprot.org/core/">Classes and predicates defined by the UniProt consortium</a></li>
-        <li>
-          <a href="https://github.com/sib-swiss/sparql-training/tree/master/uniprot"
-            >Tutorial on using SPARQL with UniProt</a
-          >
-        </li>
         <li><a href="/.well-known/void">Statistics and diagrams</a></li>
+        <li><a href="/.well-known/sparql-examples/">Example queries</a></li>
       </ol>
 
       <h4>Other SPARQL editors for SIB endpoints</h4>
@@ -63,9 +53,4 @@
       <p>You can check if an endpoint contains the <a href="/sparql-editor/check">necessary metadata here</a>.</p>
     </div>
   </body>
-  <script>
-    window.onload = function () {
-      document.getElementById("loading-spinner").style.display = "none";
-    };
-  </script>
 </html>

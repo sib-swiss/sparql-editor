@@ -1,36 +1,32 @@
 {
-  "name": "@sib-swiss/sparql-editor",
+  "name": "@sib-swiss/sparql",
   "version": "0.2.4",
-  "description": "A standard web component to easily deploy a user-friendly SPARQL query editor for one or more endpoints. Built on the popular YASGUI editor, it provides context-aware autocomplete for classes and predicates based on the content of the endpoints.",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "description": "Web components to for accessing SPARQL endpoints.",
   "license": "MIT",
   "author": {
     "name": "Vincent Emonet",
     "email": "vincent.emonet@gmail.com"
   },
-  "type": "module",
-  "main": "dist/sparql-editor.umd.cjs",
-  "module": "dist/sparql-editor.js",
-  "types": "dist/src/sparql-editor.d.ts",
-  "files": [
-    "dist/*"
-  ],
   "scripts": {
-    "dev": "vite",
-    "demo": "npx http-server demo",
-    "build": "vite build",
-    "fmt": "prettier --write . && eslint . --fix --ignore-pattern dist/",
-    "lint": "prettier --check . && eslint . --ignore-pattern dist/",
-    "test": "npm run lint && vitest run",
+    "build": "npm run build:editor && npm run build:demo",
+    "dev": "npm run dev:editor",
+    "build:editor": "npm run build -w packages/sparql-editor",
+    "dev:editor": "npm run dev -w packages/sparql-editor",
+    "build:demo": "npm run build -w packages/demo",
+    "dev:demo": "npm run build:editor && npm run dev -w packages/demo",
+    "preview:demo": "npm run preview -w packages/demo",
+    "fmt": "prettier --write . && eslint \"packages/**/*.{ts,tsx,html,json}\" --fix",
+    "lint": "prettier --check . && eslint \"packages/**/*.{ts,tsx,html,json}\"",
+    "test": "npm run lint && npm test -w packages/sparql-editor",
     "upgrade": "npx npm-check-updates -u && npm install",
     "prepare": "husky",
-    "version": "npm run lint && npm run build && auto-changelog -p && git add CHANGELOG.md && npm publish",
+    "version": "npm run lint && npm run build && auto-changelog -p && git add CHANGELOG.md && npm publish -w packages/sparql-editor",
     "postversion": "git push origin v$(npm pkg get version | tr -d \\\")"
-  },
-  "dependencies": {
-    "@zazuko/yasgui": "^4.4.0",
-    "highlight.js": "^11.10.0",
-    "mermaid": "^11.4.0",
-    "sparqljs": "^3.7.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
@@ -84,7 +80,6 @@
     "type": "git",
     "url": "https://github.com/sib-swiss/sparql-editor.git"
   },
-  "private": false,
   "publishConfig": {
     "access": "public"
   }

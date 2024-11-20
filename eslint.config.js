@@ -6,5 +6,5 @@ export default tseslint.config(eslint.configs.recommended, ...tseslint.configs.r
     "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/ban-ts-comment": "off",
   },
-  ignores: ["node_modules/*", "dist/*"],
+  ignores: ["node_modules", "dist"],
 });
