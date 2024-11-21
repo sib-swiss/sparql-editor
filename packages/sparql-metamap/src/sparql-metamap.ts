@@ -3,7 +3,8 @@ import Sigma from "sigma";
 import forceAtlas2 from "graphology-layout-forceatlas2";
 import FA2Layout from "graphology-layout-forceatlas2/worker";
 import iwanthue from "iwanthue";
-// import EdgeCurveProgram from "@sigma/edge-curve";
+import {DEFAULT_EDGE_CURVATURE, EdgeCurvedArrowProgram, indexParallelEdgesIndex} from "@sigma/edge-curve";
+import {EdgeArrowProgram} from "sigma/rendering";
 import type {Coordinates, EdgeDisplayData, NodeDisplayData} from "sigma/types";
 
 // import { createNodeImageProgram } from "@sigma/node-image";
@@ -155,6 +156,9 @@ export class SparqlMetamap extends HTMLElement {
       #metamap-predicate-sidebar p, h3, h5 {
         margin: .5em 0;
       }
+      #metamap-predicate-sidebar a {
+        text-decoration: none;
+      }
       #network-container {
         width: 100%;
         float: right;
@@ -169,9 +173,6 @@ export class SparqlMetamap extends HTMLElement {
         font-variant: small-caps;
         font-weight: 400;
         text-shadow: 2px 2px 1px white, -2px -2px 1px white, -2px 2px 1px white, 2px -2px 1px white;
-      }
-      #metamap-predicate-sidebar a {
-        text-decoration: none;
       }
       #sparql-metamap code {
         font-family: 'Fira Code', monospace;
@@ -210,6 +211,7 @@ export class SparqlMetamap extends HTMLElement {
     this.appendChild(style);
     this.appendChild(container);
 
+    // Add sidebar filtering buttons
     const showAllButton = this.querySelector("#metamap-show-all") as HTMLButtonElement;
     showAllButton.addEventListener("click", () => {
       const checkboxes = this.querySelectorAll("#metamap-predicates-list input[type='checkbox']");
@@ -361,7 +363,7 @@ export class SparqlMetamap extends HTMLElement {
     //   this.graph.setNodeAttribute(node, "color", 100 * Math.sin(angle));
     // });
     let i = 1;
-    this.graph.forEachNode((node, atts) => {
+    this.graph.forEachNode((_node, atts) => {
       const angle = (i * 2 * Math.PI) / this.graph.order;
       i++;
       atts.x = 100 * Math.cos(angle);
@@ -379,12 +381,54 @@ export class SparqlMetamap extends HTMLElement {
       this.clusters[c].y =
         this.clusters[c].positions.reduce((acc, p) => acc + p.y, 0) / this.clusters[c].positions.length;
     }
-    console.log("clusters", this.clusters);
+    console.log("clusters!", this.clusters);
+
+    // Fix multi edges between same nodes
+    // Use dedicated helper to identify parallel edges:
+    indexParallelEdgesIndex(this.graph, {
+      edgeIndexAttribute: "parallelIndex",
+      edgeMinIndexAttribute: "parallelMinIndex",
+      edgeMaxIndexAttribute: "parallelMaxIndex",
+    });
+    // Adapt types and curvature of parallel edges for rendering:
+    this.graph.forEachEdge(
+      (
+        edge,
+        {
+          parallelIndex,
+          parallelMinIndex,
+          parallelMaxIndex,
+        }:
+          | {parallelIndex: number; parallelMinIndex?: number; parallelMaxIndex: number}
+          | {parallelIndex?: null; parallelMinIndex?: null; parallelMaxIndex?: null},
+      ) => {
+        if (typeof parallelMinIndex === "number") {
+          this.graph.mergeEdgeAttributes(edge, {
+            type: parallelIndex ? "curved" : "straight",
+            curvature: getCurvature(parallelIndex, parallelMaxIndex),
+          });
+        } else if (typeof parallelIndex === "number") {
+          this.graph.mergeEdgeAttributes(edge, {
+            type: "curved",
+            curvature: getCurvature(parallelIndex, parallelMaxIndex),
+          });
+        } else {
+          this.graph.setEdgeAttribute(edge, "type", "straight");
+        }
+      },
+    );
 
     const container = this.querySelector("#network-container") as HTMLElement;
     this.renderer = new Sigma(this.graph, container, {
       renderEdgeLabels: true,
       enableEdgeEvents: true,
+      allowInvalidContainer: true,
+      defaultEdgeType: "straight",
+      edgeProgramClasses: {
+        straight: EdgeArrowProgram,
+        curved: EdgeCurvedArrowProgram,
+      },
+      // https://www.npmjs.com/package/@sigma/edge-curve
       // edgeProgramClasses: {
       //   curved: EdgeCurveProgram,
       // },
@@ -394,7 +438,11 @@ export class SparqlMetamap extends HTMLElement {
     const layout = new FA2Layout(this.graph, {
       settings: {
         ...inferredLayoutSettings,
-        gravity: 4,
+        // https://www.npmjs.com/package/graphology-layout-forceatlas2#settings
+        // barnesHutOptimize: true,
+        // gravity: 0.1,
+        linLogMode: true,
+        // adjustSizes: true,
         // strongGravityMode: true,
       },
     });
@@ -694,6 +742,14 @@ export class SparqlMetamap extends HTMLElement {
     else this.hidePredicates.delete(predicateLabel);
     this.renderer?.refresh({skipIndexation: true});
   }
+}
+
+function getCurvature(index: number, maxIndex: number): number {
+  if (maxIndex <= 0) throw new Error("Invalid maxIndex");
+  if (index < 0) return -getCurvature(-index, maxIndex);
+  const amplitude = 3.5;
+  const maxCurvature = amplitude * (1 - Math.exp(-maxIndex / amplitude)) * DEFAULT_EDGE_CURVATURE;
+  return (maxCurvature * index) / maxIndex;
 }
 
 customElements.define("sparql-metamap", SparqlMetamap);

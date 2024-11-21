@@ -24,7 +24,7 @@
     "upgrade": "npx npm-check-updates -u && npm install"
   },
   "dependencies": {
-    "@zazuko/yasgui": "^4.4.0",
+    "@zazuko/yasgui": "4.3.3",
     "highlight.js": "^11.10.0",
     "mermaid": "^11.4.0",
     "sparqljs": "^3.7.3"
