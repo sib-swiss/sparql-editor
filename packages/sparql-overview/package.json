@@ -1,5 +1,5 @@
 {
-  "name": "@sib-swiss/sparql-metamap",
+  "name": "@sib-swiss/sparql-overview",
   "version": "0.0.1",
   "description": "A standard web component to easily deploy a user-friendly network visualization for one or more endpoints.",
   "license": "MIT",
@@ -8,9 +8,9 @@
     "email": "vincent.emonet@gmail.com"
   },
   "type": "module",
-  "main": "dist/sparql-metamap.umd.cjs",
-  "module": "dist/sparql-metamap.js",
-  "types": "dist/src/sparql-metamap.d.ts",
+  "main": "dist/sparql-overview.umd.cjs",
+  "module": "dist/sparql-overview.js",
+  "types": "dist/src/sparql-overview.d.ts",
   "files": [
     "dist/*",
     "../../LICENSE"

@@ -13,12 +13,12 @@
     "email": "vincent.emonet@gmail.com"
   },
   "scripts": {
-    "build": "npm run build:editor && npm run build:metamap && npm run build:demo",
+    "build": "npm run build:editor && npm run build:overview && npm run build:demo",
     "dev": "npm run dev:editor",
     "build:editor": "npm run build -w packages/sparql-editor",
     "dev:editor": "npm run dev -w packages/sparql-editor",
-    "build:metamap": "npm run build -w packages/sparql-metamap",
-    "dev:metamap": "npm run dev -w packages/sparql-metamap",
+    "build:overview": "npm run build -w packages/sparql-overview",
+    "dev:overview": "npm run dev -w packages/sparql-overview",
     "build:demo": "npm run build -w packages/demo",
     "dev:demo": "npm run build:editor && npm run dev -w packages/demo",
     "preview:demo": "npm run preview -w packages/demo",

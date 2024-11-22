@@ -108,9 +108,9 @@ function isMetadataNode(node: string) {
 
 /**
  * Custom element to create a SPARQL network overview for a given endpoint classes and predicates
- * @example <sparql-metamap endpoint="https://sparql.uniprot.org/sparql/"></sparql-metamap>
+ * @example <sparql-overview endpoint="https://sparql.uniprot.org/sparql/"></sparql-overview>
  */
-export class SparqlMetamap extends HTMLElement {
+export class SparqlOverview extends HTMLElement {
   endpoints: {[key: string]: EndpointInfo} = {};
   // meta: EndpointsMetadata;
   // void: {[key: string]: SparqlResultBindings[]} = {};
@@ -152,10 +152,10 @@ export class SparqlMetamap extends HTMLElement {
       html, body {
         font: 10pt arial;
       }
-      #sparql-metamap {
+      #sparql-overview {
         height: 100%;
       }
-      #metamap-predicate-sidebar {
+      #overview-predicate-sidebar {
         float: left;
         width: fit-content;
         max-width: 300px;
@@ -163,10 +163,10 @@ export class SparqlMetamap extends HTMLElement {
         overflow-y: auto;
         height: 100%;
       }
-      #metamap-predicate-sidebar p, h3, h5 {
+      #overview-predicate-sidebar p, h3, h5 {
         margin: .5em 0;
       }
-      #metamap-predicate-sidebar a {
+      #overview-predicate-sidebar a {
         text-decoration: none;
       }
       #network-container {
@@ -175,7 +175,7 @@ export class SparqlMetamap extends HTMLElement {
         height: 100%;
         border: 1px solid lightgray;
       }
-      #sparql-metamap hr {
+      #sparql-overview hr {
         width: 90%;
         border: none;
         height: 1px;
@@ -190,7 +190,7 @@ export class SparqlMetamap extends HTMLElement {
         font-weight: 400;
         text-shadow: 2px 2px 1px white, -2px -2px 1px white, -2px 2px 1px white, 2px -2px 1px white;
       }
-      #sparql-metamap code {
+      #sparql-overview code {
         font-family: 'Fira Code', monospace;
         font-size: 0.95rem;
         border-radius: 6px;
@@ -202,33 +202,33 @@ export class SparqlMetamap extends HTMLElement {
       }
 		`;
     const container = document.createElement("div");
-    container.id = "sparql-metamap";
+    container.id = "sparql-overview";
     container.style.display = "flex";
     container.className = "container";
     container.style.height = "100%";
     container.innerHTML = `
-      <div id="metamap-predicate-sidebar" style="display: flex; flex-direction: column;">
+      <div id="overview-predicate-sidebar" style="display: flex; flex-direction: column;">
         <input type="search" id="search-input" list="suggestions" placeholder="Search classes...">
         <datalist id="suggestions"></datalist>
         <div style="display: flex; justify-content: space-evenly; gap: .5em; margin: .5em 0;">
-          <button id="metamap-show-meta" title="Also show metadata classes (ontology, SHACL, VoID)">Show metadata</button>
+          <button id="overview-show-meta" title="Also show metadata classes (ontology, SHACL, VoID)">Show metadata</button>
         </div>
         <div style="text-align: center;">
           <span>Filter predicates ·</span>
-          <button id="metamap-show-preds" title="Show all predicates">Show all</button>
-          <button id="metamap-hide-preds" title="Hide all predicates">Hide all</button>
+          <button id="overview-show-preds" title="Show all predicates">Show all</button>
+          <button id="overview-hide-preds" title="Hide all predicates">Hide all</button>
         </div>
-        <div id="metamap-predicates-list" style="flex: 1; overflow-y: auto;"></div>
+        <div id="overview-predicates-list" style="flex: 1; overflow-y: auto;"></div>
 
         <hr></hr>
         <div style="text-align: center; ">
           <span>Filter clusters ·</span>
-          <button id="metamap-show-clusters" title="Show all clusters">Show all</button>
-          <button id="metamap-hide-clusters" title="Hide all clusters">Hide all</button>
+          <button id="overview-show-clusters" title="Show all clusters">Show all</button>
+          <button id="overview-hide-clusters" title="Hide all clusters">Hide all</button>
         </div>
-        <div id="metamap-clusters-list" style="flex: 1; overflow-y: auto;"></div>
-        <div id="metamap-edge-info" style="overflow-y: auto;"></div>
-        <div id="metamap-node-info" style="overflow-y: auto;"></div>
+        <div id="overview-clusters-list" style="flex: 1; overflow-y: auto;"></div>
+        <div id="overview-edge-info" style="overflow-y: auto;"></div>
+        <div id="overview-node-info" style="overflow-y: auto;"></div>
       </div>
 
       <div id="network-container" style="flex: 1; position: relative;"></div>
@@ -237,25 +237,25 @@ export class SparqlMetamap extends HTMLElement {
     this.appendChild(container);
 
     // Add sidebar filtering buttons
-    const showAllPredsButton = this.querySelector("#metamap-show-preds") as HTMLButtonElement;
+    const showAllPredsButton = this.querySelector("#overview-show-preds") as HTMLButtonElement;
     showAllPredsButton.addEventListener("click", () => {
-      const checkboxes = this.querySelectorAll("#metamap-predicates-list input[type='checkbox']");
+      const checkboxes = this.querySelectorAll("#overview-predicates-list input[type='checkbox']");
       checkboxes.forEach(checkbox => {
         (checkbox as HTMLInputElement).checked = true;
       });
       this.hidePredicates.clear();
       this.renderer?.refresh({skipIndexation: true});
     });
-    const hideAllPredsButton = this.querySelector("#metamap-hide-preds") as HTMLButtonElement;
+    const hideAllPredsButton = this.querySelector("#overview-hide-preds") as HTMLButtonElement;
     hideAllPredsButton.addEventListener("click", () => {
-      const checkboxes = this.querySelectorAll("#metamap-predicates-list input[type='checkbox']");
+      const checkboxes = this.querySelectorAll("#overview-predicates-list input[type='checkbox']");
       checkboxes.forEach(checkbox => {
         (checkbox as HTMLInputElement).checked = false;
       });
       this.hidePredicates = new Set(Object.keys(this.predicatesCount));
       this.renderer?.refresh({skipIndexation: true});
     });
-    const showMetaButton = this.querySelector("#metamap-show-meta") as HTMLButtonElement;
+    const showMetaButton = this.querySelector("#overview-show-meta") as HTMLButtonElement;
     showMetaButton.addEventListener("click", async () => {
       this.showMetadata = !this.showMetadata;
       if (this.showMetadata) showMetaButton.textContent = "Hide metadata";
@@ -264,18 +264,18 @@ export class SparqlMetamap extends HTMLElement {
     });
 
     // Filtering buttons for clusters
-    const showAllClustersButton = this.querySelector("#metamap-show-clusters") as HTMLButtonElement;
+    const showAllClustersButton = this.querySelector("#overview-show-clusters") as HTMLButtonElement;
     showAllClustersButton.addEventListener("click", () => {
-      const checkboxes = this.querySelectorAll("#metamap-clusters-list input[type='checkbox']");
+      const checkboxes = this.querySelectorAll("#overview-clusters-list input[type='checkbox']");
       checkboxes.forEach(checkbox => {
         (checkbox as HTMLInputElement).checked = true;
       });
       this.hideClusters.clear();
       this.renderer?.refresh({skipIndexation: true});
     });
-    const hideAllClustersButton = this.querySelector("#metamap-hide-clusters") as HTMLButtonElement;
+    const hideAllClustersButton = this.querySelector("#overview-hide-clusters") as HTMLButtonElement;
     hideAllClustersButton.addEventListener("click", () => {
-      const checkboxes = this.querySelectorAll("#metamap-clusters-list input[type='checkbox']");
+      const checkboxes = this.querySelectorAll("#overview-clusters-list input[type='checkbox']");
       checkboxes.forEach(checkbox => {
         (checkbox as HTMLInputElement).checked = false;
       });
@@ -431,6 +431,26 @@ export class SparqlMetamap extends HTMLElement {
     for (const cluster in this.clusters) {
       this.clusters[cluster].color = palette.pop();
     }
+    // Identify single-node clusters and create the "Other" cluster
+    const otherClusterName = "Other";
+    if (!this.clusters[otherClusterName]) {
+      this.clusters[otherClusterName] = {label: otherClusterName, positions: [], count: 0};
+    }
+    this.graph.forEachNode((node, atts) => {
+      const cluster = atts.cluster;
+      if (this.clusters[cluster].count === 1) {
+        // Reassign the node to the "Other" cluster
+        this.graph.setNodeAttribute(node, "cluster", otherClusterName);
+        this.clusters[otherClusterName].count += 1;
+        this.clusters[cluster].count -= 1;
+      }
+    });
+    // Remove empty clusters
+    for (const cluster in this.clusters) {
+      if (this.clusters[cluster].count === 0 && cluster !== otherClusterName) {
+        delete this.clusters[cluster];
+      }
+    }
 
     // We need to manually set some x/y coordinates for the nodes
     // this.graph.nodes().forEach((node, i) => {
@@ -561,14 +581,12 @@ export class SparqlMetamap extends HTMLElement {
     // Render nodes accordingly to the internal state
     this.renderer.setSetting("nodeReducer", (node, data) => {
       const res: Partial<NodeDisplayData> = {...data};
-      // If there is a hovered node, all non-neighbor nodes are greyed
-      if (this.hoveredNeighbors && !this.hoveredNeighbors.has(node) && this.hoveredNode !== node) {
-        // res.label = "";
-        // res.color = "#f6f6f6";
-        res.hidden = true;
-      }
       // Filter clusters
       if (this.hideClusters.size > 0 && this.hideClusters.has(data.cluster)) {
+        res.hidden = true;
+      }
+      // If there is a hovered node, all non-neighbor nodes are greyed
+      if (this.hoveredNeighbors && !this.hoveredNeighbors.has(node) && this.hoveredNode !== node) {
         res.hidden = true;
       }
       // If a node is selected, it is highlighted
@@ -579,10 +597,9 @@ export class SparqlMetamap extends HTMLElement {
         // If there is query, all non-matching nodes are greyed
         if (this.suggestions.has(node)) {
           res.forceLabel = true;
+          res.hidden = false;
         } else {
           res.hidden = true;
-          // res.label = "";
-          // res.color = "#f6f6f6";
         }
       }
       return res;
@@ -670,7 +687,7 @@ export class SparqlMetamap extends HTMLElement {
   }
 
   displayEdgeInfo(edge: string | undefined) {
-    const edgeInfoDiv = this.querySelector("#metamap-edge-info") as HTMLElement;
+    const edgeInfoDiv = this.querySelector("#overview-edge-info") as HTMLElement;
     edgeInfoDiv.innerHTML = "";
     if (edge) {
       const edgeAttrs = this.graph.getEdgeAttributes(edge);
@@ -688,7 +705,7 @@ export class SparqlMetamap extends HTMLElement {
 
   displaySelectedNodeInfo(node: string | undefined) {
     this.selectedNode = node;
-    const nodeInfoDiv = this.querySelector("#metamap-node-info") as HTMLElement;
+    const nodeInfoDiv = this.querySelector("#overview-node-info") as HTMLElement;
     nodeInfoDiv.innerHTML = "";
     if (this.selectedNode) {
       const nodeAttrs = this.graph.getNodeAttributes(this.selectedNode);
@@ -800,7 +817,7 @@ export class SparqlMetamap extends HTMLElement {
   }
 
   renderPredicateList() {
-    const sidebar = this.querySelector("#metamap-predicates-list") as HTMLElement;
+    const sidebar = this.querySelector("#overview-predicates-list") as HTMLElement;
     sidebar.innerHTML = "";
     const sortedPredicates = Object.entries(this.predicatesCount).sort((a, b) => b[1] - a[1]);
     for (const [predicateLabel, predicateCount] of sortedPredicates) {
@@ -827,7 +844,7 @@ export class SparqlMetamap extends HTMLElement {
   }
 
   renderClusterList() {
-    const sidebar = this.querySelector("#metamap-clusters-list") as HTMLElement;
+    const sidebar = this.querySelector("#overview-clusters-list") as HTMLElement;
     sidebar.innerHTML = "";
     const sortedClusters = Object.entries(this.clusters).sort((a, b) => b[1].count - a[1].count);
     for (const [clusterLabel, clusterAttrs] of sortedClusters) {
@@ -863,4 +880,4 @@ function getEdgeCurvature(index: number, maxIndex: number): number {
   return (maxCurvature * index) / maxIndex;
 }
 
-customElements.define("sparql-metamap", SparqlMetamap);
+customElements.define("sparql-overview", SparqlOverview);

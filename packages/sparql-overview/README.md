@@ -1,6 +1,6 @@
 <div align="center">
 
-# 💫 SPARQL editor web component
+# 💫 SPARQL overview web component
 
 [![NPM](https://img.shields.io/npm/v/@sib-swiss/sparql-metamap)](https://www.npmjs.com/package/@sib-swiss/sparql-metamap)
 [![Tests](https://github.com/sib-swiss/sparql-metamap/actions/workflows/test.yml/badge.svg)](https://github.com/sib-swiss/sparql-metamap/actions/workflows/test.yml)

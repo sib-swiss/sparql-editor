@@ -1,6 +1,6 @@
 import {describe, it, expect, beforeEach, vi} from "vitest";
 import "@testing-library/jest-dom";
-import "../src/sparql-metamap";
+import "../src/sparql-overview";
 
 // We need to mock some stuff for the tests to work (vitest and jsdom don't support everything yet)
 // Puppeteers or Playwright would be better for this, but too heavy to setup
