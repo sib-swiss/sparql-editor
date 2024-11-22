@@ -20,7 +20,7 @@ PREFIX void:<http://rdfs.org/ns/void#>
 PREFIX void-ext:<http://ldf.fi/void-ext#>
 SELECT DISTINCT ?subjectClass ?prop ?objectClass ?objectDatatype ?triples
 ?objectClassTopParent ?objectClassTopParentLabel ?subjectClassTopParent ?subjectClassTopParentLabel
-?subjectClassLabel ?objectClassLabel ?subjectClassComment ?objectClassComment
+?subjectClassLabel ?objectClassLabel ?subjectClassComment ?objectClassComment ?propLabel ?propComment
 WHERE {
   {
     SELECT * WHERE {
@@ -43,6 +43,8 @@ WHERE {
 
         ?pp void:property ?prop ;
           void:triples ?triples .
+        OPTIONAL {?prop rdfs:label ?propLabel }
+        OPTIONAL {?prop rdfs:comment ?propComment }
         OPTIONAL {
           {
             ?pp  void:classPartition [ void:class ?objectClass ] .
@@ -76,6 +78,7 @@ type Cluster = {
   x?: number;
   y?: number;
   color?: string;
+  count: number;
   positions: {x: number; y: number}[];
 };
 
@@ -118,6 +121,7 @@ export class SparqlMetamap extends HTMLElement {
 
   predicatesCount: {[key: string]: number} = {};
   hidePredicates: Set<string> = new Set();
+  hideClusters: Set<string> = new Set();
 
   clusters: {[key: string]: Cluster} = {};
 
@@ -165,6 +169,12 @@ export class SparqlMetamap extends HTMLElement {
         height: 100%;
         border: 1px solid lightgray;
       }
+      #sparql-metamap hr {
+        width: 90%;
+        border: none;
+        height: 1px;
+        background: lightgrey;
+      }
       .clusterLabel {
         // position: absolute;
         // transform: translate(-50%, -50%);
@@ -194,26 +204,35 @@ export class SparqlMetamap extends HTMLElement {
       <div id="metamap-predicate-sidebar" style="display: flex; flex-direction: column;">
         <input type="search" id="search-input" list="suggestions" placeholder="Search classes...">
         <datalist id="suggestions"></datalist>
-        <div style="text-align: center; margin-top: .5em;">
-          <span>Filter predicates</span>
-        </div>
         <div style="display: flex; justify-content: space-evenly; gap: .5em; margin: .5em 0;">
-          <button id="metamap-show-all">Show all</button>
-          <button id="metamap-hide-all">Hide all</button>
-          <button id="metamap-show-meta">Show metadata</button>
+          <button id="metamap-show-meta" title="Also show metadata classes (ontology, SHACL, VoID)">Show metadata</button>
+        </div>
+        <div style="text-align: center;">
+          <span>Filter predicates ·</span>
+          <button id="metamap-show-preds" title="Show all predicates">Show all</button>
+          <button id="metamap-hide-preds" title="Hide all predicates">Hide all</button>
         </div>
         <div id="metamap-predicates-list" style="flex: 1; overflow-y: auto;"></div>
-        <div id="metamap-edge-info" style="margin-top: 1em; overflow-y: auto;"></div>
-        <div id="metamap-node-info" style="margin-top: 1em; overflow-y: auto;"></div>
+
+        <hr></hr>
+        <div style="text-align: center; ">
+          <span>Filter clusters ·</span>
+          <button id="metamap-show-clusters" title="Show all clusters">Show all</button>
+          <button id="metamap-hide-clusters" title="Hide all clusters">Hide all</button>
+        </div>
+        <div id="metamap-clusters-list" style="flex: 1; overflow-y: auto;"></div>
+        <div id="metamap-edge-info" style="overflow-y: auto;"></div>
+        <div id="metamap-node-info" style="overflow-y: auto;"></div>
       </div>
+
       <div id="network-container" style="flex: 1; position: relative;"></div>
     `;
     this.appendChild(style);
     this.appendChild(container);
 
     // Add sidebar filtering buttons
-    const showAllButton = this.querySelector("#metamap-show-all") as HTMLButtonElement;
-    showAllButton.addEventListener("click", () => {
+    const showAllPredsButton = this.querySelector("#metamap-show-preds") as HTMLButtonElement;
+    showAllPredsButton.addEventListener("click", () => {
       const checkboxes = this.querySelectorAll("#metamap-predicates-list input[type='checkbox']");
       checkboxes.forEach(checkbox => {
         (checkbox as HTMLInputElement).checked = true;
@@ -221,8 +240,8 @@ export class SparqlMetamap extends HTMLElement {
       this.hidePredicates.clear();
       this.renderer?.refresh({skipIndexation: true});
     });
-    const hideAllButton = this.querySelector("#metamap-hide-all") as HTMLButtonElement;
-    hideAllButton.addEventListener("click", () => {
+    const hideAllPredsButton = this.querySelector("#metamap-hide-preds") as HTMLButtonElement;
+    hideAllPredsButton.addEventListener("click", () => {
       const checkboxes = this.querySelectorAll("#metamap-predicates-list input[type='checkbox']");
       checkboxes.forEach(checkbox => {
         (checkbox as HTMLInputElement).checked = false;
@@ -236,6 +255,26 @@ export class SparqlMetamap extends HTMLElement {
       if (this.showMetadata) showMetaButton.textContent = "Hide metadata";
       else showMetaButton.textContent = "Show metadata";
       await this.initGraph();
+    });
+
+    // Filtering buttons for clusters
+    const showAllClustersButton = this.querySelector("#metamap-show-clusters") as HTMLButtonElement;
+    showAllClustersButton.addEventListener("click", () => {
+      const checkboxes = this.querySelectorAll("#metamap-clusters-list input[type='checkbox']");
+      checkboxes.forEach(checkbox => {
+        (checkbox as HTMLInputElement).checked = true;
+      });
+      this.hideClusters.clear();
+      this.renderer?.refresh({skipIndexation: true});
+    });
+    const hideAllClustersButton = this.querySelector("#metamap-hide-clusters") as HTMLButtonElement;
+    hideAllClustersButton.addEventListener("click", () => {
+      const checkboxes = this.querySelectorAll("#metamap-clusters-list input[type='checkbox']");
+      checkboxes.forEach(checkbox => {
+        (checkbox as HTMLInputElement).checked = false;
+      });
+      this.hideClusters = new Set(Object.keys(this.clusters));
+      this.renderer?.refresh({skipIndexation: true});
     });
 
     // const palette = iwanthue(Object.keys(countryClusters).length, { seed: "eurSISCountryClusters" });
@@ -279,13 +318,16 @@ export class SparqlMetamap extends HTMLElement {
         if (!this.graph.hasNode(subjUri)) {
           this.graph.addNode(subjUri, {
             label: subjCurie,
+            curie: subjCurie,
             size: count,
             cluster: subjCluster,
             endpoint: endpoint,
             datatypes: [],
           });
-          if (row.subjectClassLabel)
+          if (row.subjectClassLabel) {
             this.graph.updateNodeAttribute(subjUri, "displayLabel", () => row.subjectClassLabel.value);
+            this.graph.updateNodeAttribute(subjUri, "label", () => row.subjectClassLabel.value);
+          }
           if (row.subjectClassComment)
             this.graph.updateNodeAttribute(subjUri, "comment", () => row.subjectClassComment.value);
         }
@@ -322,32 +364,55 @@ export class SparqlMetamap extends HTMLElement {
             const objCurie = this.getCurie(objUri);
             this.graph.addNode(objUri, {
               label: objCurie,
+              curie: objCurie,
               size: count,
               cluster: objCluster,
               endpoint: endpoint,
               datatypes: [],
             });
-            if (row.objectClassLabel)
+            if (row.objectClassLabel) {
               this.graph.updateNodeAttribute(objUri, "displayLabel", () => row.objectClassLabel.value);
+              this.graph.updateNodeAttribute(objUri, "label", () => row.objectClassLabel.value);
+            }
             if (row.objectClassComment)
               this.graph.updateNodeAttribute(objUri, "comment", () => row.objectClassComment.value);
           }
           // Add edge
           const predCurie = this.getCurie(row.prop.value);
-          if (!this.predicatesCount[predCurie]) this.predicatesCount[predCurie] = 1;
-          else this.predicatesCount[predCurie] += 1;
-          this.graph.addEdge(subjUri, objUri, {
-            label: predCurie,
-            size: 2,
-            // size: count,
-            type: "arrow",
-          });
+          let edgeExists = false;
+          for (const edge of this.graph.edges(subjUri, objUri)) {
+            if (this.graph.getEdgeAttributes(edge).curie === predCurie) {
+              edgeExists = true;
+              break;
+            }
+          }
+          if (!edgeExists) {
+            // Add the edge only if it doesn't already exist
+            const edgeAttrs: any = {
+              label: predCurie,
+              curie: predCurie,
+              size: 2,
+              // size: count,
+              type: "arrow",
+            };
+            if (row.propLabel) {
+              edgeAttrs.curie = edgeAttrs.label;
+              edgeAttrs.label = row.propLabel.value;
+              edgeAttrs.displayLabel = row.propLabel.value;
+            }
+            if (row.propComment) edgeAttrs["comment"] = row.propComment.value;
+            if (!this.predicatesCount[predCurie]) this.predicatesCount[predCurie] = 1;
+            else this.predicatesCount[predCurie] += 1;
+            this.graph.addEdge(subjUri, objUri, edgeAttrs);
+          }
         }
       }
     }
 
+    // Create clusters
     this.graph.forEachNode((_node, atts) => {
-      if (!this.clusters[atts.cluster]) this.clusters[atts.cluster] = {label: atts.cluster, positions: []};
+      if (!this.clusters[atts.cluster]) this.clusters[atts.cluster] = {label: atts.cluster, positions: [], count: 1};
+      else this.clusters[atts.cluster].count += 1;
     });
     // create and assign one color by cluster
     const palette = iwanthue(Object.keys(this.clusters).length, {seed: "topClassesClusters"});
@@ -405,12 +470,12 @@ export class SparqlMetamap extends HTMLElement {
         if (typeof parallelMinIndex === "number") {
           this.graph.mergeEdgeAttributes(edge, {
             type: parallelIndex ? "curved" : "straight",
-            curvature: getCurvature(parallelIndex, parallelMaxIndex),
+            curvature: getEdgeCurvature(parallelIndex, parallelMaxIndex),
           });
         } else if (typeof parallelIndex === "number") {
           this.graph.mergeEdgeAttributes(edge, {
             type: "curved",
-            curvature: getCurvature(parallelIndex, parallelMaxIndex),
+            curvature: getEdgeCurvature(parallelIndex, parallelMaxIndex),
           });
         } else {
           this.graph.setEdgeAttribute(edge, "type", "straight");
@@ -442,6 +507,7 @@ export class SparqlMetamap extends HTMLElement {
         // barnesHutOptimize: true,
         // gravity: 0.1,
         linLogMode: true,
+        // slowDown: 4,
         // adjustSizes: true,
         // strongGravityMode: true,
       },
@@ -488,6 +554,10 @@ export class SparqlMetamap extends HTMLElement {
         res.label = "";
         res.color = "#f6f6f6";
       }
+      // Filter clusters
+      if (this.hideClusters.size > 0 && this.hideClusters.has(data.cluster)) {
+        res.hidden = true;
+      }
       // If a node is selected, it is highlighted
       if (this.selectedNode === node) {
         res.highlighted = true;
@@ -530,13 +600,14 @@ export class SparqlMetamap extends HTMLElement {
       ) {
         res.hidden = true;
       }
-      if (this.hidePredicates.size > 0 && this.hidePredicates.has(data.label)) {
+      if (this.hidePredicates.size > 0 && this.hidePredicates.has(data.curie)) {
         res.hidden = true;
       }
       return res;
     });
 
     this.renderPredicateList();
+    this.renderClusterList();
 
     // Feed the datalist autocomplete values:
     const searchSuggestions = this.querySelector("#suggestions") as HTMLDataListElement;
@@ -546,41 +617,40 @@ export class SparqlMetamap extends HTMLElement {
       .map(node => `<option value="${this.graph.getNodeAttribute(node, "label")}"></option>`)
       .join("\n");
 
-    // Create the clustersLabel layer
-    const clustersLayer = document.createElement("div");
-    clustersLayer.id = "clustersLayer";
-    clustersLayer.style.width = "100%";
-    clustersLayer.style.height = "100%";
-    clustersLayer.style.position = "absolute";
-    let clusterLabelsDoms = "";
-    for (const c in this.clusters) {
-      // for each cluster create a div label
-      const cluster = this.clusters[c];
-      // adapt the position to viewport coordinates
-      const viewportPos = this.renderer.graphToViewport(cluster as Coordinates);
-      clusterLabelsDoms += `<div id='${cluster.label}' class="clusterLabel" style="top:${viewportPos.y}px;left:${viewportPos.x}px;color:${cluster.color}">${cluster.label}</div>`;
-    }
-    clustersLayer.innerHTML = clusterLabelsDoms;
-    // Insert the layer underneath the hovers layer
-    container.insertBefore(clustersLayer, container.querySelector(".sigma-hovers"));
-
-    // Clusters labels position needs to be updated on each render
-    this.renderer.on("afterRender", () => {
-      for (const c in this.clusters) {
-        const cluster = this.clusters[c];
-        const clusterLabel = document.getElementById(cluster.label);
-        if (clusterLabel && this.renderer) {
-          // update position from the viewport
-          const viewportPos = this.renderer.graphToViewport(cluster as Coordinates);
-          clusterLabel.style.top = `${viewportPos.y}px`;
-          clusterLabel.style.left = `${viewportPos.x}px`;
-        }
-      }
-    });
+    // // Create the clustersLabel layer
+    // const clustersLayer = document.createElement("div");
+    // clustersLayer.id = "clustersLayer";
+    // clustersLayer.style.width = "100%";
+    // clustersLayer.style.height = "100%";
+    // clustersLayer.style.position = "absolute";
+    // let clusterLabelsDoms = "";
+    // for (const c in this.clusters) {
+    //   // for each cluster create a div label
+    //   const cluster = this.clusters[c];
+    //   // adapt the position to viewport coordinates
+    //   const viewportPos = this.renderer.graphToViewport(cluster as Coordinates);
+    //   clusterLabelsDoms += `<div id='${cluster.label}' class="clusterLabel" style="top:${viewportPos.y}px;left:${viewportPos.x}px;color:${cluster.color}">${cluster.label}</div>`;
+    // }
+    // clustersLayer.innerHTML = clusterLabelsDoms;
+    // // Insert the layer underneath the hovers layer
+    // container.insertBefore(clustersLayer, container.querySelector(".sigma-hovers"));
+    // // Clusters labels position needs to be updated on each render
+    // this.renderer.on("afterRender", () => {
+    //   for (const c in this.clusters) {
+    //     const cluster = this.clusters[c];
+    //     const clusterLabel = document.getElementById(cluster.label);
+    //     if (clusterLabel && this.renderer) {
+    //       // update position from the viewport
+    //       const viewportPos = this.renderer.graphToViewport(cluster as Coordinates);
+    //       clusterLabel.style.top = `${viewportPos.y}px`;
+    //       clusterLabel.style.left = `${viewportPos.x}px`;
+    //     }
+    //   }
+    // });
 
     setTimeout(() => {
       layout.kill();
-    }, 1500);
+    }, 3000);
     // console.log(this.graph.getNodeAttributes("http://purl.uniprot.org/core/Protein"));
   }
 
@@ -607,7 +677,8 @@ export class SparqlMetamap extends HTMLElement {
     nodeInfoDiv.innerHTML = "";
     if (this.selectedNode) {
       const nodeAttrs = this.graph.getNodeAttributes(this.selectedNode);
-      nodeInfoDiv.innerHTML = `<h3><a href="${node}" style="word-break: break-word;" target="_blank">${nodeAttrs.label}</a></h3>`;
+      nodeInfoDiv.innerHTML = `<hr></hr>`;
+      nodeInfoDiv.innerHTML += `<h3><a href="${node}" style="word-break: break-word;" target="_blank">${nodeAttrs.curie}</a></h3>`;
       if (nodeAttrs.displayLabel) nodeInfoDiv.innerHTML += `<p>${nodeAttrs.displayLabel}</p>`;
       if (nodeAttrs.comment) nodeInfoDiv.innerHTML += `<p>${nodeAttrs.comment}</p>`;
       if (nodeAttrs.cluster)
@@ -717,7 +788,6 @@ export class SparqlMetamap extends HTMLElement {
     const sidebar = this.querySelector("#metamap-predicates-list") as HTMLElement;
     sidebar.innerHTML = "";
     const sortedPredicates = Object.entries(this.predicatesCount).sort((a, b) => b[1] - a[1]);
-
     for (const [predicateLabel, predicateCount] of sortedPredicates) {
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
@@ -728,11 +798,9 @@ export class SparqlMetamap extends HTMLElement {
       const label = document.createElement("label");
       label.htmlFor = predicateLabel;
       label.textContent = `${predicateLabel} (${predicateCount.toLocaleString()})`;
-
       const container = document.createElement("div");
       container.appendChild(checkbox);
       container.appendChild(label);
-
       sidebar.appendChild(container);
     }
   }
@@ -742,11 +810,39 @@ export class SparqlMetamap extends HTMLElement {
     else this.hidePredicates.delete(predicateLabel);
     this.renderer?.refresh({skipIndexation: true});
   }
+
+  renderClusterList() {
+    const sidebar = this.querySelector("#metamap-clusters-list") as HTMLElement;
+    sidebar.innerHTML = "";
+    const sortedClusters = Object.entries(this.clusters).sort((a, b) => b[1].count - a[1].count);
+    for (const [clusterLabel, clusterAttrs] of sortedClusters) {
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.id = clusterLabel;
+      checkbox.checked = true;
+      checkbox.onchange = () => this.toggleCluster(clusterLabel, checkbox.checked);
+
+      const label = document.createElement("label");
+      if (clusterAttrs.color) label.style.color = clusterAttrs.color;
+      label.htmlFor = clusterLabel;
+      label.textContent = `${clusterLabel} (${clusterAttrs.count})`;
+      const container = document.createElement("div");
+      container.appendChild(checkbox);
+      container.appendChild(label);
+      sidebar.appendChild(container);
+    }
+  }
+
+  toggleCluster(predicateLabel: string, checked: boolean) {
+    if (!checked) this.hideClusters.add(predicateLabel);
+    else this.hideClusters.delete(predicateLabel);
+    this.renderer?.refresh({skipIndexation: true});
+  }
 }
 
-function getCurvature(index: number, maxIndex: number): number {
+function getEdgeCurvature(index: number, maxIndex: number): number {
   if (maxIndex <= 0) throw new Error("Invalid maxIndex");
-  if (index < 0) return -getCurvature(-index, maxIndex);
+  if (index < 0) return -getEdgeCurvature(-index, maxIndex);
   const amplitude = 3.5;
   const maxCurvature = amplitude * (1 - Math.exp(-maxIndex / amplitude)) * DEFAULT_EDGE_CURVATURE;
   return (maxCurvature * index) / maxIndex;
