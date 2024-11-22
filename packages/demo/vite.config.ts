@@ -15,7 +15,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, "src/index.html"),
         check: resolve(__dirname, "src/check.html"),
-        metamap: resolve(__dirname, "src/metamap.html"),
+        overview: resolve(__dirname, "src/overview.html"),
         bgee: resolve(__dirname, "src/bgee.html"),
         uniprot: resolve(__dirname, "src/uniprot.html"),
         oma: resolve(__dirname, "src/oma.html"),
