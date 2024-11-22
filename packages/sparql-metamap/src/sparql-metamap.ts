@@ -82,6 +82,13 @@ type Cluster = {
   positions: {x: number; y: number}[];
 };
 
+type EndpointInfo = {
+  label?: string;
+  description?: string;
+  graphs?: string[];
+  void?: SparqlResultBindings[];
+};
+
 const metadataNamespaces = [
   "http://www.w3.org/ns/shacl#",
   "http://www.w3.org/2002/07/owl#",
@@ -104,8 +111,7 @@ function isMetadataNode(node: string) {
  * @example <sparql-metamap endpoint="https://sparql.uniprot.org/sparql/"></sparql-metamap>
  */
 export class SparqlMetamap extends HTMLElement {
-  endpoints: {[key: string]: {label?: string; description?: string; graphs?: string[]; void?: SparqlResultBindings[]}} =
-    {};
+  endpoints: {[key: string]: EndpointInfo} = {};
   // meta: EndpointsMetadata;
   // void: {[key: string]: SparqlResultBindings[]} = {};
   prefixes: {[key: string]: string} = {};
@@ -557,8 +563,9 @@ export class SparqlMetamap extends HTMLElement {
       const res: Partial<NodeDisplayData> = {...data};
       // If there is a hovered node, all non-neighbor nodes are greyed
       if (this.hoveredNeighbors && !this.hoveredNeighbors.has(node) && this.hoveredNode !== node) {
-        res.label = "";
-        res.color = "#f6f6f6";
+        // res.label = "";
+        // res.color = "#f6f6f6";
+        res.hidden = true;
       }
       // Filter clusters
       if (this.hideClusters.size > 0 && this.hideClusters.has(data.cluster)) {
@@ -567,13 +574,15 @@ export class SparqlMetamap extends HTMLElement {
       // If a node is selected, it is highlighted
       if (this.selectedNode === node) {
         res.highlighted = true;
+        res.hidden = false;
       } else if (this.suggestions) {
         // If there is query, all non-matching nodes are greyed
         if (this.suggestions.has(node)) {
           res.forceLabel = true;
         } else {
-          res.label = "";
-          res.color = "#f6f6f6";
+          res.hidden = true;
+          // res.label = "";
+          // res.color = "#f6f6f6";
         }
       }
       return res;
