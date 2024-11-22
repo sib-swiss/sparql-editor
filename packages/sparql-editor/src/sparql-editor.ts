@@ -106,11 +106,14 @@ export class SparqlEditor extends HTMLElement {
         <button id="sparql-add-prefixes-btn" class="btn" style="margin-bottom: 0.3em;">Add common prefixes</button>
         <button id="sparql-save-example-btn" class="btn" style="margin-bottom: 0.3em;">Save query as example</button>
         <button id="sparql-examples-top-btn" class="btn" style="margin-bottom: 0.3em;">Browse examples</button>
+        <button id="sparql-cls-overview" class="btn" style="margin-bottom: 0.3em;" title="Overview of classes and their relations in the endpoint">
+          Classes overview
+        </button>
         <button id="sparql-clear-cache-btn" class="btn" style="margin-bottom: 0.3em;">Clear cache</button>
         <div id="yasgui"></div>
       </div>
     `;
-    // TODO: <button id="sparql-browse-overview" class="btn" style="margin-bottom: 0.3em;">Browse overview</button>
+    // TODO: <button id="sparql-cls-overview" class="btn" style="margin-bottom: 0.3em;">Browse overview</button>
     this.appendChild(style);
 
     // NOTE: autocompleters are executed when Yasgui is instantiated
@@ -199,6 +202,14 @@ export class SparqlEditor extends HTMLElement {
         this.addPrefixesToQuery(this.currentEndpoint().examples[0]?.query) || Yasgui.Yasqe.defaults.value;
     }
     Yasgui.Yasr.defaults.prefixes = this.meta[endpoint].prefixes;
+
+    // Hide or show the Classes overview button
+    const clsOverviewBtn = this.querySelector("#sparql-cls-overview") as HTMLElement;
+    if (Object.keys(this.meta[endpoint].void).length > 0) {
+      clsOverviewBtn.style.display = "";
+    } else {
+      clsOverviewBtn.style.display = "none";
+    }
     // Update the statusLight
     let metaScore = 0;
     let statusMsg = `📡 Endpoint ${endpoint}\n\n`;
@@ -237,10 +248,6 @@ export class SparqlEditor extends HTMLElement {
   }
 
   async connectedCallback() {
-    await this.loadCurrentEndpoint();
-    Yasgui.Yasqe.defaults.value =
-      this.addPrefixesToQuery(this.currentEndpoint().examples[0]?.query) || Yasgui.Yasqe.defaults.value;
-
     // Instantiate YASGUI editor
     const editorEl = this.querySelector("#yasgui") as HTMLElement;
     this.yasgui = new Yasgui(editorEl, {
@@ -248,19 +255,22 @@ export class SparqlEditor extends HTMLElement {
       persistenceId: `yasgui_${window.location.pathname.replace(/\//g, "")}`,
       copyEndpointOnNewTab: true,
     });
+    await this.loadCurrentEndpoint();
     await this.showExamples();
-    // TODO: await this.showOverview();
+    await this.showOverview();
 
     this.yasgui?.on("tabSelect", () => {
       setTimeout(async () => {
         await this.loadCurrentEndpoint();
         await this.showExamples();
+        await this.showOverview();
       });
     });
     this.yasgui?.on("endpointHistoryChange", () => {
       setTimeout(async () => {
         await this.loadCurrentEndpoint();
         await this.showExamples(true);
+        await this.showOverview();
       });
     });
     this.yasgui?.on("tabAdd", () => {
@@ -575,7 +585,7 @@ ex:${exampleUri} a sh:SPARQLExecutable${
   }
 
   async showOverview() {
-    const overviewBtn = this.querySelector("#sparql-browse-overview") as HTMLButtonElement;
+    const overviewBtn = this.querySelector("#sparql-cls-overview") as HTMLButtonElement;
     // Create dialog for examples
     const overviewDialog = document.createElement("dialog");
     // exQueryDialog.style.margin = "1em";
@@ -585,8 +595,9 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     overviewDialog.style.borderColor = "#cccccc";
     overviewDialog.style.backgroundColor = "#f5f5f5";
     overviewDialog.style.borderRadius = "10px";
-    console.log(this.endpointUrl());
-    overviewDialog.innerHTML = `<sparql-overview endpoint="${this.endpointUrl()}"></sparql-overview>`;
+    overviewDialog.innerHTML = `<div style="height: 100%;">
+      <sparql-overview endpoint="${this.endpointUrl()}"></sparql-overview>
+    </div>`;
 
     // Add button to close dialog
     const dialogCloseBtn = document.createElement("button");
@@ -596,7 +607,7 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     dialogCloseBtn.style.top = "1.5em";
     dialogCloseBtn.style.right = "2em";
     overviewDialog.appendChild(dialogCloseBtn);
-    overviewBtn.appendChild(overviewDialog);
+    document.body.appendChild(overviewDialog);
 
     overviewBtn.addEventListener("click", () => {
       overviewDialog.showModal();
@@ -608,6 +619,7 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     });
     dialogCloseBtn.addEventListener("click", () => {
       overviewDialog.close();
+      document.body.style.overflow = "";
     });
     overviewDialog.addEventListener("close", () => {
       document.body.style.overflow = "";

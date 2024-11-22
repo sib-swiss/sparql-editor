@@ -434,6 +434,11 @@ export class SparqlOverview extends HTMLElement {
       }
     }
 
+    if (this.graph.nodes().length < 2) {
+      console.warn(`No VoID description found in endpoint ${this.endpointUrl()}`);
+      return;
+    }
+
     // Create clusters
     this.graph.forEachNode((_node, atts) => {
       if (!this.clusters[atts.cluster]) this.clusters[atts.cluster] = {label: atts.cluster, positions: [], count: 1};
@@ -715,16 +720,14 @@ export class SparqlOverview extends HTMLElement {
     edgeInfoDiv.innerHTML = "";
     if (edge) {
       const edgeAttrs = this.graph.getEdgeAttributes(edge);
-      console.log("edgeAttrs", edgeAttrs);
-      // this.graph.connectedNodes(edge).forEach(n => {
-      // this.graph.neighbors(edge).forEach(n => {
-      //   console.log("neighbors", n);
-      // })
-      console.log(edge, edgeAttrs);
+      const connectedNodes = this.graph.extremities(edge);
       edgeInfoDiv.innerHTML = `<hr></hr>`;
       edgeInfoDiv.innerHTML += `<h3><a href="${edgeAttrs.uri}" style="word-break: break-word;" target="_blank">${edgeAttrs.curie}</a></h3>`;
       if (edgeAttrs.displayLabel) edgeInfoDiv.innerHTML += `<p>${edgeAttrs.displayLabel}</p>`;
       if (edgeAttrs.comment) edgeInfoDiv.innerHTML += `<p>${edgeAttrs.comment}</p>`;
+      edgeInfoDiv.innerHTML += `<div style="text-align: center">
+        <code>${this.getCurie(connectedNodes[0])}</code><br/>⬇️<br/><code>${this.getCurie(connectedNodes[1])}</code>
+      </div>`;
     }
     this.renderer?.refresh({skipIndexation: true});
   }
