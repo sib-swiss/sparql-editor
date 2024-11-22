@@ -1,7 +1,7 @@
 {
   "name": "@sib-swiss/sparql-overview",
   "version": "0.0.1",
-  "description": "A standard web component to easily deploy a user-friendly network visualization for one or more endpoints.",
+  "description": "A web component to easily deploy a user-friendly network visualization for one or more endpoints.",
   "license": "MIT",
   "author": {
     "name": "Vincent Emonet",

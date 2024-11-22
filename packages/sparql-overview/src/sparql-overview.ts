@@ -214,6 +214,7 @@ export class SparqlOverview extends HTMLElement {
         <div style="display: flex; justify-content: space-evenly; gap: .5em; margin: .5em 0;">
           <button id="overview-show-meta" title="Also show metadata classes (ontology, SHACL, VoID)">Show metadata</button>
         </div>
+
         <div style="text-align: center;">
           <span>Filter predicates ·</span>
           <button id="overview-show-preds" title="Show all predicates">Show all</button>
@@ -228,6 +229,7 @@ export class SparqlOverview extends HTMLElement {
           <button id="overview-hide-clusters" title="Hide all clusters">Hide all</button>
         </div>
         <div id="overview-clusters-list" style="flex: 1; overflow-y: auto;"></div>
+
         <div id="overview-edge-info" style="overflow-y: auto;"></div>
         <div id="overview-node-info" style="overflow-y: auto;"></div>
       </div>
@@ -410,6 +412,7 @@ export class SparqlOverview extends HTMLElement {
             const edgeAttrs: any = {
               label: predCurie,
               curie: predCurie,
+              uri: row.prop.value,
               size: 2,
               // size: count,
               type: "arrow",
@@ -463,12 +466,6 @@ export class SparqlOverview extends HTMLElement {
     }
 
     // We need to manually set some x/y coordinates for the nodes
-    // this.graph.nodes().forEach((node, i) => {
-    //   const angle = (i * 2 * Math.PI) / this.graph.order;
-    //   this.graph.setNodeAttribute(node, "x", 100 * Math.cos(angle));
-    //   this.graph.setNodeAttribute(node, "y", 100 * Math.sin(angle));
-    //   this.graph.setNodeAttribute(node, "color", 100 * Math.sin(angle));
-    // });
     let i = 1;
     this.graph.forEachNode((_node, atts) => {
       const angle = (i * 2 * Math.PI) / this.graph.order;
@@ -620,6 +617,11 @@ export class SparqlOverview extends HTMLElement {
           res.hidden = true;
         }
       }
+      // Highlight nodes at extremity of selected edge
+      if (this.selectedEdge && this.graph.hasExtremity(this.selectedEdge, node)) {
+        res.highlighted = true;
+        res.hidden = false;
+      }
       return res;
     });
 
@@ -718,8 +720,9 @@ export class SparqlOverview extends HTMLElement {
       // this.graph.neighbors(edge).forEach(n => {
       //   console.log("neighbors", n);
       // })
+      console.log(edge, edgeAttrs);
       edgeInfoDiv.innerHTML = `<hr></hr>`;
-      edgeInfoDiv.innerHTML += `<h3>${edgeAttrs.curie}</h3>`;
+      edgeInfoDiv.innerHTML += `<h3><a href="${edgeAttrs.uri}" style="word-break: break-word;" target="_blank">${edgeAttrs.curie}</a></h3>`;
       if (edgeAttrs.displayLabel) edgeInfoDiv.innerHTML += `<p>${edgeAttrs.displayLabel}</p>`;
       if (edgeAttrs.comment) edgeInfoDiv.innerHTML += `<p>${edgeAttrs.comment}</p>`;
     }

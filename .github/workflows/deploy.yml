@@ -30,6 +30,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # - name: Install dependency package
+      #   working-directory: packages/sparql-overview
+      #   run: npm i
+
       - name: Build demo website
         run: npm run build
 

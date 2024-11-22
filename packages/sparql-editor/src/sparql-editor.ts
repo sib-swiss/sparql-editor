@@ -26,7 +26,7 @@ import {
 } from "./utils";
 import "@sib-swiss/sparql-overview";
 
-// <sparql-overview endpoints="https://sparql.uniprot.org/sparql/"></sparql-overview>
+// <sparql-overview endpoint="https://sparql.uniprot.org/sparql/"></sparql-overview>
 
 type Autocompleter = {name: string} & Partial<CompleterConfig>;
 const addSlashAtEnd = (str: string) => (str.endsWith("/") ? str : `${str}/`);
