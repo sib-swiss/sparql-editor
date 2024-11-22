@@ -335,13 +335,19 @@ export class SparqlMetamap extends HTMLElement {
         // Handle when the object is a datatype (string, integer, etc)
         if (row.objectDatatype) {
           this.graph.updateNodeAttribute(subjUri, "datatypes", datatypes => {
-            datatypes.push({
-              predCurie: this.getCurie(row.prop.value),
-              predUri: row.prop.value,
-              datatypeCurie: this.getCurie(row.objectDatatype.value),
-              datatypeUri: row.objectDatatype.value,
-              count: parseInt(row.triples.value),
-            });
+            const exists = datatypes.some(
+              (datatype: {[key: string]: string}) =>
+                datatype.predUri === row.prop.value && datatype.datatypeUri === row.objectDatatype.value,
+            );
+            if (!exists) {
+              datatypes.push({
+                predCurie: this.getCurie(row.prop.value),
+                predUri: row.prop.value,
+                datatypeCurie: this.getCurie(row.objectDatatype.value),
+                datatypeUri: row.objectDatatype.value,
+                count: parseInt(row.triples.value),
+              });
+            }
             return datatypes;
           });
         }
