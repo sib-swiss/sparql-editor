@@ -121,11 +121,12 @@ export class SparqlOverview extends HTMLElement {
   searchQuery: string = "";
   // State derived from query:
   selectedNode?: string;
+  selectedEdge?: string;
   suggestions?: Set<string>;
   // State derived from hovered node:
   hoveredNeighbors?: Set<string>;
 
-  predicatesCount: {[key: string]: number} = {};
+  predicatesCount: {[key: string]: {count: number; label: string}} = {};
   hidePredicates: Set<string> = new Set();
   hideClusters: Set<string> = new Set();
 
@@ -137,7 +138,7 @@ export class SparqlOverview extends HTMLElement {
 
   constructor() {
     super();
-    const endpointList = (this.getAttribute("endpoints") || "").split(",");
+    const endpointList = (this.getAttribute("endpoint") || "").split(",");
     // this.meta = this.loadMetaFromLocalStorage();
     // console.log("Loaded metadata from localStorage", this.meta);
     endpointList.forEach(endpoint => {
@@ -157,8 +158,8 @@ export class SparqlOverview extends HTMLElement {
       }
       #overview-predicate-sidebar {
         float: left;
-        width: fit-content;
-        max-width: 300px;
+        // width: fit-content;
+        width: 230px;
         padding-right: 0.5em;
         overflow-y: auto;
         height: 100%;
@@ -176,7 +177,7 @@ export class SparqlOverview extends HTMLElement {
         border: 1px solid lightgray;
       }
       #sparql-overview hr {
-        width: 90%;
+        width: 80%;
         border: none;
         height: 1px;
         background: lightgrey;
@@ -231,7 +232,11 @@ export class SparqlOverview extends HTMLElement {
         <div id="overview-node-info" style="overflow-y: auto;"></div>
       </div>
 
-      <div id="network-container" style="flex: 1; position: relative;"></div>
+      <div id="network-container" style="flex: 1; display: flex; position: relative; align-items: center; justify-content: center;">
+        <div id="loading-spinner">
+          <p style="margin: 0; text-align: center">Loading overview...</p>
+        </div>
+      </div>
     `;
     this.appendChild(style);
     this.appendChild(container);
@@ -291,6 +296,8 @@ export class SparqlOverview extends HTMLElement {
   async connectedCallback() {
     await Promise.all(Object.keys(this.endpoints).map(endpoint => this.fetchEndpointMetadata(endpoint)));
     await this.initGraph();
+    const loadingSpinner = this.querySelector("#loading-spinner") as HTMLElement;
+    loadingSpinner.style.display = "None";
   }
 
   async initGraph() {
@@ -413,8 +420,11 @@ export class SparqlOverview extends HTMLElement {
               edgeAttrs.displayLabel = row.propLabel.value;
             }
             if (row.propComment) edgeAttrs["comment"] = row.propComment.value;
-            if (!this.predicatesCount[predCurie]) this.predicatesCount[predCurie] = 1;
-            else this.predicatesCount[predCurie] += 1;
+            if (!this.predicatesCount[predCurie]) {
+              this.predicatesCount[predCurie] = {count: 1, label: row.propLabel ? row.propLabel.value : predCurie};
+            } else {
+              this.predicatesCount[predCurie].count += 1;
+            }
             this.graph.addEdge(subjUri, objUri, edgeAttrs);
           }
         }
@@ -480,7 +490,7 @@ export class SparqlOverview extends HTMLElement {
     }
     console.log("clusters!", this.clusters);
 
-    // Fix multi edges between same nodes
+    // Curve multi edges between same nodes
     // Use dedicated helper to identify parallel edges:
     indexParallelEdgesIndex(this.graph, {
       edgeIndexAttribute: "parallelIndex",
@@ -515,6 +525,7 @@ export class SparqlOverview extends HTMLElement {
       },
     );
 
+    // Instantiate Sigma.js graph
     const container = this.querySelector("#network-container") as HTMLElement;
     this.renderer = new Sigma(this.graph, container, {
       renderEdgeLabels: true,
@@ -557,25 +568,32 @@ export class SparqlOverview extends HTMLElement {
     // Bind graph interactions:
     this.renderer.on("enterNode", ({node}) => {
       this.setHoveredNode(node);
+      if (!this.selectedNode) this.displayNodeInfo(node);
     });
     this.renderer.on("leaveNode", () => {
       this.setHoveredNode(undefined);
+      if (!this.selectedNode) this.displayNodeInfo(undefined);
     });
     // TODO: highlight node on click
     this.renderer.on("clickNode", ({node}) => {
-      this.displaySelectedNodeInfo(node);
+      this.selectedNode = node;
+      this.displayNodeInfo(node);
     });
     this.renderer.on("clickStage", () => {
-      this.displaySelectedNodeInfo(undefined);
+      this.selectedNode = undefined;
+      this.displayNodeInfo(undefined);
+      this.selectedEdge = undefined;
+      this.displayEdgeInfo(undefined);
+    });
+    this.renderer.on("clickEdge", ({edge}) => {
+      this.selectedEdge = edge;
+      this.displayEdgeInfo(edge);
     });
     this.renderer.on("enterEdge", ({edge}) => {
-      console.log("enterEdge", edge);
-      this.displayEdgeInfo(edge);
-      // this.displaySelectedNodeInfo(undefined);
+      if (!this.selectedEdge) this.displayEdgeInfo(edge);
     });
     this.renderer.on("leaveEdge", () => {
-      this.displayEdgeInfo(undefined);
-      // this.displaySelectedNodeInfo(undefined);
+      if (!this.selectedEdge) this.displayEdgeInfo(undefined);
     });
 
     // Render nodes accordingly to the internal state
@@ -623,6 +641,10 @@ export class SparqlOverview extends HTMLElement {
       if (this.selectedNode && this.graph.hasExtremity(edge, this.selectedNode)) {
         res.zIndex = 9000;
         res.color = "red";
+        res.hidden = false;
+      }
+      if (edge == this.selectedEdge) {
+        res.color = "blue";
         res.hidden = false;
       }
       // If there is a search query, the edge is only visible if it connects two suggestions
@@ -696,26 +718,26 @@ export class SparqlOverview extends HTMLElement {
       // this.graph.neighbors(edge).forEach(n => {
       //   console.log("neighbors", n);
       // })
-      // edgeInfoDiv.innerHTML = `<h3>${edgeAttrs.label}</h3>`;
-      // if (edgeAttrs.displayLabel) edgeInfoDiv.innerHTML += `<p>${edgeAttrs.displayLabel}</p>`;
-      // if (edgeAttrs.comment) edgeInfoDiv.innerHTML += `<p>${edgeAttrs.comment}</p>`;
+      edgeInfoDiv.innerHTML = `<hr></hr>`;
+      edgeInfoDiv.innerHTML += `<h3>${edgeAttrs.curie}</h3>`;
+      if (edgeAttrs.displayLabel) edgeInfoDiv.innerHTML += `<p>${edgeAttrs.displayLabel}</p>`;
+      if (edgeAttrs.comment) edgeInfoDiv.innerHTML += `<p>${edgeAttrs.comment}</p>`;
     }
     this.renderer?.refresh({skipIndexation: true});
   }
 
-  displaySelectedNodeInfo(node: string | undefined) {
-    this.selectedNode = node;
+  displayNodeInfo(node: string | undefined) {
     const nodeInfoDiv = this.querySelector("#overview-node-info") as HTMLElement;
     nodeInfoDiv.innerHTML = "";
-    if (this.selectedNode) {
-      const nodeAttrs = this.graph.getNodeAttributes(this.selectedNode);
+    if (node) {
+      const nodeAttrs = this.graph.getNodeAttributes(node);
       nodeInfoDiv.innerHTML = `<hr></hr>`;
       nodeInfoDiv.innerHTML += `<h3><a href="${node}" style="word-break: break-word;" target="_blank">${nodeAttrs.curie}</a></h3>`;
       if (nodeAttrs.displayLabel) nodeInfoDiv.innerHTML += `<p>${nodeAttrs.displayLabel}</p>`;
       if (nodeAttrs.comment) nodeInfoDiv.innerHTML += `<p>${nodeAttrs.comment}</p>`;
       if (nodeAttrs.cluster)
         nodeInfoDiv.innerHTML += `<p>Cluster: <code style="background-color: ${this.clusters[nodeAttrs.cluster].color}">${nodeAttrs.cluster}</code></p>`;
-      if (nodeAttrs.datatypes.length > 0) nodeInfoDiv.innerHTML += '<h5 style="margin: .5em;">Datatypes:</h5>';
+      if (nodeAttrs.datatypes.length > 0) nodeInfoDiv.innerHTML += '<h5 style="margin: .5em;">Data properties:</h5>';
       for (const dt of nodeAttrs.datatypes) {
         const dtDiv = document.createElement("div");
         dtDiv.innerHTML = `<a href="${dt.predUri}">${dt.predCurie}</a> <a href="${dt.datatypeUri}">${dt.datatypeCurie}</a> (${dt.count.toLocaleString()})`;
@@ -739,7 +761,8 @@ export class SparqlOverview extends HTMLElement {
       // If we have a single perfect match, them we remove the suggestions, and consider the user has selected a node
       if (suggestions.length === 1 && suggestions[0].label === query) {
         // this.selectedNode = suggestions[0].id;
-        this.displaySelectedNodeInfo(suggestions[0].id);
+        this.selectedNode = suggestions[0].id;
+        this.displayNodeInfo(suggestions[0].id);
         this.suggestions = undefined;
         // Move the camera to center it on the selected node:
         const nodePosition = this.renderer?.getNodeDisplayData(this.selectedNode) as Coordinates;
@@ -819,17 +842,18 @@ export class SparqlOverview extends HTMLElement {
   renderPredicateList() {
     const sidebar = this.querySelector("#overview-predicates-list") as HTMLElement;
     sidebar.innerHTML = "";
-    const sortedPredicates = Object.entries(this.predicatesCount).sort((a, b) => b[1] - a[1]);
-    for (const [predicateLabel, predicateCount] of sortedPredicates) {
+    const sortedPredicates = Object.entries(this.predicatesCount).sort((a, b) => b[1].count - a[1].count);
+    for (const [predicateCurie, predicate] of sortedPredicates) {
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
-      checkbox.id = predicateLabel;
+      checkbox.id = predicateCurie;
       checkbox.checked = true;
-      checkbox.onchange = () => this.togglePredicate(predicateLabel, checkbox.checked);
+      checkbox.onchange = () => this.togglePredicate(predicateCurie, checkbox.checked);
 
       const label = document.createElement("label");
-      label.htmlFor = predicateLabel;
-      label.textContent = `${predicateLabel} (${predicateCount.toLocaleString()})`;
+      label.htmlFor = predicateCurie;
+      label.title = predicateCurie;
+      label.textContent = `${predicate.label} (${predicate.count.toLocaleString()})`;
       const container = document.createElement("div");
       container.appendChild(checkbox);
       container.appendChild(label);

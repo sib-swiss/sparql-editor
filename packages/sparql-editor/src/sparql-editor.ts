@@ -24,6 +24,9 @@ import {
   getPredicatesFallback,
   createUseButton,
 } from "./utils";
+import "@sib-swiss/sparql-overview";
+
+// <sparql-overview endpoints="https://sparql.uniprot.org/sparql/"></sparql-overview>
 
 type Autocompleter = {name: string} & Partial<CompleterConfig>;
 const addSlashAtEnd = (str: string) => (str.endsWith("/") ? str : `${str}/`);
@@ -107,6 +110,7 @@ export class SparqlEditor extends HTMLElement {
         <div id="yasgui"></div>
       </div>
     `;
+    // TODO: <button id="sparql-browse-overview" class="btn" style="margin-bottom: 0.3em;">Browse overview</button>
     this.appendChild(style);
 
     // NOTE: autocompleters are executed when Yasgui is instantiated
@@ -245,6 +249,7 @@ export class SparqlEditor extends HTMLElement {
       copyEndpointOnNewTab: true,
     });
     await this.showExamples();
+    // TODO: await this.showOverview();
 
     this.yasgui?.on("tabSelect", () => {
       setTimeout(async () => {
@@ -567,6 +572,46 @@ ex:${exampleUri} a sh:SPARQLExecutable${
         }
       });
     }
+  }
+
+  async showOverview() {
+    const overviewBtn = this.querySelector("#sparql-browse-overview") as HTMLButtonElement;
+    // Create dialog for examples
+    const overviewDialog = document.createElement("dialog");
+    // exQueryDialog.style.margin = "1em";
+    // exQueryDialog.style.width = "calc(100vw - 8px)";
+    overviewDialog.style.width = "100%";
+    overviewDialog.style.height = "100%";
+    overviewDialog.style.borderColor = "#cccccc";
+    overviewDialog.style.backgroundColor = "#f5f5f5";
+    overviewDialog.style.borderRadius = "10px";
+    console.log(this.endpointUrl());
+    overviewDialog.innerHTML = `<sparql-overview endpoint="${this.endpointUrl()}"></sparql-overview>`;
+
+    // Add button to close dialog
+    const dialogCloseBtn = document.createElement("button");
+    dialogCloseBtn.className = "btn closeBtn";
+    dialogCloseBtn.textContent = "Close";
+    dialogCloseBtn.style.position = "fixed";
+    dialogCloseBtn.style.top = "1.5em";
+    dialogCloseBtn.style.right = "2em";
+    overviewDialog.appendChild(dialogCloseBtn);
+    overviewBtn.appendChild(overviewDialog);
+
+    overviewBtn.addEventListener("click", () => {
+      overviewDialog.showModal();
+      document.body.style.overflow = "hidden";
+    });
+    overviewBtn.addEventListener("click", () => {
+      overviewDialog.showModal();
+      document.body.style.overflow = "hidden";
+    });
+    dialogCloseBtn.addEventListener("click", () => {
+      overviewDialog.close();
+    });
+    overviewDialog.addEventListener("close", () => {
+      document.body.style.overflow = "";
+    });
   }
 
   async showExamples(forceReload: boolean = false) {

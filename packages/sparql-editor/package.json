@@ -24,6 +24,7 @@
     "upgrade": "npx npm-check-updates -u && npm install"
   },
   "dependencies": {
+    "@sib-swiss/sparql-overview": "*",
     "@zazuko/yasgui": "4.3.3",
     "highlight.js": "^11.10.0",
     "mermaid": "^11.4.0",
