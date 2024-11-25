@@ -12,24 +12,20 @@ body {
   background-color: #f4f4f4;
 }
 .info-box {
+  text-align: left;
   max-width: 800px;
   margin: 2em auto;
-  text-align: left;
   padding: 0.5em 1em;
   background-color: white;
   border: 1px solid #ccc;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-h2 {
-  text-align: center;
-}
-p,
-ul,
-li {
-  text-align: left;
-}
-ul {
-  padding-left: 1.5em;
+
+  h2 {
+    text-align: center;
+  }
+  ul {
+    padding-left: 1.5em;
+  }
 }
 
 #loading-spinner {

@@ -21,11 +21,13 @@ type Cluster = {
   positions: {x: number; y: number}[];
 };
 
-type EndpointInfo = {
-  label?: string;
-  description?: string;
-  graphs?: string[];
-  void?: SparqlResultBindings[];
+type EndpointsInfo = {
+  [key: string]: {
+    label?: string;
+    description?: string;
+    graphs?: string[];
+    void?: SparqlResultBindings[];
+  };
 };
 
 const metadataNamespaces = [
@@ -50,7 +52,8 @@ function isMetadataNode(node: string) {
  * @example <sparql-overview endpoint="https://sparql.uniprot.org/sparql/"></sparql-overview>
  */
 export class SparqlOverview extends HTMLElement {
-  endpoints: {[key: string]: EndpointInfo} = {};
+  endpoints: EndpointsInfo = {};
+  selectedEndpoints: Array<string> = [];
   prefixes: {[key: string]: string} = {};
   showMetadata: boolean = false;
   // meta: EndpointsMetadata;
@@ -79,12 +82,11 @@ export class SparqlOverview extends HTMLElement {
 
   constructor() {
     super();
-    const endpointList = (this.getAttribute("endpoint") || "").split(",");
-    // this.meta = this.loadMetaFromLocalStorage();
-    // console.log("Loaded metadata from localStorage", this.meta);
-    endpointList.forEach(endpoint => {
+    this.selectedEndpoints = (this.getAttribute("endpoint") || "").split(",");
+    this.loadMetaFromLocalStorage();
+    this.selectedEndpoints.forEach(endpoint => {
       endpoint = endpoint.trim();
-      this.endpoints[endpoint] = {};
+      if (!(endpoint in this.endpoints)) this.endpoints[endpoint] = {};
     });
     if (Object.keys(this.endpoints).length === 0)
       throw new Error("No endpoint provided. Please use the 'endpoints' attribute to specify the SPARQL endpoint URL.");
@@ -284,10 +286,13 @@ export class SparqlOverview extends HTMLElement {
   }
 
   async connectedCallback() {
-    await Promise.all(Object.keys(this.endpoints).map(endpoint => this.fetchEndpointMetadata(endpoint)));
+    // Fetch endpoints metadata in parallel
+    // await Promise.all(Object.keys(this.endpoints).map(endpoint => this.fetchEndpointMetadata(endpoint)));
+    await Promise.all(this.selectedEndpoints.map(endpoint => this.fetchEndpointMetadata(endpoint)));
+    // this.saveMetaToLocalStorage();
     await this.initGraph();
     const loadingSpinner = this.querySelector("#loading-spinner") as HTMLElement;
-    loadingSpinner.style.display = "None";
+    if (loadingSpinner.style.color != "red") loadingSpinner.style.display = "None";
   }
 
   async initGraph() {
@@ -297,12 +302,14 @@ export class SparqlOverview extends HTMLElement {
     this.predicatesCount = {};
     this.clusters = {};
 
-    const defaultNodeSize = 10;
+    const defaultNodeSize = 8;
     // let largestNodeCount = 0;
     let largestEdgeCount = 0;
 
     // Create nodes and edges based on SPARQL query results
-    for (const [endpoint, info] of Object.entries(this.endpoints)) {
+    // for (const [endpoint, info] of Object.entries(this.endpoints)) {
+    for (const endpoint of this.selectedEndpoints) {
+      const info = this.endpoints[endpoint];
       if (!info.void) continue;
       for (const row of info.void) {
         if (!this.showMetadata && (isMetadataNode(row.subjectClass.value) || isMetadataNode(row.objectClass?.value)))
@@ -412,7 +419,7 @@ export class SparqlOverview extends HTMLElement {
               curie: predCurie,
               uri: row.prop.value,
               count: count,
-              size: 2,
+              // size: 2,
               // TODO: dynamic size: count, ?
               type: "arrow",
             };
@@ -435,8 +442,7 @@ export class SparqlOverview extends HTMLElement {
     }
 
     if (this.graph.nodes().length < 2) {
-      console.warn(`No VoID description found in endpoint ${this.endpointUrl()}`);
-      // TODO: show error message on screen
+      this.displayError(`No VoID description found in endpoint ${this.endpointUrl()}`);
       return;
     }
 
@@ -486,11 +492,11 @@ export class SparqlOverview extends HTMLElement {
     }
 
     // const largestNodeSize = 20;
-    const largestEdgeSize = 8;
+    const largestEdgeSize = 5;
 
     this.graph.forEachEdge((_edge, atts) => {
       atts.size = (atts.count * largestEdgeSize) / largestEdgeCount;
-      if (atts.size < 2) atts.size = 2;
+      if (atts.size < 1) atts.size = 1;
     });
 
     // We need to manually set some x/y coordinates for each node
@@ -869,6 +875,17 @@ export class SparqlOverview extends HTMLElement {
     });
   }
 
+  displayError(msg?: string) {
+    const msgEl = this.querySelector("#loading-spinner") as HTMLElement;
+    if (msg) {
+      msgEl.style.color = "red";
+      msgEl.innerHTML = msg;
+      msgEl.style.display = "";
+    } else {
+      msgEl.style.display = "none";
+    }
+  }
+
   getCurie(uri: string) {
     return compressUri(this.prefixes, uri);
   }
@@ -877,27 +894,44 @@ export class SparqlOverview extends HTMLElement {
     return Object.keys(this.endpoints)[0];
   }
 
-  // loadMetaFromLocalStorage(): EndpointsMetadata {
-  //   const metaString = localStorage.getItem("sparql-editor-metadata");
-  //   return metaString ? JSON.parse(metaString) : {};
-  // }
+  loadMetaFromLocalStorage() {
+    const metaString = localStorage.getItem("sparql-overview-metadata");
+    if (metaString) {
+      const meta = JSON.parse(metaString);
+      this.endpoints = meta.endpoints;
+      this.prefixes = meta.prefixes;
+      console.log("Loaded metadata from localStorage", meta);
+    }
+  }
 
-  // // Function to save metadata to localStorage
-  // saveMetaToLocalStorage() {
-  //   localStorage.setItem("sparql-editor-metadata", JSON.stringify(this.meta));
-  // }
+  // Function to save metadata to localStorage
+  saveMetaToLocalStorage() {
+    // localStorage.setItem("sparql-overview-metadata", JSON.stringify({endpoints: this.endpoints, prefixes: this.prefixes}));
+    const jsonString = JSON.stringify({endpoints: this.endpoints, prefixes: this.prefixes});
+    const sizeInBytes = new Blob([jsonString]).size;
+    const sizeInMB = sizeInBytes / (1024 * 1024);
+    console.log(`Data size: ${sizeInMB.toFixed(2)} MB`);
+    try {
+      localStorage.setItem("sparql-overview-metadata", jsonString);
+    } catch {
+      console.warn(`Data exceeds localStorage limit (${sizeInMB.toFixed(2)}/5 MB), will not use cache.`);
+    }
+  }
 
   // Get prefixes, VoID and examples
   async fetchEndpointMetadata(endpoint: string) {
-    // if (!this.meta[endpoint].retrievedAt) {
-    // console.log(`Getting metadata for ${endpoint}`);
-    const [prefixes, voidInfo] = await Promise.all([getPrefixes(endpoint), queryEndpoint(voidQuery, endpoint)]);
-    this.endpoints[endpoint].void = voidInfo;
-    // this.prefixes = {...this.prefixes, ...prefixes};
-    // Merge prefixes into `this.prefixes` one key at a time to avoid race conditions
-    Object.assign(this.prefixes, prefixes);
-    // this.meta[endpoint].retrievedAt = new Date();
-    // this.saveMetaToLocalStorage();
+    if (this.endpoints[endpoint].void) return;
+    try {
+      const [prefixes, voidInfo] = await Promise.all([getPrefixes(endpoint), queryEndpoint(voidQuery, endpoint)]);
+      this.endpoints[endpoint].void = voidInfo;
+      // TODO: convert VoID to a better format to be stored?
+      // this.prefixes = {...this.prefixes, ...prefixes};
+      // Merge prefixes into `this.prefixes` one key at a time to avoid race conditions
+      Object.assign(this.prefixes, prefixes);
+      this.saveMetaToLocalStorage();
+    } catch (err) {
+      this.displayError(`Issue fetching metadata from endpoint ${err}`);
+    }
   }
 
   renderPredicatesFilter() {

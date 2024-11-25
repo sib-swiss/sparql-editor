@@ -40,7 +40,7 @@ export function compressUri(prefixes: {[key: string]: string}, uri: string): str
 export async function queryEndpoint(query: string, endpoint: string): Promise<SparqlResultBindings[]> {
   // We add `&ac=1` to all the queries to exclude these queries from stats
   const response = await fetch(`${endpoint}?ac=1&query=${encodeURIComponent(query)}`, {
-    signal: AbortSignal.timeout(20000),
+    signal: AbortSignal.timeout(12000),
     headers: {
       Accept: "application/sparql-results+json",
     },
