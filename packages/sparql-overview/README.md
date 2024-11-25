@@ -2,9 +2,9 @@
 
 # 💫 SPARQL overview web component
 
-[![NPM](https://img.shields.io/npm/v/@sib-swiss/sparql-metamap)](https://www.npmjs.com/package/@sib-swiss/sparql-metamap)
-[![Tests](https://github.com/sib-swiss/sparql-metamap/actions/workflows/test.yml/badge.svg)](https://github.com/sib-swiss/sparql-metamap/actions/workflows/test.yml)
-[![Deploy demo to GitHub Pages](https://github.com/sib-swiss/sparql-metamap/actions/workflows/deploy.yml/badge.svg)](https://github.com/sib-swiss/sparql-metamap/actions/workflows/deploy.yml)
+[![NPM](https://img.shields.io/npm/v/@sib-swiss/sparql-overview)](https://www.npmjs.com/package/@sib-swiss/sparql-overview)
+[![Tests](https://github.com/sib-swiss/sparql-editor/actions/workflows/test.yml/badge.svg)](https://github.com/sib-swiss/sparql-v/actions/workflows/test.yml)
+[![Deploy demo to GitHub Pages](https://github.com/sib-swiss/sparql-editor/actions/workflows/deploy.yml/badge.svg)](https://github.com/sib-swiss/sparql-editor/actions/workflows/deploy.yml)
 
 </div>
 
@@ -12,34 +12,34 @@ A standard web component to visualize classes and their relations as a network.
 
 The editor retrieves VoID description about the endpoints by directly querying them with SPARQL.
 
-👆️ You can **try it** for a few SPARQL endpoints of the SIB, such as UniProt and Bgee, here: **[sib-swiss.github.io/sparql-metamap](https://sib-swiss.github.io/sparql-metamap)**
+👆️ You can **try it** for a few SPARQL endpoints of the SIB, such as UniProt and Bgee, here: **[sib-swiss.github.io/sparql-editor/overview](https://sib-swiss.github.io/sparql-editor/overview)**
 
 ## 🚀 Use
 
 1. Import from a CDN:
 
    ```html
-   <script type="module" src="https://unpkg.com/@sib-swiss/sparql-metamap"></script>
+   <script type="module" src="https://unpkg.com/@sib-swiss/sparql-overview"></script>
    ```
 
    Or install with a package manager in your project:
 
    ```bash
-   npm install --save @sib-swiss/sparql-metamap
+   npm install --save @sib-swiss/sparql-overview
    # or
-   pnpm add @sib-swiss/sparql-metamap
+   pnpm add @sib-swiss/sparql-overview
    ```
 
 2. Use the custom element in your HTML/JSX/TSX code:
 
    ```html
-   <sparql-metamap endpoint="https://sparql.uniprot.org/sparql/"></sparql-metamap>
+   <sparql-overview endpoint="https://sparql.uniprot.org/sparql/"></sparql-overview>
    ```
 
    You can also pass a list of endpoints URLs separated by commas to enable users to choose from different endpoints:
 
    ```html
-   <sparql-metamap endpoint="https://sparql.uniprot.org/sparql/,https://www.bgee.org/sparql/"></sparql-metamap>
+   <sparql-overview endpoint="https://sparql.uniprot.org/sparql/,https://www.bgee.org/sparql/"></sparql-overview>
    ```
 
 > [!WARNING]
@@ -62,15 +62,12 @@ Create a `index.html` file with:
     <meta name="description" content="SPARQL editor demo page" />
     <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/f/f3/Rdf_logo.svg" />
     <!-- Import the module from a CDN -->
-    <script type="module" src="https://unpkg.com/@sib-swiss/sparql-metamap"></script>
+    <script type="module" src="https://unpkg.com/@sib-swiss/sparql-overview"></script>
   </head>
 
   <body>
     <div>
-      <sparql-metamap endpoint="https://www.bgee.org/sparql/">
-        <h1>About</h1>
-        <p>This SPARQL endpoint contains...</p>
-      </sparql-metamap>
+      <sparql-overview endpoint="https://www.bgee.org/sparql/"></sparql-overview>
     </div>
   </body>
 </html>
@@ -88,4 +85,4 @@ python -m http.server
 
 # 🧑‍💻 Contributing
 
-Checkout [CONTRIBUTING.md](https://github.com/sib-swiss/sparql-metamap/blob/main/CONTRIBUTING.md) for more details on how to run this in development and make a contribution.
+Checkout [CONTRIBUTING.md](https://github.com/sib-swiss/sparql-editor/blob/main/CONTRIBUTING.md) for more details on how to run this in development and make a contribution.

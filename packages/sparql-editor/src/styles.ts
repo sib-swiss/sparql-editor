@@ -7,41 +7,79 @@
 // .yasr .dataTable {
 //   font-size: 0.9em;
 // }
-export const editorCss = `.sparql-editor-container a {
-  text-decoration: none;
-  color: #00709b;
-}
-.sparql-editor-container a:hover {
-  filter: brightness(60%);
-}
-.sparql-editor-container button {
-  cursor: pointer;
-}
-.sparql-editor-container {
+export const editorCss = `.sparql-editor-container {
+  --btn-color: #e30613;
+  --btn-bg-color: #f8bca5;
+  font-family: Arial, sans-serif;
   display: flex;
   flex-direction: row;
-}
-.sparql-editor-container .sparql-examples {
-  padding-left: 1em;
-}
-.sparql-editor-container input.sparql-search-examples-input {
-  width: 300px;
-  padding: 0.5em;
-  border-radius: 5px;
+
+  a {
+    text-decoration: none;
+    color: #00709b;
+  }
+  a:hover {
+    filter: brightness(60%);
+  }
+  dialog {
+    border-color: #cccccc;
+    background-color: #f5f5f5;
+    border-radius: 10px;
+  }
+  .sparql-examples {
+    padding-left: 1em;
+  }
+  input.sparql-search-examples-input {
+    width: 300px;
+    padding: 0.5em;
+    border-radius: 5px;
+  }
+  .yasr_results {
+    overflow-x: auto;
+  }
+
+  #status-link {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    cursor: pointer;
+    padding: 3px;
+  }
+
+  button.btn {
+    background-color: var(--btn-bg-color);
+    color: var(--btn-color);
+    border: none;
+    padding: 0.3em 0.4em;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    cursor: pointer;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  button.btn:hover {
+    filter: brightness(90%);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2); /* Larger shadow on hover */
+  }
+  button.btn:active {
+    filter: brightness(80%);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Reset shadow on click */
+  }
 }
 
 @media (max-width: 600px) {
   .sparql-editor-container {
     flex-direction: column;
-  }
-  .sparql-editor-container .sparql-examples {
-    display: none;
-  }
-  .sparql-editor-container #sparql-examples-top-btn {
-    display: inline-block;
-  }
-  .sparql-editor-container input.sparql-search-examples-input {
-    width: 100%;
+
+    .sparql-examples {
+      display: none;
+    }
+    #sparql-examples-top-btn {
+      display: inline-block;
+    }
+    input.sparql-search-examples-input {
+      width: 100%;
+    }
   }
 }
 @media (min-width: 600px) {
@@ -50,45 +88,9 @@ export const editorCss = `.sparql-editor-container a {
   }
 }
 
-
-.sparql-editor-container {
-    --btn-color: #e30613;
-    --btn-bg-color: #f8bca5;
-    font-family: Arial, sans-serif;
-}
-
-.sparql-editor-container #status-link {
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    border-radius: 50%;
-    cursor: pointer;
-    padding: 3px;
-}
-
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
-
-.sparql-editor-container button.btn {
-  background-color: var(--btn-bg-color);
-  color: var(--btn-color);
-  border: none;
-  padding: 0.3em 0.4em;
-  border-radius: 5px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
-  cursor: pointer;
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
-}
-.sparql-editor-container button.btn:hover {
-  filter: brightness(90%);
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2); /* Larger shadow on hover */
-}
-.sparql-editor-container button.btn:active {
-  filter: brightness(80%);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Reset shadow on click */
-}
-
 
 button.yasqe_share {
   display: none !important;

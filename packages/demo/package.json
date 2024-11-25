@@ -1,7 +1,7 @@
 {
-  "name": "@sib-swiss/sparql-editor-demo",
+  "name": "@sib-swiss/sparql-demo",
   "version": "0.2.4",
-  "description": "A demo website of the SPARQL query editor. Built on the popular YASGUI editor, it provides context-aware autocomplete for classes and predicates based on the content of the endpoints.",
+  "description": "A demo website of the SPARQL tools.",
   "license": "MIT",
   "author": {
     "name": "Vincent Emonet",

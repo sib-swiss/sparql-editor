@@ -6,7 +6,7 @@
   "workspaces": [
     "packages/*"
   ],
-  "description": "Web components to for accessing SPARQL endpoints.",
+  "description": "Web components for accessing SPARQL endpoints.",
   "license": "MIT",
   "author": {
     "name": "Vincent Emonet",
@@ -14,7 +14,7 @@
   },
   "scripts": {
     "build": "npm run build:overview && npm run build:editor && npm run build:demo",
-    "dev": "npm run dev:editor",
+    "dev": "npm run build:overview && npm run dev:editor",
     "build:editor": "npm run build -w packages/sparql-editor",
     "dev:editor": "npm run dev -w packages/sparql-editor",
     "build:overview": "npm run build -w packages/sparql-overview",

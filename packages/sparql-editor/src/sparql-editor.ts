@@ -106,14 +106,14 @@ export class SparqlEditor extends HTMLElement {
         <button id="sparql-add-prefixes-btn" class="btn" style="margin-bottom: 0.3em;">Add common prefixes</button>
         <button id="sparql-save-example-btn" class="btn" style="margin-bottom: 0.3em;">Save query as example</button>
         <button id="sparql-examples-top-btn" class="btn" style="margin-bottom: 0.3em;">Browse examples</button>
-        <button id="sparql-cls-overview" class="btn" style="margin-bottom: 0.3em;" title="Overview of classes and their relations in the endpoint">
+        <button id="sparql-cls-overview-btn" class="btn" style="margin-bottom: 0.3em;" title="Overview of classes and their relations in the endpoint">
           Classes overview
         </button>
         <button id="sparql-clear-cache-btn" class="btn" style="margin-bottom: 0.3em;">Clear cache</button>
         <div id="yasgui"></div>
       </div>
     `;
-    // TODO: <button id="sparql-cls-overview" class="btn" style="margin-bottom: 0.3em;">Browse overview</button>
+    // TODO: <button id="sparql-cls-overview-btn" class="btn" style="margin-bottom: 0.3em;">Browse overview</button>
     this.appendChild(style);
 
     // NOTE: autocompleters are executed when Yasgui is instantiated
@@ -204,7 +204,7 @@ export class SparqlEditor extends HTMLElement {
     Yasgui.Yasr.defaults.prefixes = this.meta[endpoint].prefixes;
 
     // Hide or show the Classes overview button
-    const clsOverviewBtn = this.querySelector("#sparql-cls-overview") as HTMLElement;
+    const clsOverviewBtn = this.querySelector("#sparql-cls-overview-btn") as HTMLElement;
     if (Object.keys(this.meta[endpoint].void).length > 0) {
       clsOverviewBtn.style.display = "";
     } else {
@@ -274,7 +274,10 @@ export class SparqlEditor extends HTMLElement {
       });
     });
     this.yasgui?.on("tabAdd", () => {
-      setTimeout(() => this.showExamples());
+      setTimeout(() => {
+        this.showExamples();
+        this.showOverview();
+      });
     });
 
     // Button to clear and update cache of SPARQL endpoints metadata
@@ -585,16 +588,14 @@ ex:${exampleUri} a sh:SPARQLExecutable${
   }
 
   async showOverview() {
-    const overviewBtn = this.querySelector("#sparql-cls-overview") as HTMLButtonElement;
-    // Create dialog for examples
+    const overviewBtn = this.querySelector("#sparql-cls-overview-btn") as HTMLButtonElement;
+    const existingOverviewDialog = this.querySelector("#sparql-cls-overview-dialog") as HTMLDialogElement;
+    if (existingOverviewDialog) existingOverviewDialog.remove();
     const overviewDialog = document.createElement("dialog");
-    // exQueryDialog.style.margin = "1em";
-    // exQueryDialog.style.width = "calc(100vw - 8px)";
+    // Create dialog for overview
+    overviewDialog.id = "sparql-cls-overview-dialog";
     overviewDialog.style.width = "100%";
     overviewDialog.style.height = "100%";
-    overviewDialog.style.borderColor = "#cccccc";
-    overviewDialog.style.backgroundColor = "#f5f5f5";
-    overviewDialog.style.borderRadius = "10px";
     overviewDialog.innerHTML = `<div style="height: 100%;">
       <sparql-overview endpoint="${this.endpointUrl()}"></sparql-overview>
     </div>`;
@@ -607,13 +608,13 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     dialogCloseBtn.style.top = "1.5em";
     dialogCloseBtn.style.right = "2em";
     overviewDialog.appendChild(dialogCloseBtn);
-    document.body.appendChild(overviewDialog);
+    this.appendChild(overviewDialog);
 
-    overviewBtn.addEventListener("click", () => {
-      overviewDialog.showModal();
-      document.body.style.overflow = "hidden";
-    });
-    overviewBtn.addEventListener("click", () => {
+    // Remove previous event listeners
+    overviewBtn.replaceWith(overviewBtn.cloneNode(true));
+    const newOverviewBtn = this.querySelector("#sparql-cls-overview-btn") as HTMLButtonElement;
+
+    newOverviewBtn.addEventListener("click", () => {
       overviewDialog.showModal();
       document.body.style.overflow = "hidden";
     });
