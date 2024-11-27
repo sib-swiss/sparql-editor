@@ -21,7 +21,7 @@
     "dev:overview": "npm run dev -w packages/sparql-overview",
     "build:demo": "npm run build -w packages/demo",
     "dev:demo": "npm run build:editor && npm run dev -w packages/demo",
-    "preview:demo": "npm run preview -w packages/demo",
+    "preview:demo": "npm run build && npm run preview -w packages/demo",
     "fmt": "prettier --write . && eslint \"packages/**/*.{ts,tsx,html,json}\" --fix",
     "lint": "prettier --check . && eslint \"packages/**/*.{ts,tsx,html,json}\"",
     "test": "npm run lint && npm test -w packages/sparql-editor",

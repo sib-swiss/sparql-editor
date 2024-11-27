@@ -10,7 +10,8 @@ import type {Coordinates, EdgeDisplayData, NodeDisplayData} from "sigma/types";
 // import { createNodeImageProgram } from "@sigma/node-image";
 // import ForceSupervisor from "graphology-layout-force/worker";
 
-import {getPrefixes, compressUri, queryEndpoint, SparqlResultBindings, getEdgeCurvature, voidQuery} from "./utils";
+import {getPrefixes, compressUri, queryEndpoint, getEdgeCurvature, voidQuery, isMetadataNode} from "./utils";
+import {componentStyle} from "./styles";
 
 type Cluster = {
   label: string;
@@ -18,46 +19,44 @@ type Cluster = {
   y?: number;
   color?: string;
   count: number;
+  endpoint: string;
   positions: {x: number; y: number}[];
 };
 
-type EndpointsInfo = {
+type StoredMetadata = {
   [key: string]: {
-    label?: string;
-    description?: string;
-    graphs?: string[];
-    void?: SparqlResultBindings[];
+    graph: any;
+    prefixes: {[key: string]: string};
+    clusters: {[key: string]: Cluster};
+    hidePredicates: string[];
+    hideClusters: string[];
   };
 };
 
-const metadataNamespaces = [
-  "http://www.w3.org/ns/shacl#",
-  "http://www.w3.org/2002/07/owl#",
-  "http://www.w3.org/2000/01/rdf-schema#",
-  "http://www.w3.org/ns/sparql-service-description#",
-  "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-  "http://rdfs.org/ns/void#",
-  "http://purl.org/query/voidext#",
-  "http://purl.org/query/bioquery#",
-];
-
-function isMetadataNode(node: string) {
-  if (!node) return false;
-  if (node === "http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement") return false;
-  return metadataNamespaces.some(namespace => node.startsWith(namespace));
-}
+const metadataClusterLabel = "Endpoint Metadata";
 
 /**
  * Custom element to create a SPARQL network overview for a given endpoint classes and predicates
  * @example <sparql-overview endpoint="https://sparql.uniprot.org/sparql/"></sparql-overview>
  */
 export class SparqlOverview extends HTMLElement {
-  endpoints: EndpointsInfo = {};
-  selectedEndpoints: Array<string> = [];
+  selectedEndpoints: string[] = [];
+
+  // TODO: DRAG N DROP https://www.sigmajs.org/storybook/?path=/story/mouse-manipulations--story
+
+  // Metadata stored in localStorage
+  storedMeta: StoredMetadata = {};
+
+  graph: Graph = new Graph({multi: true});
   prefixes: {[key: string]: string} = {};
-  showMetadata: boolean = false;
-  // meta: EndpointsMetadata;
-  // void: {[key: string]: SparqlResultBindings[]} = {};
+  clusters: {[key: string]: Cluster} = {};
+
+  // Used for rendering and filtering
+  // https://github.com/jacomyal/sigma.js/issues/197
+  renderer?: Sigma;
+  predicates: {[key: string]: {count: number; label: string}} = {};
+  hidePredicates: Set<string> = new Set();
+  hideClusters: Set<string> = new Set();
 
   // Hovered stuff
   hoveredNode?: string;
@@ -70,147 +69,73 @@ export class SparqlOverview extends HTMLElement {
   searchQuery: string = "";
   suggestions?: Set<string>;
 
-  // Predicates and clusters filters
-  predicatesCount: {[key: string]: {count: number; label: string}} = {};
-  clusters: {[key: string]: Cluster} = {};
-  hidePredicates: Set<string> = new Set();
-  hideClusters: Set<string> = new Set();
-
-  graph: Graph;
-  renderer?: Sigma;
-  // https://github.com/jacomyal/sigma.js/issues/197
-
   constructor() {
     super();
-    this.selectedEndpoints = (this.getAttribute("endpoint") || "").split(",");
-    this.loadMetaFromLocalStorage();
-    this.selectedEndpoints.forEach(endpoint => {
-      endpoint = endpoint.trim();
-      if (!(endpoint in this.endpoints)) this.endpoints[endpoint] = {};
-    });
-    if (Object.keys(this.endpoints).length === 0)
-      throw new Error("No endpoint provided. Please use the 'endpoints' attribute to specify the SPARQL endpoint URL.");
+    this.selectedEndpoints = (this.getAttribute("endpoint") || "").split(",").map(value => value.trim());
+    this.loadGraph();
+    this.hideClusters.add("Endpoint Metadata");
+
+    if (this.selectedEndpoints.length === 0)
+      throw new Error("No endpoint provided. Please use the 'endpoint' attribute to specify the SPARQL endpoint URL.");
 
     const style = document.createElement("style");
-    style.textContent = `
-      html, body {
-        font: 10pt arial;
-      }
-      #sparql-overview {
-        height: 100%;
-
-        a {
-          text-decoration: none;
-        }
-        a:hover {
-          filter: brightness(60%);
-          text-decoration: underline;
-        }
-        #overview-predicate-sidebar {
-          float: left;
-          // width: fit-content;
-          width: 230px;
-          padding-right: 0.5em;
-          overflow-y: auto;
-          height: 100%a:hover {
-  filter: brightness(60%);
-  text-decoration: underline;
-};
-        }
-        #overview-predicate-sidebar p, h3, h5 {
-          margin: .5em 0;
-        }
-        #network-container {
-          width: 100%;
-          float: right;
-          height: 100%;
-          border: 1px solid lightgray;
-          border-radius: 2px;
-        }
-        hr {
-          width: 80%;
-          border: none;
-          height: 1px;
-          background: lightgrey;
-        }
-        .clusterLabel {
-          position: absolute;
-          // transform: translate(-50%, -50%);
-          font-size: 1.5rem;
-          font-family: sans-serif;
-          font-variant: small-caps;
-          font-weight: 400;
-          text-shadow: 2px 2px 1px white, -2px -2px 1px white, -2px 2px 1px white, 2px -2px 1px white;
-        }
-        code {
-          font-family: 'Fira Code', monospace;
-          font-size: 0.95rem;
-          border-radius: 6px;
-          padding: 0.2em 0.4em;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-          border: 1px solid #e0e0e0;
-          display: inline-block;
-          word-wrap: break-word;
-        }
-        dialog {
-          border-color: #cccccc;
-          background-color: #f5f5f5;
-          border-radius: 10px;
-        }
-        button {
-          // background-color: var(--btn-bg-color);
-          // color: var(--btn-color);
-          font-size: 0.9em;
-          border: none;
-          padding: 0.3em 0.4em;
-          border-radius: 5px;
-          transition: background-color 0.3s ease, box-shadow 0.3s ease;
-        }
-        button:hover {
-          filter: brightness(90%);
-        }
-      }
-		`;
+    style.textContent = componentStyle;
     const container = document.createElement("div");
     container.id = "sparql-overview";
     container.style.display = "flex";
     container.className = "container";
     container.style.height = "100%";
     let endpointsHtml = "";
-    for (const endpoint of Object.keys(this.endpoints)) {
-      endpointsHtml += `<p><code><a href="${endpoint}">${endpoint}</a></code></p>`;
+    for (const endpoint of this.selectedEndpoints) {
+      endpointsHtml += `<p><a href="${endpoint}" target="_blank"><code>${endpoint}</code></a></p>`;
     }
     container.innerHTML = `
       <div id="overview-predicate-sidebar" style="display: flex; flex-direction: column;">
-        <input type="search" id="search-input" list="suggestions" placeholder="Search classes...">
-        <datalist id="suggestions"></datalist>
-        <div style="display: flex; align-self: center; gap: .5em; margin: .5em 0;">
-          <button id="overview-show-info" class="btn" title="Show info about the page">ℹ️</button>
-          <button id="overview-show-meta" class="btn" title="Also show metadata classes (ontology, SHACL, VoID)">Show metadata</button>
+        <div style="display: flex; align-self: center; gap: .5em; margin-bottom: .5em;">
+          <input type="search" id="search-input" list="suggestions" placeholder="Search classes...">
+          <datalist id="suggestions"></datalist>
+          <button id="overview-show-info" title="Information about this page">ℹ️</button>
         </div>
+
         <dialog id="overview-dialog-info" style="text-align: center;">
-          <p>
-            Overview of classes and their relations for SPARQL endpoint
-          </p>
+          <h4>
+            Overview of classes and their relations for SPARQL endpoint${this.selectedEndpoints.length > 1 ? "s" : ""}
+          </h4>
           ${endpointsHtml}
-          <p style="opacity: 60%; margin-top: 2em;">
+          <p style="margin-top: 1.5em;">
+            This visualization uses informations about classes and their relations described as
+            <a href="https://www.w3.org/TR/void/" target="_blank">VoID description</a> RDF uploaded to the endpoint.
+          <p>
+          </p>
+            You can easily generate it for your endpoint with the
+            <a href="https://github.com/JervenBolleman/void-generator" target="_blank"><code>void-generator</code></a> CLI.
+          </p>
+          <p>
+            <a href="https://github.com/sib-swiss/sparql-editor/tree/main/packages/sparql-overview" target="_blank">
+              Web component source code
+            </a>
+          </p>
+          <p style="opacity: 60%; margin: 1.5em 0;">
             💡 <code>ctrl + left click</code> to select multiple nodes.
           </p>
-          <button id="overview-close-info" class="btn closeBtn">Close</button>
+          <button id="overview-clear-cache" title="Clear and update the endpoints metadata stored in the cache">
+            Clear cache
+          </button>
+          <button id="overview-close-info">Close</button>
         </dialog>
 
         <div style="text-align: center;">
           <span>Filter predicates ·</span>
-          <button id="overview-show-preds" class="btn" title="Show all predicates">Show all</button>
-          <button id="overview-hide-preds" class="btn" title="Hide all predicates">Hide all</button>
+          <button id="overview-show-preds" title="Show all predicates">Show all</button>
+          <button id="overview-hide-preds" title="Hide all predicates">Hide all</button>
         </div>
         <div id="overview-predicates-list" style="flex: 1; overflow-y: auto;"></div>
 
         <hr></hr>
         <div style="text-align: center; ">
           <span>Filter clusters ·</span>
-          <button id="overview-show-clusters" class="btn" title="Show all clusters">Show all</button>
-          <button id="overview-hide-clusters" class="btn" title="Hide all clusters">Hide all</button>
+          <button id="overview-show-clusters" title="Show all clusters">Show all</button>
+          <button id="overview-hide-clusters" title="Hide all clusters">Hide all</button>
         </div>
         <div id="overview-clusters-list" style="flex: 1; overflow-y: auto;"></div>
 
@@ -218,14 +143,36 @@ export class SparqlOverview extends HTMLElement {
         <div id="overview-node-info" style="overflow-y: auto;"></div>
       </div>
 
-      <div id="network-container" style="flex: 1; display: flex; position: relative; align-items: center; justify-content: center;">
-        <div id="loading-spinner">
-          <p style="margin: 0; text-align: center">Loading overview...</p>
-        </div>
+      <div id="loading-msg">
+        <p style="margin: 0; text-align: center">Loading overview...</p>
       </div>
+      <div id="network-container" style="flex: 1; display: flex; position: relative; align-items: center; justify-content: center;"></div>
     `;
     this.appendChild(style);
     this.appendChild(container);
+
+    // Show info dialog
+    const showInfoButton = this.querySelector("#overview-show-info") as HTMLButtonElement;
+    const dialogInfo = this.querySelector("#overview-dialog-info") as HTMLDialogElement;
+    showInfoButton.addEventListener("click", async () => {
+      dialogInfo.showModal();
+    });
+    const closeInfoButton = this.querySelector("#overview-close-info") as HTMLButtonElement;
+    closeInfoButton.addEventListener("click", async () => {
+      dialogInfo.close();
+    });
+    const clearCacheButton = this.querySelector("#overview-clear-cache") as HTMLButtonElement;
+    clearCacheButton.addEventListener("click", async () => {
+      localStorage.removeItem("sparql-overview-metadata");
+      this.renderer?.kill();
+      this.storedMeta = {};
+      this.graph = new Graph({multi: true});
+      this.clusters = {};
+      this.predicates = {};
+      this.displayMsg("Loading overview...");
+      this.connectedCallback();
+      dialogInfo.close();
+    });
 
     // Add sidebar filtering buttons
     const showAllPredsButton = this.querySelector("#overview-show-preds") as HTMLButtonElement;
@@ -243,24 +190,8 @@ export class SparqlOverview extends HTMLElement {
       checkboxes.forEach(checkbox => {
         (checkbox as HTMLInputElement).checked = false;
       });
-      this.hidePredicates = new Set(Object.keys(this.predicatesCount));
+      this.hidePredicates = new Set(Object.keys(this.predicates));
       this.renderer?.refresh({skipIndexation: true});
-    });
-    const showMetaButton = this.querySelector("#overview-show-meta") as HTMLButtonElement;
-    showMetaButton.addEventListener("click", async () => {
-      this.showMetadata = !this.showMetadata;
-      if (this.showMetadata) showMetaButton.textContent = "Hide metadata";
-      else showMetaButton.textContent = "Show metadata";
-      await this.initGraph();
-    });
-    const showInfoButton = this.querySelector("#overview-show-info") as HTMLButtonElement;
-    const dialogInfo = this.querySelector("#overview-dialog-info") as HTMLDialogElement;
-    showInfoButton.addEventListener("click", async () => {
-      dialogInfo.showModal();
-    });
-    const closeInfoButton = this.querySelector("#overview-close-info") as HTMLButtonElement;
-    closeInfoButton.addEventListener("click", async () => {
-      dialogInfo.close();
     });
 
     // Filtering buttons for clusters
@@ -271,6 +202,7 @@ export class SparqlOverview extends HTMLElement {
         (checkbox as HTMLInputElement).checked = true;
       });
       this.hideClusters.clear();
+      this.renderPredicatesFilter();
       this.renderer?.refresh({skipIndexation: true});
     });
     const hideAllClustersButton = this.querySelector("#overview-hide-clusters") as HTMLButtonElement;
@@ -280,55 +212,48 @@ export class SparqlOverview extends HTMLElement {
         (checkbox as HTMLInputElement).checked = false;
       });
       this.hideClusters = new Set(Object.keys(this.clusters));
+      this.renderPredicatesFilter();
       this.renderer?.refresh({skipIndexation: true});
     });
-    this.graph = new Graph({multi: true});
   }
 
   async connectedCallback() {
-    // Fetch endpoints metadata in parallel
-    // await Promise.all(Object.keys(this.endpoints).map(endpoint => this.fetchEndpointMetadata(endpoint)));
-    await Promise.all(this.selectedEndpoints.map(endpoint => this.fetchEndpointMetadata(endpoint)));
-    // this.saveMetaToLocalStorage();
-    await this.initGraph();
-    const loadingSpinner = this.querySelector("#loading-spinner") as HTMLElement;
-    if (loadingSpinner.style.color != "red") loadingSpinner.style.display = "None";
+    if (this.graph.nodes().length < 1) {
+      await this.initGraph();
+      if (this.graph.nodes().length > 0) this.saveGraph();
+    }
+    await this.renderGraph();
+    const loadingSpinner = this.querySelector("#loading-msg") as HTMLElement;
+    if (loadingSpinner.style.color != "red") loadingSpinner.style.display = "none";
   }
 
+  // Initialize the graph by retrieving metadata from the SPARQL endpoints
   async initGraph() {
-    // Reinitialize the graph
-    this.renderer?.kill();
-    this.graph = new Graph({multi: true});
-    this.predicatesCount = {};
-    this.clusters = {};
-
     const defaultNodeSize = 8;
     // let largestNodeCount = 0;
     let largestEdgeCount = 0;
+    const {prefixes, metadata} = await this.fetchEndpointsMetadata(this.selectedEndpoints);
+    this.prefixes = prefixes;
 
     // Create nodes and edges based on SPARQL query results
-    // for (const [endpoint, info] of Object.entries(this.endpoints)) {
     for (const endpoint of this.selectedEndpoints) {
-      const info = this.endpoints[endpoint];
-      if (!info.void) continue;
-      for (const row of info.void) {
-        if (!this.showMetadata && (isMetadataNode(row.subjectClass.value) || isMetadataNode(row.objectClass?.value)))
-          continue;
+      if (metadata[endpoint] && !metadata[endpoint].void) continue;
+      for (const row of metadata[endpoint].void) {
         const count = row.triples ? parseInt(row.triples.value) : 5;
         if (largestEdgeCount < count) largestEdgeCount = count;
 
+        const subjUri = row.subjectClass.value;
         // Get the cluster for the subject node
-        const subjCluster = isMetadataNode(row.subjectClass.value)
-          ? "Endpoint Metadata"
+        const subjCluster = isMetadataNode(subjUri)
+          ? metadataClusterLabel
           : row.subjectClassTopParentLabel
             ? row.subjectClassTopParentLabel.value
             : row.subjectClassTopParent
               ? this.getCurie(row.subjectClassTopParent.value)
-              : row.subjectClass.value.includes("Citation") // quick hack to cluster citations in uniprot
+              : subjUri.includes("Citation") // quick hack to cluster citations in uniprot
                 ? "Citation"
                 : "Other";
         // Add subject node
-        const subjUri = row.subjectClass.value;
         const subjCurie = this.getCurie(subjUri);
         if (!this.graph.hasNode(subjUri)) {
           this.graph.addNode(subjUri, {
@@ -337,7 +262,7 @@ export class SparqlOverview extends HTMLElement {
             // count: 1,
             size: defaultNodeSize,
             cluster: subjCluster,
-            endpoint: endpoint,
+            endpoints: [],
             datatypes: [],
           });
           if (row.subjectClassLabel) {
@@ -348,6 +273,10 @@ export class SparqlOverview extends HTMLElement {
             this.graph.updateNodeAttribute(subjUri, "comment", () => row.subjectClassComment.value);
         }
         this.graph.updateNodeAttribute(subjUri, "count", (value: number) => value + count);
+        this.graph.updateNodeAttribute(subjUri, "endpoints", (value: string[]) => {
+          if (!value.includes(endpoint)) return [...value, endpoint];
+          return value;
+        });
         // const subjCount = parseInt(this.graph.getNodeAttribute(subjUri, "count"))
         // if (largestNodeCount < subjCount) largestNodeCount = subjCount;
 
@@ -373,18 +302,18 @@ export class SparqlOverview extends HTMLElement {
 
         // Handle when the object is a class
         if (row.objectClass && !row.objectDatatype) {
+          const objUri = row.objectClass.value;
           // Get the cluster for the object node
-          const objCluster = isMetadataNode(row.objectClass.value)
-            ? "Endpoint Metadata"
+          const objCluster = isMetadataNode(objUri)
+            ? metadataClusterLabel
             : row.objectClassTopParentLabel
               ? row.objectClassTopParentLabel.value
               : row.objectClassTopParent
                 ? this.getCurie(row.objectClassTopParent.value)
-                : row.objectClass.value.includes("Citation") // quick hack to cluster citations in uniprot
+                : objUri.includes("Citation") // quick hack to cluster citations in uniprot
                   ? "Citation"
                   : "Other";
           // Add object node
-          const objUri = row.objectClass.value;
           if (!this.graph.hasNode(objUri)) {
             const objCurie = this.getCurie(objUri);
             this.graph.addNode(objUri, {
@@ -393,7 +322,7 @@ export class SparqlOverview extends HTMLElement {
               // count: 1,
               size: defaultNodeSize,
               cluster: objCluster,
-              endpoint: endpoint,
+              endpoints: [],
               datatypes: [],
             });
             if (row.objectClassLabel) {
@@ -403,6 +332,10 @@ export class SparqlOverview extends HTMLElement {
             if (row.objectClassComment)
               this.graph.updateNodeAttribute(objUri, "comment", () => row.objectClassComment.value);
           }
+          this.graph.updateNodeAttribute(objUri, "endpoints", (value: string[]) => {
+            if (!value.includes(endpoint)) return [...value, endpoint];
+            return value;
+          });
           // Add edge
           const predCurie = this.getCurie(row.prop.value);
           let edgeExists = false;
@@ -419,8 +352,6 @@ export class SparqlOverview extends HTMLElement {
               curie: predCurie,
               uri: row.prop.value,
               count: count,
-              // size: 2,
-              // TODO: dynamic size: count, ?
               type: "arrow",
             };
             if (row.triples) edgeAttrs.triples = parseInt(row.triples.value);
@@ -430,11 +361,6 @@ export class SparqlOverview extends HTMLElement {
               edgeAttrs.displayLabel = row.propLabel.value;
             }
             if (row.propComment) edgeAttrs["comment"] = row.propComment.value;
-            if (!this.predicatesCount[predCurie]) {
-              this.predicatesCount[predCurie] = {count: 1, label: row.propLabel ? row.propLabel.value : predCurie};
-            } else {
-              this.predicatesCount[predCurie].count += 1;
-            }
             this.graph.addEdge(subjUri, objUri, edgeAttrs);
           }
         }
@@ -442,24 +368,27 @@ export class SparqlOverview extends HTMLElement {
     }
 
     if (this.graph.nodes().length < 2) {
-      this.displayError(`No VoID description found in endpoint ${this.endpointUrl()}`);
+      this.displayMsg(`No VoID description found in endpoints ${this.selectedEndpoints.join(", ")}`, true);
       return;
     }
 
     // Create clusters
     this.graph.forEachNode((_node, atts) => {
-      if (!this.clusters[atts.cluster]) this.clusters[atts.cluster] = {label: atts.cluster, positions: [], count: 1};
+      if (!this.clusters[atts.cluster])
+        this.clusters[atts.cluster] = {label: atts.cluster, positions: [], count: 1, endpoint: [...atts.endpoints][0]};
       else this.clusters[atts.cluster].count += 1;
     });
-    // create and assign one color by cluster
-    const palette = iwanthue(Object.keys(this.clusters).length, {seed: "topClassesClusters"});
-    for (const cluster in this.clusters) {
-      this.clusters[cluster].color = palette.pop();
-    }
+
     // Identify single-node clusters and create the "Other" cluster
     const otherClusterName = "Other";
     if (!this.clusters[otherClusterName]) {
-      this.clusters[otherClusterName] = {label: otherClusterName, positions: [], count: 0};
+      this.clusters[otherClusterName] = {
+        label: otherClusterName,
+        positions: [],
+        count: 0,
+        // TODO: 1 Other per endpoint?
+        endpoint: this.selectedEndpoints[0],
+      };
     }
     this.graph.forEachNode((node, atts) => {
       const cluster = atts.cluster;
@@ -476,6 +405,51 @@ export class SparqlOverview extends HTMLElement {
         delete this.clusters[cluster];
       }
     }
+
+    // create and assign one color by cluster
+    const palette = iwanthue(Object.keys(this.clusters).length, {seed: "topClassesClusters"});
+    for (const cluster in this.clusters) {
+      this.clusters[cluster].color = palette.pop();
+    }
+
+    // // Create colors per endpoint and clusters
+    // // Generate main colors for each endpoint
+    // const endpointPalette = iwanthue(this.selectedEndpoints.length, { seed: "endpointColors" });
+    // const endpointColors: any = {};
+    // this.selectedEndpoints.forEach((endpoint, idx) => {
+    //   endpointColors[endpoint] = endpointPalette[idx];
+    // });
+
+    // console.log(endpointColors)
+    // // Generate shades for each cluster
+    // const clusterColors: any = {};
+    // for (const clusterId in this.clusters) {
+    //   console.log(clusterId, this.clusters[clusterId])
+    //   const endpoint = this.clusters[clusterId].endpoint;
+    //   console.log("cluu", endpointColors, endpoint, clusterColors[endpoint])
+    //   if (!endpointColors[endpoint]) continue;
+    //   // Generate shades for the endpoint's color
+    //   if (!clusterColors[endpoint]) {
+    //     console.log(clusterId)
+
+    //     clusterColors[endpoint] = iwanthue(
+    //       Object.keys(this.clusters).filter(cid => this.clusters[cid].endpoint === endpoint).length,
+    //       {
+    //           // colorSpace: "lab",
+    //           seed: endpointColors[endpoint], // Base color
+    //           // lightness: [50, 70],  // Adjust for brightness range
+    //           // chroma: [30, 60],     // Adjust for color intensity
+    //       }
+    //     );
+    //     // clusterColors[endpoint] = iwanthue(Object.keys(this.clusters).filter(cid => this.clusters[cid].endpoint === endpoint).length, {
+    //     //   seed: `shades-${endpoint}`,
+    //     //   colorSpace: endpointColors[endpoint],
+    //     // });
+    //   }
+    //   console.log(clusterColors)
+    //   // Assign a color from the generated shades
+    //   this.clusters[clusterId].color = clusterColors[endpoint].pop();
+    // }
 
     // Define initial positions of nodes based on their clusters.
     // Comment `layout.start()` to see initial position in dev
@@ -511,7 +485,6 @@ export class SparqlOverview extends HTMLElement {
 
       // atts.size = atts.count * largestNodeSize / largestNodeCount;
       // if (atts.size < 1) atts.size = 2;
-
       // node color depends on the cluster it belongs to
       atts.color = this.clusters[atts.cluster].color;
       // TODO: get largest node size up there, then define node size based on largest node
@@ -526,7 +499,7 @@ export class SparqlOverview extends HTMLElement {
       this.clusters[c].y =
         this.clusters[c].positions.reduce((acc, p) => acc + p.y, 0) / this.clusters[c].positions.length;
     }
-    console.log("clusters!", this.clusters);
+    // console.log("clusters!", this.clusters);
 
     // Curve multi edges between same nodes
     // Use dedicated helper to identify parallel edges:
@@ -562,7 +535,10 @@ export class SparqlOverview extends HTMLElement {
         }
       },
     );
+  }
 
+  // Render the initialized graph and add all event listeners
+  async renderGraph() {
     // Instantiate Sigma.js graph
     const container = this.querySelector("#network-container") as HTMLElement;
     this.renderer = new Sigma(this.graph, container, {
@@ -575,22 +551,19 @@ export class SparqlOverview extends HTMLElement {
         curved: EdgeCurvedArrowProgram,
       },
       // https://www.npmjs.com/package/@sigma/edge-curve
-      // edgeProgramClasses: {
-      //   curved: EdgeCurveProgram,
-      // },
     });
     const inferredLayoutSettings = forceAtlas2.inferSettings(this.graph);
-    console.log("inferredLayoutSettings", inferredLayoutSettings);
+    // console.log("inferredLayoutSettings", inferredLayoutSettings);
     const layout = new FA2Layout(this.graph, {
       settings: {
         ...inferredLayoutSettings,
-        // https://www.npmjs.com/package/graphology-layout-forceatlas2#settings
+        linLogMode: true,
         // barnesHutOptimize: true,
         // gravity: 0.1,
-        linLogMode: true,
         // slowDown: 4,
         // adjustSizes: true,
         // strongGravityMode: true,
+        // https://www.npmjs.com/package/graphology-layout-forceatlas2#settings
       },
     });
     layout.start();
@@ -628,20 +601,29 @@ export class SparqlOverview extends HTMLElement {
     this.renderer.on("clickStage", () => {
       this.selectedNodes = new Set();
       this.selectedNode = undefined;
-      this.displayNodeInfo(undefined);
+      this.displayNodeInfo();
       this.selectedEdge = undefined;
-      this.displayEdgeInfo(undefined);
+      this.displayEdgeInfo();
     });
     this.renderer.on("clickEdge", ({edge}) => {
-      this.selectedEdge = edge;
-      this.displayEdgeInfo(edge);
+      if (this.selectedEdge !== edge) {
+        this.selectedEdge = edge;
+        this.displayEdgeInfo(edge);
+      } else {
+        this.selectedEdge = undefined;
+        this.displayEdgeInfo();
+      }
     });
     this.renderer.on("enterEdge", ({edge}) => {
       if (!this.selectedEdge) this.displayEdgeInfo(edge);
     });
     this.renderer.on("leaveEdge", () => {
-      if (!this.selectedEdge) this.displayEdgeInfo(undefined);
+      if (!this.selectedEdge) this.displayEdgeInfo();
     });
+    // this.renderer.on("beforeClear", () => {
+    //   if (!this.selectedEdge) this.displayEdgeInfo();
+    // });
+    // this.renderer?.refresh({skipIndexation: true});
 
     // Render nodes accordingly to the internal state
     this.renderer.setSetting("nodeReducer", (node, data) => {
@@ -764,13 +746,12 @@ export class SparqlOverview extends HTMLElement {
     // });
 
     setTimeout(() => {
-      // this.renderer?.refresh({skipIndexation: true});
       layout.kill();
+      this.renderer?.refresh({skipIndexation: true});
     }, 3000);
     // console.log(this.graph.getNodeAttributes("http://purl.uniprot.org/core/Protein"));
   }
 
-  // TODO: make edge width based on triplesCount, with a ratio based on largest triplesCount
   displayEdgeInfo(edge?: string) {
     const edgeInfoDiv = this.querySelector("#overview-edge-info") as HTMLElement;
     edgeInfoDiv.innerHTML = "";
@@ -779,8 +760,6 @@ export class SparqlOverview extends HTMLElement {
       const connectedNodes = this.graph.extremities(edge);
       const triplesCount = edgeAttrs.triples ? `${edgeAttrs.triples.toLocaleString()}<br/>` : "";
       edgeInfoDiv.innerHTML = `<hr></hr>`;
-      // edgeInfoDiv.innerHTML += `<h3><a href="${edgeAttrs.uri}" style="word-break: break-word;" target="_blank">${edgeAttrs.curie}</a></h3>`;
-
       edgeInfoDiv.innerHTML += `<div style="text-align: center">
         ${triplesCount}
         <code style="word-wrap: anywhere;"><a href="${connectedNodes[0]}" target="_blank">${this.graph.getNodeAttributes(connectedNodes[0]).label}</a></code>
@@ -796,21 +775,31 @@ export class SparqlOverview extends HTMLElement {
 
   displayNodeInfo(node?: string) {
     const nodeInfoDiv = this.querySelector("#overview-node-info") as HTMLElement;
-    nodeInfoDiv.innerHTML = "";
     if (node) {
       const nodeAttrs = this.graph.getNodeAttributes(node);
-      nodeInfoDiv.innerHTML = `<hr></hr>`;
-      nodeInfoDiv.innerHTML += `<h3><a href="${node}" style="word-break: break-word;" target="_blank">${nodeAttrs.curie}</a></h3>`;
-      if (nodeAttrs.displayLabel) nodeInfoDiv.innerHTML += `<p>${nodeAttrs.displayLabel}</p>`;
-      if (nodeAttrs.comment) nodeInfoDiv.innerHTML += `<p>${nodeAttrs.comment}</p>`;
+      let nodeHtml = "";
+      nodeHtml = `<hr></hr>`;
+      nodeHtml += `<h3><a href="${node}" style="word-break: break-word;" target="_blank">${nodeAttrs.curie}</a></h3>`;
+      if (nodeAttrs.displayLabel) nodeHtml += `<p>${nodeAttrs.displayLabel}</p>`;
+      if (nodeAttrs.comment) nodeHtml += `<p>${nodeAttrs.comment}</p>`;
       if (nodeAttrs.cluster)
-        nodeInfoDiv.innerHTML += `<p>Cluster: <code style="background-color: ${this.clusters[nodeAttrs.cluster].color}">${nodeAttrs.cluster}</code></p>`;
-      if (nodeAttrs.datatypes.length > 0) nodeInfoDiv.innerHTML += '<h5 style="margin: .5em;">Data properties:</h5>';
+        nodeHtml += `<p>Cluster: <code style="background-color: ${this.clusters[nodeAttrs.cluster].color}">${nodeAttrs.cluster}</code></p>`;
+      if (this.selectedEndpoints.length > 1) {
+        nodeHtml += "<p>Endpoint:";
+        for (const endpoint of nodeAttrs.endpoints) {
+          nodeHtml += `<br/><a href="${endpoint}">${endpoint}</a>`;
+        }
+        nodeHtml += "</p>";
+      }
+      if (nodeAttrs.datatypes.length > 0) nodeHtml += '<h5 style="margin: .5em;">Data properties:</h5>';
+      nodeInfoDiv.innerHTML = nodeHtml;
       for (const dt of nodeAttrs.datatypes) {
         const dtDiv = document.createElement("div");
         dtDiv.innerHTML = `<a href="${dt.predUri}">${dt.predCurie}</a> <a href="${dt.datatypeUri}">${dt.datatypeCurie}</a> (${dt.count.toLocaleString()})`;
         nodeInfoDiv.appendChild(dtDiv);
       }
+    } else {
+      nodeInfoDiv.innerHTML = "";
     }
     this.renderer?.refresh({skipIndexation: true});
   }
@@ -875,10 +864,10 @@ export class SparqlOverview extends HTMLElement {
     });
   }
 
-  displayError(msg?: string) {
-    const msgEl = this.querySelector("#loading-spinner") as HTMLElement;
+  displayMsg(msg?: string, isError: boolean = false) {
+    const msgEl = this.querySelector("#loading-msg") as HTMLElement;
     if (msg) {
-      msgEl.style.color = "red";
+      msgEl.style.color = isError ? "red" : "black";
       msgEl.innerHTML = msg;
       msgEl.style.display = "";
     } else {
@@ -886,65 +875,93 @@ export class SparqlOverview extends HTMLElement {
     }
   }
 
-  getCurie(uri: string) {
-    return compressUri(this.prefixes, uri);
-  }
-
-  endpointUrl() {
-    return Object.keys(this.endpoints)[0];
-  }
-
-  loadMetaFromLocalStorage() {
-    const metaString = localStorage.getItem("sparql-overview-metadata");
-    if (metaString) {
-      const meta = JSON.parse(metaString);
-      this.endpoints = meta.endpoints;
-      this.prefixes = meta.prefixes;
-      console.log("Loaded metadata from localStorage", meta);
-    }
-  }
-
-  // Function to save metadata to localStorage
-  saveMetaToLocalStorage() {
-    // localStorage.setItem("sparql-overview-metadata", JSON.stringify({endpoints: this.endpoints, prefixes: this.prefixes}));
-    const jsonString = JSON.stringify({endpoints: this.endpoints, prefixes: this.prefixes});
-    const sizeInBytes = new Blob([jsonString]).size;
-    const sizeInMB = sizeInBytes / (1024 * 1024);
-    console.log(`Data size: ${sizeInMB.toFixed(2)} MB`);
+  // Save graph metadata to localStorage
+  saveGraph() {
+    this.storedMeta[this.selectedEndpoints.join(",")] = {
+      prefixes: this.prefixes,
+      clusters: this.clusters,
+      // NOTE: array/set conversion does not seems to work
+      hidePredicates: Array.from(this.hidePredicates),
+      hideClusters: Array.from(this.hideClusters),
+      graph: this.graph.export(),
+    };
+    const jsonString = JSON.stringify(this.storedMeta);
     try {
       localStorage.setItem("sparql-overview-metadata", jsonString);
     } catch {
-      console.warn(`Data exceeds localStorage limit (${sizeInMB.toFixed(2)}/5 MB), will not use cache.`);
+      const sizeInBytes = new Blob([jsonString]).size;
+      const sizeInMB = sizeInBytes / (1024 * 1024);
+      // console.log(`Data size: ${sizeInMB.toFixed(2)} MB`);
+      console.warn(
+        `Data exceeds localStorage limit (${sizeInMB.toFixed(2)}/5 MB), will not use cache to store graph metadata.`,
+      );
     }
   }
 
-  // Get prefixes, VoID and examples
-  async fetchEndpointMetadata(endpoint: string) {
-    if (this.endpoints[endpoint].void) return;
-    try {
-      const [prefixes, voidInfo] = await Promise.all([getPrefixes(endpoint), queryEndpoint(voidQuery, endpoint)]);
-      this.endpoints[endpoint].void = voidInfo;
-      // TODO: convert VoID to a better format to be stored?
-      // this.prefixes = {...this.prefixes, ...prefixes};
-      // Merge prefixes into `this.prefixes` one key at a time to avoid race conditions
-      Object.assign(this.prefixes, prefixes);
-      this.saveMetaToLocalStorage();
-    } catch (err) {
-      this.displayError(`Issue fetching metadata from endpoint ${err}`);
+  // Load graph metadata from localStorage
+  loadGraph() {
+    const metaString = localStorage.getItem("sparql-overview-metadata");
+    if (metaString) {
+      this.storedMeta = JSON.parse(metaString);
+      const meta = this.storedMeta[this.selectedEndpoints.join(",")];
+      if (meta) {
+        console.log("Loaded graph metadata from localStorage", meta);
+        this.prefixes = meta.prefixes;
+        this.clusters = meta.clusters;
+        this.hidePredicates = new Set(meta.hidePredicates);
+        this.hideClusters = new Set(meta.hideClusters);
+        this.graph.import(meta.graph);
+      }
     }
+  }
+
+  // Fetch endpoints metadata in parallel (prefixes, VoID)
+  async fetchEndpointsMetadata(endpoints: string[]) {
+    const prefixes: {[key: string]: string} = {};
+    const metadata: any = {};
+    // Function to fetch prefixes and VoID data for one endpoint
+    const fetchEndpointMetadata = async (endpoint: string) => {
+      try {
+        const [endpointPrefixes, voidInfo] = await Promise.all([
+          getPrefixes(endpoint),
+          queryEndpoint(voidQuery, endpoint),
+        ]);
+        // Merge results
+        Object.assign(prefixes, endpointPrefixes); // Merge prefixes into shared object
+        metadata[endpoint] = {prefixes: endpointPrefixes, void: voidInfo};
+      } catch (err) {
+        this.displayMsg(`Error fetching metadata for endpoint ${endpoint}: ${err}`, true);
+      }
+    };
+    // Run all endpoint metadata fetches in parallel
+    await Promise.all(endpoints.map(fetchEndpointMetadata));
+    return {prefixes, metadata};
   }
 
   renderPredicatesFilter() {
     const sidebar = this.querySelector("#overview-predicates-list") as HTMLElement;
     sidebar.innerHTML = "";
-    const sortedPredicates = Object.entries(this.predicatesCount).sort((a, b) => b[1].count - a[1].count);
+
+    // Recalculate predicates list for visible edges/nodes
+    this.predicates = {};
+    this.graph.forEachEdge((_edge, atts, source, target) => {
+      // Only take into account edges that not between nodes in hidden clusters
+      if (this.hideClusters.has(this.graph.getNodeAttribute(source, "cluster"))) return;
+      if (this.hideClusters.has(this.graph.getNodeAttribute(target, "cluster"))) return;
+      if (!this.predicates[atts.curie]) {
+        this.predicates[atts.curie] = {count: 1, label: atts.label};
+      } else {
+        this.predicates[atts.curie].count += 1;
+      }
+    });
+    const sortedPredicates = Object.entries(this.predicates).sort((a, b) => b[1].count - a[1].count);
+
     for (const [predicateCurie, predicate] of sortedPredicates) {
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
       checkbox.id = predicateCurie;
       checkbox.checked = true;
       checkbox.onchange = () => this.togglePredicate(predicateCurie, checkbox.checked);
-
       const label = document.createElement("label");
       label.htmlFor = predicateCurie;
       label.title = predicateCurie;
@@ -970,13 +987,15 @@ export class SparqlOverview extends HTMLElement {
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
       checkbox.id = clusterLabel;
-      checkbox.checked = true;
+      checkbox.checked = clusterLabel == metadataClusterLabel ? false : true;
       checkbox.onchange = () => this.toggleCluster(clusterLabel, checkbox.checked);
-
       const label = document.createElement("label");
       if (clusterAttrs.color) label.style.color = clusterAttrs.color;
       label.htmlFor = clusterLabel;
       label.textContent = `${clusterLabel} (${clusterAttrs.count})`;
+      if (this.selectedEndpoints.length > 1) label.title = clusterAttrs.endpoint;
+      // Special title for endpoint metadata
+      if (clusterLabel == metadataClusterLabel) label.title = "Also show metadata classes (ontology, SHACL, VoID)";
       const container = document.createElement("div");
       container.appendChild(checkbox);
       container.appendChild(label);
@@ -987,7 +1006,12 @@ export class SparqlOverview extends HTMLElement {
   toggleCluster(predicateLabel: string, checked: boolean) {
     if (!checked) this.hideClusters.add(predicateLabel);
     else this.hideClusters.delete(predicateLabel);
+    this.renderPredicatesFilter();
     this.renderer?.refresh({skipIndexation: true});
+  }
+
+  getCurie(uri: string) {
+    return compressUri(this.prefixes, uri);
   }
 }
 

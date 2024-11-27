@@ -18,7 +18,6 @@
   ],
   "scripts": {
     "dev": "vite",
-    "demo": "npx http-server demo",
     "build": "vite build",
     "test": "vitest run",
     "upgrade": "npx npm-check-updates -u && npm install"

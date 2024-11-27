@@ -103,13 +103,21 @@ export class SparqlEditor extends HTMLElement {
         <a id="status-link" href="" target="_blank" title="Loading..." style="display: inline-flex; width: 16px; height: 16px;">
           <div id="status-light" style="width: 10px; height: 10px; background-color: purple; border-radius: 50%; margin: 0 auto;"></div>
         </a>
-        <button id="sparql-add-prefixes-btn" class="btn" style="margin-bottom: 0.3em;">Add common prefixes</button>
-        <button id="sparql-save-example-btn" class="btn" style="margin-bottom: 0.3em;">Save query as example</button>
-        <button id="sparql-examples-top-btn" class="btn" style="margin-bottom: 0.3em;">Browse examples</button>
+        <button id="sparql-add-prefixes-btn" class="btn" style="margin-bottom: 0.3em;" title="Add prefixes commonly used in the selected endpoint to the query">
+          Add common prefixes
+        </button>
+        <button id="sparql-save-example-btn" class="btn" style="margin-bottom: 0.3em;" title="Save the current query as example">
+          Save query as example
+        </button>
+        <button id="sparql-examples-top-btn" class="btn" style="margin-bottom: 0.3em;" title="Browse examples available for the selected endpoint">
+          Browse examples
+        </button>
         <button id="sparql-cls-overview-btn" class="btn" style="margin-bottom: 0.3em;" title="Overview of classes and their relations in the endpoint">
           Classes overview
         </button>
-        <button id="sparql-clear-cache-btn" class="btn" style="margin-bottom: 0.3em;">Clear cache</button>
+        <button id="sparql-clear-cache-btn" class="btn" title="Clear and update the endpoints metadata stored in the cache" style="margin-bottom: 0.3em;">
+          Clear cache
+        </button>
         <div id="yasgui"></div>
       </div>
     `;
@@ -602,7 +610,7 @@ ex:${exampleUri} a sh:SPARQLExecutable${
 
     // Add button to close dialog
     const dialogCloseBtn = document.createElement("button");
-    dialogCloseBtn.className = "btn closeBtn";
+    // dialogCloseBtn.className = "btn closeBtn";
     dialogCloseBtn.textContent = "Close";
     dialogCloseBtn.style.position = "fixed";
     dialogCloseBtn.style.top = "1.5em";
@@ -638,6 +646,7 @@ ex:${exampleUri} a sh:SPARQLExecutable${
       return;
     } else {
       examplesTopBtnEl.textContent = btnTextContent;
+      examplesTopBtnEl.title = `${btnTextContent} available for the selected endpoint`;
       examplesTopBtnEl.style.display = "inline-block";
     }
     if (existingExampleQueriesEl && !forceReload) {
@@ -772,6 +781,7 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     // Add button to open dialog
     const openExDialogBtn = document.createElement("button");
     openExDialogBtn.textContent = btnTextContent;
+    openExDialogBtn.title = `${btnTextContent} available for the selected endpoint`;
     openExDialogBtn.className = "btn";
     exampleQueriesEl.appendChild(openExDialogBtn);
 
@@ -798,9 +808,9 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     yasqeElParent.style.display = "flex";
     yasqeElParent.appendChild(exampleQueriesEl);
     if (exampleQueriesEl.offsetHeight > 0) {
-      // Yasgui.Yasqe.defaults.editorHeight = `${exampleQueriesEl.offsetHeight}px`;
       const yasqe = this.yasgui?.getTab()?.getYasqe();
       yasqe?.setSize(null, `${exampleQueriesEl.offsetHeight}px`);
+      yasqe?.expandEditor();
     }
   }
 
