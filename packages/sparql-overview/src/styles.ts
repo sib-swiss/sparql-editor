@@ -61,8 +61,6 @@ export const componentStyle = `
       border-radius: 10px;
     }
     button {
-      // background-color: var(--btn-bg-color);
-      // color: var(--btn-color);
       font-size: 0.9em;
       border: none;
       padding: 0.3em 0.4em;

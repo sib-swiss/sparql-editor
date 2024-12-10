@@ -212,67 +212,6 @@ export function getEdgeCurvature(index: number, maxIndex: number): number {
 //   ["faldo", "http://biohackathon.org/resource/faldo#"],
 // ]);
 
-export const voidQuery = `PREFIX owl: <http://www.w3.org/2002/07/owl#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX sh:<http://www.w3.org/ns/shacl#>
-PREFIX sd:<http://www.w3.org/ns/sparql-service-description#>
-PREFIX void:<http://rdfs.org/ns/void#>
-PREFIX void-ext:<http://ldf.fi/void-ext#>
-SELECT DISTINCT ?subjectClass ?prop ?objectClass ?objectDatatype ?triples
-?objectClassTopParent ?objectClassTopParentLabel ?subjectClassTopParent ?subjectClassTopParentLabel
-?subjectClassLabel ?objectClassLabel ?subjectClassComment ?objectClassComment ?propLabel ?propComment
-WHERE {
-  {
-    SELECT * WHERE {
-      {
-        ?s sd:graph ?graph .
-        ?graph void:classPartition ?cp .
-        ?cp void:class ?subjectClass ;
-          void:propertyPartition ?pp .
-        OPTIONAL {?subjectClass rdfs:label ?subjectClassLabel }
-        OPTIONAL {?subjectClass rdfs:comment ?subjectClassComment }
-        OPTIONAL {
-          ?subjectClass rdfs:subClassOf* ?subjectClassTopParent .
-          OPTIONAL {?subjectClassTopParent rdfs:label ?subjectClassTopParentLabel}
-          FILTER(isIRI(?subjectClassTopParent) && ?subjectClassTopParent != owl:Thing && ?subjectClassTopParent != owl:Class)
-          MINUS {
-            ?subjectClassTopParent rdfs:subClassOf ?intermediateParent .
-            FILTER(?intermediateParent != owl:Thing && ?intermediateParent != owl:Class)
-          }
-        }
-
-        ?pp void:property ?prop ;
-          void:triples ?triples .
-        OPTIONAL {?prop rdfs:label ?propLabel }
-        OPTIONAL {?prop rdfs:comment ?propComment }
-        OPTIONAL {
-          {
-            ?pp  void:classPartition [ void:class ?objectClass ] .
-            OPTIONAL {?objectClass rdfs:label ?objectClassLabel }
-            OPTIONAL {?objectClass rdfs:comment ?objectClassComment }
-            OPTIONAL {
-              ?objectClass rdfs:subClassOf* ?objectClassTopParent .
-              OPTIONAL {?objectClassTopParent rdfs:label ?objectClassTopParentLabel}
-              FILTER(isIRI(?objectClassTopParent) && ?objectClassTopParent != owl:Thing && ?objectClassTopParent != owl:Class)
-              MINUS {
-                ?objectClassTopParent rdfs:subClassOf ?intermediateParent .
-                FILTER(?intermediateParent != owl:Thing && ?intermediateParent != owl:Class)
-              }
-            }
-          } UNION {
-            ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
-          }
-        }
-      } UNION {
-        ?linkset void:subjectsTarget [ void:class ?subjectClass ] ;
-          void:linkPredicate ?prop ;
-          void:objectsTarget [ void:class ?objectClass ] .
-      }
-
-    }
-  }
-} ORDER BY ?subjectClass ?objectClass ?objectDatatype ?graph ?triples`;
-
 // export const voidQuery = `PREFIX owl: <http://www.w3.org/2002/07/owl#>
 // PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 // PREFIX sh:<http://www.w3.org/ns/shacl#>
@@ -293,13 +232,13 @@ WHERE {
 //         OPTIONAL {?subjectClass rdfs:label ?subjectClassLabel }
 //         OPTIONAL {?subjectClass rdfs:comment ?subjectClassComment }
 //         OPTIONAL {
-//           ?subjectClass rdfs:subClassOf ?subjectClassTopParent .
+//           ?subjectClass rdfs:subClassOf* ?subjectClassTopParent .
 //           OPTIONAL {?subjectClassTopParent rdfs:label ?subjectClassTopParentLabel}
-// #          FILTER(isIRI(?subjectClassTopParent) && ?subjectClassTopParent != owl:Thing && ?subjectClassTopParent != owl:Class)
-// #          MINUS {
-// #            ?subjectClassTopParent rdfs:subClassOf ?intermediateParent .
-// #            FILTER(?intermediateParent != owl:Thing && ?intermediateParent != owl:Class)
-// #          }
+//           FILTER(isIRI(?subjectClassTopParent) && ?subjectClassTopParent != owl:Thing && ?subjectClassTopParent != owl:Class)
+//           MINUS {
+//             ?subjectClassTopParent rdfs:subClassOf ?intermediateParent .
+//             FILTER(?intermediateParent != owl:Thing && ?intermediateParent != owl:Class)
+//           }
 //         }
 
 //         ?pp void:property ?prop ;
@@ -312,13 +251,13 @@ WHERE {
 //             OPTIONAL {?objectClass rdfs:label ?objectClassLabel }
 //             OPTIONAL {?objectClass rdfs:comment ?objectClassComment }
 //             OPTIONAL {
-//               ?objectClass rdfs:subClassOf ?objectClassTopParent .
+//               ?objectClass rdfs:subClassOf* ?objectClassTopParent .
 //               OPTIONAL {?objectClassTopParent rdfs:label ?objectClassTopParentLabel}
-// #              FILTER(isIRI(?objectClassTopParent) && ?objectClassTopParent != owl:Thing && ?objectClassTopParent != owl:Class)
-// #              MINUS {
-// #                ?objectClassTopParent rdfs:subClassOf ?intermediateParent .
-// #                FILTER(?intermediateParent != owl:Thing && ?intermediateParent != owl:Class)
-// #              }
+//               FILTER(isIRI(?objectClassTopParent) && ?objectClassTopParent != owl:Thing && ?objectClassTopParent != owl:Class)
+//               MINUS {
+//                 ?objectClassTopParent rdfs:subClassOf ?intermediateParent .
+//                 FILTER(?intermediateParent != owl:Thing && ?intermediateParent != owl:Class)
+//               }
 //             }
 //           } UNION {
 //             ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
@@ -332,4 +271,56 @@ WHERE {
 
 //     }
 //   }
-// } ORDER BY ?subjectClass ?objectClass ?objectDatatype ?graph ?triples`
+// } ORDER BY ?subjectClass ?objectClass ?objectDatatype ?graph ?triples`;
+
+export const voidQuery = `PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX sh:<http://www.w3.org/ns/shacl#>
+PREFIX sd:<http://www.w3.org/ns/sparql-service-description#>
+PREFIX void:<http://rdfs.org/ns/void#>
+PREFIX void-ext:<http://ldf.fi/void-ext#>
+SELECT DISTINCT ?graph ?graphLabel ?subjectClass ?prop ?objectClass ?objectDatatype ?triples
+?objectClassTopParent ?objectClassTopParentLabel ?subjectClassTopParent ?subjectClassTopParentLabel
+?subjectClassLabel ?objectClassLabel ?subjectClassComment ?objectClassComment ?propLabel ?propComment
+WHERE {
+  {
+    SELECT * WHERE {
+      {
+        ?s sd:graph ?graph .
+        ?graph rdfs:label ?graphLabel .
+        ?graph void:classPartition ?cp .
+        ?cp void:class ?subjectClass ;
+          void:propertyPartition ?pp .
+        OPTIONAL {?subjectClass rdfs:label ?subjectClassLabel }
+        OPTIONAL {?subjectClass rdfs:comment ?subjectClassComment }
+        OPTIONAL {
+          ?subjectClass rdfs:subClassOf ?subjectClassTopParent .
+          OPTIONAL {?subjectClassTopParent rdfs:label ?subjectClassTopParentLabel}
+        }
+
+        ?pp void:property ?prop ;
+          void:triples ?triples .
+        OPTIONAL {?prop rdfs:label ?propLabel }
+        OPTIONAL {?prop rdfs:comment ?propComment }
+        OPTIONAL {
+          {
+            ?pp  void:classPartition [ void:class ?objectClass ] .
+            OPTIONAL {?objectClass rdfs:label ?objectClassLabel }
+            OPTIONAL {?objectClass rdfs:comment ?objectClassComment }
+            OPTIONAL {
+              ?objectClass rdfs:subClassOf ?objectClassTopParent .
+              OPTIONAL {?objectClassTopParent rdfs:label ?objectClassTopParentLabel}
+            }
+          } UNION {
+            ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
+          }
+        }
+      } UNION {
+        ?linkset void:subjectsTarget [ void:class ?subjectClass ] ;
+          void:linkPredicate ?prop ;
+          void:objectsTarget [ void:class ?objectClass ] .
+      }
+
+    }
+  }
+} ORDER BY ?subjectClass ?objectClass ?objectDatatype ?graph ?triples`;

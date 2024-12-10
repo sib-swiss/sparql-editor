@@ -40,7 +40,7 @@ const metadataClusterLabel = "Endpoint Metadata";
  * @example <sparql-overview endpoint="https://sparql.uniprot.org/sparql/"></sparql-overview>
  */
 export class SparqlOverview extends HTMLElement {
-  selectedEndpoints: string[] = [];
+  endpoints: string[] = [];
 
   // TODO: DRAG N DROP https://www.sigmajs.org/storybook/?path=/story/mouse-manipulations--story
 
@@ -71,11 +71,11 @@ export class SparqlOverview extends HTMLElement {
 
   constructor() {
     super();
-    this.selectedEndpoints = (this.getAttribute("endpoint") || "").split(",").map(value => value.trim());
+    this.endpoints = (this.getAttribute("endpoint") || "").split(",").map(value => value.trim());
     this.loadGraph();
-    this.hideClusters.add("Endpoint Metadata");
+    this.hideClusters.add(metadataClusterLabel);
 
-    if (this.selectedEndpoints.length === 0)
+    if (this.endpoints.length === 0)
       throw new Error("No endpoint provided. Please use the 'endpoint' attribute to specify the SPARQL endpoint URL.");
 
     const style = document.createElement("style");
@@ -86,7 +86,7 @@ export class SparqlOverview extends HTMLElement {
     container.className = "container";
     container.style.height = "100%";
     let endpointsHtml = "";
-    for (const endpoint of this.selectedEndpoints) {
+    for (const endpoint of this.endpoints) {
       endpointsHtml += `<p><a href="${endpoint}" target="_blank"><code>${endpoint}</code></a></p>`;
     }
     container.innerHTML = `
@@ -99,24 +99,24 @@ export class SparqlOverview extends HTMLElement {
 
         <dialog id="overview-dialog-info" style="text-align: center;">
           <h4>
-            Overview of classes and their relations for SPARQL endpoint${this.selectedEndpoints.length > 1 ? "s" : ""}
+            Overview of classes and their relations for SPARQL endpoint${this.endpoints.length > 1 ? "s" : ""}
           </h4>
           ${endpointsHtml}
           <p style="margin-top: 1.5em;">
-            This visualization uses informations about classes and their relations described as
+            This visualization uses informations about classes and their relations described using
             <a href="https://www.w3.org/TR/void/" target="_blank">VoID description</a> RDF uploaded to the endpoint.
           <p>
           </p>
             You can easily generate it for your endpoint with the
-            <a href="https://github.com/JervenBolleman/void-generator" target="_blank"><code>void-generator</code></a> CLI.
+            <a href="https://github.com/JervenBolleman/void-generator" target="_blank"><code>void-generator</code></a> CLI tool.
           </p>
           <p>
             <a href="https://github.com/sib-swiss/sparql-editor/tree/main/packages/sparql-overview" target="_blank">
-              Web component source code
+              Web component source code available
             </a>
           </p>
           <p style="opacity: 60%; margin: 1.5em 0;">
-            💡 <code>ctrl + left click</code> to select multiple nodes.
+            💡 <code>shift + left click</code> to select multiple nodes.
           </p>
           <button id="overview-clear-cache" title="Clear and update the endpoints metadata stored in the cache">
             Clear cache
@@ -146,7 +146,7 @@ export class SparqlOverview extends HTMLElement {
       <div id="loading-msg">
         <p style="margin: 0; text-align: center">Loading overview...</p>
       </div>
-      <div id="network-container" style="flex: 1; display: flex; position: relative; align-items: center; justify-content: center;"></div>
+      <div id="network-container" width="100%" heigth="100%" style="flex: 1; display: flex; position: relative; align-items: center; justify-content: center; width: 100%; height: 100%;"></div>
     `;
     this.appendChild(style);
     this.appendChild(container);
@@ -169,6 +169,9 @@ export class SparqlOverview extends HTMLElement {
       this.graph = new Graph({multi: true});
       this.clusters = {};
       this.predicates = {};
+      this.hidePredicates.clear();
+      this.hideClusters.clear();
+      this.hideClusters.add(metadataClusterLabel);
       this.displayMsg("Loading overview...");
       this.connectedCallback();
       dialogInfo.close();
@@ -232,11 +235,11 @@ export class SparqlOverview extends HTMLElement {
     const defaultNodeSize = 8;
     // let largestNodeCount = 0;
     let largestEdgeCount = 0;
-    const {prefixes, metadata} = await this.fetchEndpointsMetadata(this.selectedEndpoints);
+    const {prefixes, metadata} = await this.fetchEndpointsMetadata(this.endpoints);
     this.prefixes = prefixes;
 
     // Create nodes and edges based on SPARQL query results
-    for (const endpoint of this.selectedEndpoints) {
+    for (const endpoint of this.endpoints) {
       if (metadata[endpoint] && !metadata[endpoint].void) continue;
       for (const row of metadata[endpoint].void) {
         const count = row.triples ? parseInt(row.triples.value) : 5;
@@ -367,8 +370,10 @@ export class SparqlOverview extends HTMLElement {
       }
     }
 
+    // TODO: get graph for cluster, if only 1 graph use subClassOf
+
     if (this.graph.nodes().length < 2) {
-      this.displayMsg(`No VoID description found in endpoints ${this.selectedEndpoints.join(", ")}`, true);
+      this.displayMsg(`No VoID description found in endpoints ${this.endpoints.join(", ")}`, true);
       return;
     }
 
@@ -387,7 +392,7 @@ export class SparqlOverview extends HTMLElement {
         positions: [],
         count: 0,
         // TODO: 1 Other per endpoint?
-        endpoint: this.selectedEndpoints[0],
+        endpoint: this.endpoints[0],
       };
     }
     this.graph.forEachNode((node, atts) => {
@@ -414,12 +419,11 @@ export class SparqlOverview extends HTMLElement {
 
     // // Create colors per endpoint and clusters
     // // Generate main colors for each endpoint
-    // const endpointPalette = iwanthue(this.selectedEndpoints.length, { seed: "endpointColors" });
+    // const endpointPalette = iwanthue(this.endpoints.length, { seed: "endpointColors" });
     // const endpointColors: any = {};
-    // this.selectedEndpoints.forEach((endpoint, idx) => {
+    // this.endpoints.forEach((endpoint, idx) => {
     //   endpointColors[endpoint] = endpointPalette[idx];
     // });
-
     // console.log(endpointColors)
     // // Generate shades for each cluster
     // const clusterColors: any = {};
@@ -431,7 +435,6 @@ export class SparqlOverview extends HTMLElement {
     //   // Generate shades for the endpoint's color
     //   if (!clusterColors[endpoint]) {
     //     console.log(clusterId)
-
     //     clusterColors[endpoint] = iwanthue(
     //       Object.keys(this.clusters).filter(cid => this.clusters[cid].endpoint === endpoint).length,
     //       {
@@ -586,7 +589,7 @@ export class SparqlOverview extends HTMLElement {
       if (!this.selectedNode) this.displayNodeInfo(undefined);
     });
     this.renderer.on("clickNode", ({node, event}) => {
-      if (event.original.ctrlKey) {
+      if (event.original.shiftKey) {
         if (this.selectedNodes.has(node)) {
           this.selectedNodes.delete(node);
           return;
@@ -784,7 +787,7 @@ export class SparqlOverview extends HTMLElement {
       if (nodeAttrs.comment) nodeHtml += `<p>${nodeAttrs.comment}</p>`;
       if (nodeAttrs.cluster)
         nodeHtml += `<p>Cluster: <code style="background-color: ${this.clusters[nodeAttrs.cluster].color}">${nodeAttrs.cluster}</code></p>`;
-      if (this.selectedEndpoints.length > 1) {
+      if (this.endpoints.length > 1) {
         nodeHtml += "<p>Endpoint:";
         for (const endpoint of nodeAttrs.endpoints) {
           nodeHtml += `<br/><a href="${endpoint}">${endpoint}</a>`;
@@ -877,7 +880,7 @@ export class SparqlOverview extends HTMLElement {
 
   // Save graph metadata to localStorage
   saveGraph() {
-    this.storedMeta[this.selectedEndpoints.join(",")] = {
+    this.storedMeta[this.endpoints.join(",")] = {
       prefixes: this.prefixes,
       clusters: this.clusters,
       // NOTE: array/set conversion does not seems to work
@@ -903,7 +906,7 @@ export class SparqlOverview extends HTMLElement {
     const metaString = localStorage.getItem("sparql-overview-metadata");
     if (metaString) {
       this.storedMeta = JSON.parse(metaString);
-      const meta = this.storedMeta[this.selectedEndpoints.join(",")];
+      const meta = this.storedMeta[this.endpoints.join(",")];
       if (meta) {
         console.log("Loaded graph metadata from localStorage", meta);
         this.prefixes = meta.prefixes;
@@ -993,9 +996,9 @@ export class SparqlOverview extends HTMLElement {
       if (clusterAttrs.color) label.style.color = clusterAttrs.color;
       label.htmlFor = clusterLabel;
       label.textContent = `${clusterLabel} (${clusterAttrs.count})`;
-      if (this.selectedEndpoints.length > 1) label.title = clusterAttrs.endpoint;
+      if (this.endpoints.length > 1) label.title = clusterAttrs.endpoint;
       // Special title for endpoint metadata
-      if (clusterLabel == metadataClusterLabel) label.title = "Also show metadata classes (ontology, SHACL, VoID)";
+      if (clusterLabel == metadataClusterLabel) label.title = "Show metadata classes (ontology, SHACL, VoID, examples)";
       const container = document.createElement("div");
       container.appendChild(checkbox);
       container.appendChild(label);

@@ -272,6 +272,8 @@ export function generateTabLabel(description: string): string {
   const ignoreStopwords = [
     "select",
     "that",
+    "this",
+    "query",
     "with",
     "entries",
     "annotated",

@@ -118,8 +118,9 @@ The editor retrieves metadata about the endpoints by directly querying them, so 
 
 You can customize a few optional attributes when calling the custom element:
 
-- `examples-repo-add-url`: the URL to directly add the query to the git repository where the query examples for this endpoint are stored through the GitHub web UI,
+- `default-method`: the default method used by YASGUI to query the endpoints (GET or POST, default to GET)
 - `examples-repository`: the URL to the git repository where the query examples for this endpoint are stored (automatically generated from `examples-repo-add-url` if you provide it),
+- `examples-repo-add-url`: the URL to directly add the query to the git repository where the query examples for this endpoint are stored through the GitHub web UI
 - `examples-namespace`: the namespace used when saving a query as example (defaults to the endpoint URL + /.well-known/sparql-examples/ when not specified),
 - `examples-on-main-page`: the number of examples displayed on the main page (defaults to 10),
 - `add-limit`: the number of rows to be added as limit to the query before being sent, if no limit has been defined by the user (default to none)
@@ -128,6 +129,7 @@ You can customize a few optional attributes when calling the custom element:
 ```html
 <sparql-editor
   endpoint="https://www.bgee.org/sparql/,https://sparql.uniprot.org/sparql/"
+  default-method="POST"
   examples-repo-add-url="https://github.com/sib-swiss/sparql-examples/new/master/examples/Bgee"
   examples-repository="https://github.com/sib-swiss/sparql-examples"
   examples-namespace="https://sparql.uniprot.org/sparql/.well-known/sparql-examples/"

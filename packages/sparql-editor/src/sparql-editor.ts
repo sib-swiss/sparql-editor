@@ -67,8 +67,15 @@ export class SparqlEditor extends HTMLElement {
   constructor() {
     super();
 
+    // TODO: add attribute for POST/GET default
+
     this.meta = this.loadMetaFromLocalStorage();
     this.endpoints = (this.getAttribute("endpoint") || "").split(",").map(e => e.trim());
+
+    const defaultMethod = (this.getAttribute("default-method")?.toUpperCase() as "GET" | "POST") || "GET";
+    if (!["GET", "POST"].includes(defaultMethod))
+      console.warn("Default method is wrong, should be GET or POST", defaultMethod);
+
     // NOTE: will need to be removed at some point I guess
     // Check if examples contain the index field, if not reset cache
     if (this.currentEndpoint() && this.currentEndpoint().examples?.some(example => example.index === undefined)) {
@@ -134,7 +141,7 @@ export class SparqlEditor extends HTMLElement {
     Yasgui.defaults.requestConfig = {
       ...Yasgui.defaults.requestConfig,
       endpoint: this.endpoints[0],
-      method: "GET",
+      method: defaultMethod,
     };
     Yasgui.defaults.endpointCatalogueOptions = {
       ...Yasgui.defaults.endpointCatalogueOptions,
