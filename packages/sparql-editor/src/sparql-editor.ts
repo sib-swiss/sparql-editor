@@ -46,6 +46,7 @@ export class SparqlEditor extends HTMLElement {
   examplesRepo: string | null;
   examplesRepoAddUrl: string | null;
   addLimit: number | null;
+  dialogElOpen: HTMLDialogElement | null = null;
   // TODO: make exampleQueries a dict with the query IRI as key, so if the window.location matches a key, it will load the query?
 
   examplesNamespace() {
@@ -273,6 +274,14 @@ export class SparqlEditor extends HTMLElement {
     await this.loadCurrentEndpoint();
     await this.showExamples();
     await this.showOverview();
+
+    window.addEventListener("popstate", event => {
+      if (this.dialogElOpen) {
+        // If the dialog is open, close it instead of navigating
+        this.closeDialog();
+        event.preventDefault();
+      }
+    });
 
     this.yasgui?.on("tabSelect", () => {
       setTimeout(async () => {
@@ -503,6 +512,22 @@ export class SparqlEditor extends HTMLElement {
     return suggestedString;
   }
 
+  openDialog(dialogEl: HTMLDialogElement) {
+    dialogEl.showModal();
+    this.dialogElOpen = dialogEl;
+    history.pushState({dialogOpen: true}, "");
+    document.body.style.overflow = "hidden";
+  }
+
+  closeDialog() {
+    if (this.dialogElOpen) {
+      this.dialogElOpen.close();
+      this.dialogElOpen = null;
+      document.body.style.overflow = "";
+      // history.back();
+    }
+  }
+
   showSaveExampleDialog() {
     // Create dialog to save the current query as an example in a turtle file
     const exampleNumberForId = (this.currentEndpoint().examples.length + 1).toString().padStart(3, "0");
@@ -533,14 +558,21 @@ export class SparqlEditor extends HTMLElement {
           <button type="submit" class="btn">Download example file</button>
           ${addToRepoBtn}
           <button type="button" class="btn" id="copy-clipboard-btn">Copy to clipboard</button>
-          <button type="button" class="btn" onclick="this.closest('dialog').close()">Cancel</button>
+          <button type="button" class="btn" id="close-save-dialog-btn">Cancel</button>
         </div>
       </form>
     `;
     this.appendChild(dialog);
-    dialog.showModal();
+    this.openDialog(dialog);
     const descriptionInput = dialog.querySelector("#description") as HTMLInputElement;
     descriptionInput.focus();
+
+    dialog.querySelector("#close-save-dialog-btn")?.addEventListener("click", () => {
+      this.closeDialog();
+    });
+    dialog.addEventListener("close", () => {
+      this.closeDialog();
+    });
 
     const generateShacl = () => {
       const description = (dialog.querySelector("#description") as HTMLTextAreaElement).value;
@@ -577,7 +609,7 @@ ex:${exampleUri} a sh:SPARQLExecutable${
       downloadAnchor.setAttribute("href", dataStr);
       downloadAnchor.setAttribute("download", `${exampleUri}.ttl`);
       downloadAnchor.click();
-      dialog.close();
+      this.closeDialog();
     });
 
     dialog.querySelector("#copy-clipboard-btn")?.addEventListener("click", () => {
@@ -630,18 +662,16 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     const newOverviewBtn = this.querySelector("#sparql-cls-overview-btn") as HTMLButtonElement;
 
     newOverviewBtn.addEventListener("click", () => {
-      overviewDialog.showModal();
+      this.openDialog(overviewDialog);
       // Trigger the rendering of the graph to make sure it is properly displayed
       const overviewEl = overviewDialog.querySelector("sparql-overview") as HTMLElement;
       overviewEl.dispatchEvent(new Event("render"));
-      document.body.style.overflow = "hidden";
     });
     dialogCloseBtn.addEventListener("click", () => {
-      overviewDialog.close();
-      document.body.style.overflow = "";
+      this.closeDialog();
     });
     overviewDialog.addEventListener("close", () => {
-      document.body.style.overflow = "";
+      this.closeDialog();
     });
   }
 
@@ -741,7 +771,7 @@ ex:${exampleUri} a sh:SPARQLExecutable${
         const useBtn = createUseButton();
         useBtn.addEventListener("click", () => {
           this.addTab(example.query, example.comment);
-          exQueryDialog.close();
+          this.closeDialog();
         });
         exQueryP.appendChild(useBtn);
         exQueryDiv.appendChild(exQueryP);
@@ -796,19 +826,17 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     exampleQueriesEl.appendChild(openExDialogBtn);
 
     examplesTopBtnEl.addEventListener("click", () => {
-      exQueryDialog.showModal();
-      document.body.style.overflow = "hidden";
+      this.openDialog(exQueryDialog);
     });
     openExDialogBtn.addEventListener("click", () => {
-      exQueryDialog.showModal();
-      document.body.style.overflow = "hidden";
+      this.openDialog(exQueryDialog);
       // exQueryDialog.scrollTop = 0;
     });
     exDialogCloseBtn.addEventListener("click", () => {
-      exQueryDialog.close();
+      this.closeDialog();
     });
     exQueryDialog.addEventListener("close", () => {
-      document.body.style.overflow = "";
+      this.closeDialog();
     });
 
     // Add the examples next to the YASQE editor
