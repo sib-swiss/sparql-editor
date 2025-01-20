@@ -177,6 +177,12 @@ export class SparqlOverview extends HTMLElement {
       dialogInfo.close();
     });
 
+    // A custom event to trigger the rendering of the graph to make sure it is properly displayed, e.g. in dialogs
+    // Trigger it with: overviewEl.dispatchEvent(new Event("render"));
+    this.addEventListener("render", () => {
+      this.renderer?.refresh({skipIndexation: true});
+    });
+
     // Add sidebar filtering buttons
     const showAllPredsButton = this.querySelector("#overview-show-preds") as HTMLButtonElement;
     showAllPredsButton.addEventListener("click", () => {

@@ -631,6 +631,9 @@ ex:${exampleUri} a sh:SPARQLExecutable${
 
     newOverviewBtn.addEventListener("click", () => {
       overviewDialog.showModal();
+      // Trigger the rendering of the graph to make sure it is properly displayed
+      const overviewEl = overviewDialog.querySelector("sparql-overview") as HTMLElement;
+      overviewEl.dispatchEvent(new Event("render"));
       document.body.style.overflow = "hidden";
     });
     dialogCloseBtn.addEventListener("click", () => {
@@ -814,11 +817,13 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     exampleQueriesEl.style.height = "fit-content";
     yasqeElParent.style.display = "flex";
     yasqeElParent.appendChild(exampleQueriesEl);
-    if (exampleQueriesEl.offsetHeight > 0) {
-      const yasqe = this.yasgui?.getTab()?.getYasqe();
-      yasqe?.setSize(null, `${exampleQueriesEl.offsetHeight}px`);
-      yasqe?.expandEditor();
-    }
+    setTimeout(() => {
+      if (exampleQueriesEl.offsetHeight > 0) {
+        const yasqe = this.yasgui?.getTab()?.getYasqe();
+        console.log(exampleQueriesEl.offsetHeight);
+        yasqe?.setSize(null, `${exampleQueriesEl.offsetHeight}px`);
+      }
+    });
   }
 
   addPrefixesToQuery(query: string) {

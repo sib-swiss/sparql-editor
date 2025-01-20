@@ -261,6 +261,7 @@ export function createUseButton() {
   // Create use button
   const useBtn = document.createElement("button");
   useBtn.textContent = "Use";
+  useBtn.title = "Load this example query in the editor";
   useBtn.style.marginLeft = "0.5em";
   useBtn.className = "btn use-sparql-example-btn";
   return useBtn;
