@@ -69,6 +69,8 @@ export class SparqlOverview extends HTMLElement {
   searchQuery: string = "";
   suggestions?: Set<string>;
 
+  dialogElOpen: HTMLDialogElement | null = null;
+
   constructor() {
     super();
     this.endpoints = (this.getAttribute("endpoint") || "").split(",").map(value => value.trim());
@@ -156,10 +158,16 @@ export class SparqlOverview extends HTMLElement {
     const dialogInfo = this.querySelector("#overview-dialog-info") as HTMLDialogElement;
     showInfoButton.addEventListener("click", async () => {
       dialogInfo.showModal();
+      this.dialogElOpen = dialogInfo;
+      history.pushState({dialogOpen: true}, "");
     });
     const closeInfoButton = this.querySelector("#overview-close-info") as HTMLButtonElement;
     closeInfoButton.addEventListener("click", async () => {
       dialogInfo.close();
+    });
+    dialogInfo.addEventListener("close", async () => {
+      this.dialogElOpen = null;
+      // history.back();
     });
     const clearCacheButton = this.querySelector("#overview-clear-cache") as HTMLButtonElement;
     clearCacheButton.addEventListener("click", async () => {
@@ -234,6 +242,15 @@ export class SparqlOverview extends HTMLElement {
     await this.renderGraph();
     const loadingSpinner = this.querySelector("#loading-msg") as HTMLElement;
     if (loadingSpinner.style.color != "red") loadingSpinner.style.display = "none";
+
+    window.addEventListener("popstate", event => {
+      if (this.dialogElOpen) {
+        // If the dialog is open, close it instead of navigating
+        this.dialogElOpen.close();
+        this.dialogElOpen = null;
+        event.preventDefault();
+      }
+    });
   }
 
   // Initialize the graph by retrieving metadata from the SPARQL endpoints
