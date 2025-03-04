@@ -3,7 +3,9 @@ import "@testing-library/jest-dom";
 import "../src/sparql-editor";
 
 // We need to mock some stuff for the tests to work (vitest and jsdom don't support everything yet)
-// Puppeteers or Playwright would be better for this, but too heavy to setup
+// Puppeteers or Playwright would be better for this, but heavier to setup
+
+// NOTE: since adding the sparql-overview we get `ReferenceError: WebGL2RenderingContext is not defined` when running with vitest
 
 describe("sparql-editor", () => {
   beforeEach(() => {

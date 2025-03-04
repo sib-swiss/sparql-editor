@@ -232,7 +232,7 @@ WHERE {
         OPTIONAL {?subjectClass rdfs:label ?subjectClassLabel }
         OPTIONAL {?subjectClass rdfs:comment ?subjectClassComment }
         OPTIONAL {
-          ?subjectClass rdfs:subClassOf* ?subjectClassTopParent .
+          ?subjectClass rdfs:subClassOf+ ?subjectClassTopParent .
           OPTIONAL {?subjectClassTopParent rdfs:label ?subjectClassTopParentLabel}
           FILTER(isIRI(?subjectClassTopParent) && ?subjectClassTopParent != owl:Thing && ?subjectClassTopParent != owl:Class)
           MINUS {
@@ -251,7 +251,7 @@ WHERE {
             OPTIONAL {?objectClass rdfs:label ?objectClassLabel }
             OPTIONAL {?objectClass rdfs:comment ?objectClassComment }
             OPTIONAL {
-              ?objectClass rdfs:subClassOf* ?objectClassTopParent .
+              ?objectClass rdfs:subClassOf+ ?objectClassTopParent .
               OPTIONAL {?objectClassTopParent rdfs:label ?objectClassTopParentLabel}
               FILTER(isIRI(?objectClassTopParent) && ?objectClassTopParent != owl:Thing && ?objectClassTopParent != owl:Class)
               MINUS {
