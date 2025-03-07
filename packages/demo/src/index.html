@@ -18,9 +18,6 @@
     <meta name="keywords" content="SPARQL, RDF, Semantic Web, SIB, Swiss Institute of Bioinformatics" />
     <link rel="icon" type="image/png" href="sib-logo.png" />
     <link rel="stylesheet" href="styles.css" />
-
-    <!-- <script type="module" src="https://unpkg.com/@sib-swiss/sparql-editor"></script> -->
-    <script type="module" src="../../sparql-editor/dist/sparql-editor.js"></script>
   </head>
 
   <body>
@@ -36,6 +33,25 @@
 
     <div class="info-box">
       <h2>💫 Metadata-based SPARQL editor 📝</h2>
+      <h3>🧑‍🏫 How to use</h3>
+      <ul>
+        <li>Hit <code>ctrl+enter</code> or <code>cmd+enter</code> to execute the query.</li>
+        <li>Hover the colored dot on the top left to see details about what has been extracted from the endpoint.</li>
+        <li>
+          Hit <code>ctrl+space</code> to trigger autocomplete which will automatically suggest types and predicates from
+          the endpoint.
+        </li>
+        <ul>
+          <li>If you provide a type for a subject, then suggested predicates will be based on this type.</li>
+          <li>
+            In the case where MacOS has overriden the <code>ctrl+space</code> shortcut to trigger autocomplete
+            (sometimes they use it for the switch keyboard layout action) you can fix this by going to System settings >
+            Keyboard > Keyboard Shortcuts > Input Sources > disable `Select the previous input source`.
+            <!-- This will also fix the behavior in VSCode and other editors, you're welcome, and apple devs please fix those non-sense inconsistencies. -->
+          </li>
+        </ul>
+      </ul>
+      <h3>ℹ️ About</h3>
       <p>Metadata used by this editor are automatically retrieved by querying the endpoints. It features:</p>
       <ul>
         <li>Context-aware autocomplete for classes and predicates based on the content of the endpoints</li>
@@ -67,7 +83,9 @@
       </ul>
     </div>
   </body>
-  <script>
+  <script type="module">
+    import "@sib-swiss/sparql-editor";
+
     window.onload = function () {
       document.getElementById("loading-spinner").style.display = "none";
     };

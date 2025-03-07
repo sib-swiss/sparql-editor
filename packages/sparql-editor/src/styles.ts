@@ -59,6 +59,10 @@ export const editorCss = `.sparql-editor-container {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
   }
+  button.top-btn {
+    margin-bottom: 0.3em;
+    margin-left: 0.3em;
+  }
   button.btn:hover {
     filter: brightness(90%);
     box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2); /* Larger shadow on hover */

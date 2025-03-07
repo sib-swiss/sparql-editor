@@ -107,29 +107,24 @@ export class SparqlEditor extends HTMLElement {
     }
     this.className = "sparql-editor-container";
     this.innerHTML = `
-      <div style="width: 100%;">
-        <a id="status-link" href="" target="_blank" title="Loading..." style="display: inline-flex; width: 16px; height: 16px;">
-          <div id="status-light" style="width: 10px; height: 10px; background-color: purple; border-radius: 50%; margin: 0 auto;"></div>
-        </a>
-        <button id="sparql-add-prefixes-btn" class="btn" style="margin-bottom: 0.3em;" title="Add prefixes commonly used in the selected endpoint to the query">
-          Add common prefixes
-        </button>
-        <button id="sparql-save-example-btn" class="btn" style="margin-bottom: 0.3em;" title="Save the current query as example">
-          Save query as example
-        </button>
-        <button id="sparql-examples-top-btn" class="btn" style="margin-bottom: 0.3em;" title="Browse examples available for the selected endpoint">
-          Browse examples
-        </button>
-        <button id="sparql-cls-overview-btn" class="btn" style="margin-bottom: 0.3em;" title="Overview of classes and their relations in the endpoint">
-          Classes overview
-        </button>
-        <button id="sparql-clear-cache-btn" class="btn" title="Clear and update the endpoints metadata stored in the cache" style="margin-bottom: 0.3em;">
-          Clear cache
-        </button>
-        <div id="yasgui"></div>
-      </div>
-    `;
-    // TODO: <button id="sparql-cls-overview-btn" class="btn" style="margin-bottom: 0.3em;">Browse overview</button>
+<div style="width: 100%;">
+  <a id="status-link" href="" target="_blank" title="Loading..." style="display: inline-flex; width: 16px; height: 16px;">
+    <div id="status-light" style="width: 10px; height: 10px; background-color: purple; border-radius: 50%; margin: 0 auto;"></div>
+  </a><button id="sparql-add-prefixes-btn" class="btn top-btn" title="Add prefixes commonly used in the selected endpoint to the query">
+    Add common prefixes
+  </button><button id="sparql-save-example-btn" class="btn top-btn" title="Save the current query as example">
+    Save query as example
+  </button><button id="sparql-examples-top-btn" class="btn top-btn" title="Browse examples available for the selected endpoint">
+    Browse examples
+  </button><button id="sparql-cls-overview-btn" class="btn top-btn" title="Overview of classes and their relations in the endpoint">
+    Classes overview
+  </button><button id="sparql-clear-cache-btn" class="btn top-btn" title="Clear and update the endpoints metadata stored in the cache">
+    Clear cache
+  </button><button id="sparql-toggle-examples-btn" class="btn top-btn" title="Toggle display of the examples panel">
+    Toggle examples
+  </button>
+  <div id="yasgui"></div>
+</div>`;
     this.appendChild(style);
 
     // NOTE: autocompleters are executed when Yasgui is instantiated
@@ -634,6 +629,13 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     }
   }
 
+  toggleExamplesVisibility() {
+    const exampleQueriesEl = this.querySelector(".active .sparql-examples") as HTMLElement;
+    if (exampleQueriesEl) {
+      exampleQueriesEl.style.display = exampleQueriesEl.style.display === "none" ? "block" : "none";
+    }
+  }
+
   async showOverview() {
     const overviewBtn = this.querySelector("#sparql-cls-overview-btn") as HTMLButtonElement;
     const existingOverviewDialog = this.querySelector("#sparql-cls-overview-dialog") as HTMLDialogElement;
@@ -679,15 +681,19 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     // Display examples on the main page and in a dialog for the currently selected endpoint
     const existingExampleQueriesEl = this.querySelector(".active .sparql-examples") as HTMLButtonElement;
     const examplesTopBtnEl = this.querySelector("#sparql-examples-top-btn") as HTMLButtonElement;
+    const toggleExamplesBtn = this.querySelector("#sparql-toggle-examples-btn") as HTMLButtonElement;
     const btnTextContent = `Browse ${this.currentEndpoint().examples.length} examples`;
     if (this.currentEndpoint().examples.length === 0) {
       existingExampleQueriesEl?.remove();
       examplesTopBtnEl.style.display = "none";
+      toggleExamplesBtn.style.display = "none";
       return;
     } else {
       examplesTopBtnEl.textContent = btnTextContent;
       examplesTopBtnEl.title = `${btnTextContent} available for the selected endpoint`;
       examplesTopBtnEl.style.display = "inline-block";
+      toggleExamplesBtn.style.display = "inline-block";
+      toggleExamplesBtn.addEventListener("click", () => this.toggleExamplesVisibility());
     }
     if (existingExampleQueriesEl && !forceReload) {
       return;
@@ -695,18 +701,20 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     if (existingExampleQueriesEl) existingExampleQueriesEl?.remove();
     const yasqeEl = this.querySelector(".active .yasqe") as HTMLElement;
     const yasqeElParent = yasqeEl.parentElement as HTMLElement;
+
     const exampleQueriesEl = document.createElement("div");
     exampleQueriesEl.className = "sparql-examples";
     exampleQueriesEl.innerHTML = "";
     // TODO: remove title for examples?
-    // const exQueryTitleDiv = document.createElement("div");
-    // exQueryTitleDiv.style.textAlign = "center";
-    // const exQueryTitle = document.createElement("h3");
-    // exQueryTitle.style.margin = "0.1em";
-    // exQueryTitle.style.fontWeight = "200";
-    // exQueryTitle.textContent = "Examples";
-    // exQueryTitleDiv.appendChild(exQueryTitle);
-    // exampleQueriesEl.appendChild(exQueryTitleDiv);
+    const exQueryTitleDiv = document.createElement("div");
+    exQueryTitleDiv.style.textAlign = "center";
+    const exQueryTitle = document.createElement("h3");
+    exQueryTitle.style.margin = "0.1em";
+    exQueryTitle.style.fontWeight = "200";
+    exQueryTitle.textContent = "Examples";
+    exQueryTitleDiv.appendChild(exQueryTitle);
+    exQueryTitleDiv.appendChild(exQueryTitle);
+    exampleQueriesEl.appendChild(exQueryTitleDiv);
 
     // Create dialog for examples
     const exQueryDialog = document.createElement("dialog");
