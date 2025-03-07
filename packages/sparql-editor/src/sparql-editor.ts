@@ -159,7 +159,13 @@ export class SparqlEditor extends HTMLElement {
   // Load and save metadata to localStorage
   loadMetaFromLocalStorage(): EndpointsMetadata {
     const metaString = localStorage.getItem("sparql-editor-metadata");
-    return metaString ? JSON.parse(metaString) : {};
+    try {
+      return metaString ? JSON.parse(metaString) : {};
+    } catch (error) {
+      console.warn("Error parsing metadata from local storage", error);
+      localStorage.removeItem("sparql-editor-metadata");
+      return {};
+    }
   }
   saveMetaToLocalStorage() {
     localStorage.setItem("sparql-editor-metadata", JSON.stringify(this.meta));
