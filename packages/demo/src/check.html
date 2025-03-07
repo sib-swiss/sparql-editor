@@ -30,7 +30,9 @@
       <div id="results" class="result"></div>
     </div>
 
-    <script>
+    <script type="module">
+      // import {} from '@sib-swiss/sparql-editor';
+
       document.addEventListener("DOMContentLoaded", function () {
         // Prefill the input field with the 'url' parameter from the URL if available
         const queryParams = new URLSearchParams(window.location.search);
@@ -50,7 +52,7 @@
         const response = await fetch(`${endpointUrl}?ac=1&query=${encodeURIComponent(query)}`, {
           signal: AbortSignal.timeout(5000),
           headers: {
-            Accept: "application/json",
+            Accept: "application/sparql-results+json",
           },
         });
         // console.log(await response.text());
@@ -104,27 +106,27 @@ WHERE {
           const voidResults = await queryEndpoint(
             endpoint,
             `PREFIX up: <http://purl.uniprot.org/core/>
-              PREFIX void: <http://rdfs.org/ns/void#>
-              PREFIX void-ext: <http://ldf.fi/void-ext#>
-              SELECT DISTINCT ?subjectClass
-              WHERE {
-                {
-                  ?cp void:class ?subjectClass ;
-                      void:propertyPartition ?pp .
-                  ?pp void:property ?prop .
-                  OPTIONAL {
-                      {
-                          ?pp  void:classPartition [ void:class ?objectClass ] .
-                      } UNION {
-                          ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
-                      }
-                  }
-                } UNION {
-                  ?ls void:subjectsTarget ?subjectClass ;
-                    void:linkPredicate ?prop ;
-                    void:objectsTarget ?objectClass .
+            PREFIX void: <http://rdfs.org/ns/void#>
+            PREFIX void-ext: <http://ldf.fi/void-ext#>
+            SELECT DISTINCT ?subjectClass ?prop ?objectClass ?objectDatatype
+            WHERE {
+              {
+                ?cp void:class ?subjectClass ;
+                    void:propertyPartition ?pp .
+                ?pp void:property ?prop .
+                OPTIONAL {
+                    {
+                        ?pp  void:classPartition [ void:class ?objectClass ] .
+                    } UNION {
+                        ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
+                    }
                 }
-              }`,
+              } UNION {
+                ?ls void:subjectsTarget [ void:class ?subjectClass ] ;
+                    void:linkPredicate ?prop ;
+                    void:objectsTarget [ void:class ?objectClass ] .
+              }
+            }`,
           );
 
           if (voidResults.length === 0) {
@@ -150,9 +152,9 @@ WHERE {
         }
     }
   } UNION {
-    ?linkset void:subjectsTarget ?subjectClass ;
-      void:linkPredicate ?prop ;
-      void:objectsTarget ?objectClass .
+    ?ls void:subjectsTarget [ void:class ?subjectClass ] ;
+        void:linkPredicate ?prop ;
+        void:objectsTarget [ void:class ?objectClass ] .
   }
 }</code></pre>`;
             return;

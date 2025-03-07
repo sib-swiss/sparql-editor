@@ -1,3 +1,5 @@
+import {QueryEngine} from "@comunica/query-sparql";
+
 export type EndpointsMetadata = {
   // Endpoint URL
   [key: string]: {
@@ -75,37 +77,57 @@ export async function getPrefixes(endpoint: string): Promise<{[key: string]: str
   return prefixes;
 }
 
+const voidQuery = `PREFIX up: <http://purl.uniprot.org/core/>
+PREFIX void: <http://rdfs.org/ns/void#>
+PREFIX void-ext: <http://ldf.fi/void-ext#>
+SELECT DISTINCT ?subjectClass ?prop ?objectClass ?objectDatatype
+WHERE {
+  {
+    ?cp void:class ?subjectClass ;
+        void:propertyPartition ?pp .
+    ?pp void:property ?prop .
+    OPTIONAL {
+        {
+            ?pp  void:classPartition [ void:class ?objectClass ] .
+        } UNION {
+            ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
+        }
+    }
+  } UNION {
+    ?ls void:subjectsTarget [ void:class ?subjectClass ] ;
+        void:linkPredicate ?prop ;
+        void:objectsTarget [ void:class ?objectClass ] .
+  }
+}`;
+
 export async function getVoidDescription(endpoint: string): Promise<[VoidDict, string[], string[]]> {
   // Get VoID description to get classes and properties for advanced autocomplete
   const clsSet = new Set<string>();
   const predSet = new Set<string>();
   const voidDescription: VoidDict = {};
   try {
-    const queryResults = await queryEndpoint(
-      `PREFIX up: <http://purl.uniprot.org/core/>
-      PREFIX void: <http://rdfs.org/ns/void#>
-      PREFIX void-ext: <http://ldf.fi/void-ext#>
-      SELECT DISTINCT ?subjectClass ?prop ?objectClass ?objectDatatype
-      WHERE {
-        {
-          ?cp void:class ?subjectClass ;
-              void:propertyPartition ?pp .
-          ?pp void:property ?prop .
-          OPTIONAL {
-              {
-                  ?pp  void:classPartition [ void:class ?objectClass ] .
-              } UNION {
-                  ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
-              }
-          }
-        } UNION {
-          ?ls void:subjectsTarget [ void:class ?subjectClass ] ;
-              void:linkPredicate ?prop ;
-              void:objectsTarget [ void:class ?objectClass ] .
-        }
-      }`,
-      endpoint,
-    );
+    let queryResults = await queryEndpoint(voidQuery, endpoint);
+    if (queryResults.length === 0) {
+      // If no results from SPARQL endpoint we try to retrieve from the service description
+      const sparqlEngine = new QueryEngine();
+      const bindingsStream = await sparqlEngine.queryBindings(voidQuery, {
+        sources: [
+          // Directly query the service description:
+          {type: "file", value: endpoint},
+        ],
+      });
+      const bindings = await bindingsStream.toArray();
+      queryResults = bindings.map(b => {
+        const result: any = {
+          subjectClass: b.get("subjectClass"),
+          prop: b.get("prop"),
+        };
+        if (b.get("objectClass")) result.objectClass = b.get("objectClass");
+        if (b.get("objectDatatype")) result.objectDatatype = b.get("objectDatatype");
+        return result;
+      });
+    }
+    // console.log(queryResults)
     queryResults.forEach(b => {
       clsSet.add(b.subjectClass.value);
       predSet.add(b.prop.value);

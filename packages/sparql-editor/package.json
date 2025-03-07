@@ -23,6 +23,7 @@
     "upgrade": "npx npm-check-updates -u && npm install"
   },
   "dependencies": {
+    "@comunica/query-sparql": "^4.1.0",
     "@sib-swiss/sparql-overview": "*",
     "@zazuko/yasgui": "4.3.3",
     "highlight.js": "^11.10.0",

@@ -9,7 +9,7 @@ export default defineConfig({
   },
   build: {
     outDir: "dist",
-    target: ["es2015"],
+    target: ["es2020"],
     lib: {
       entry: "src/sparql-editor.ts",
       name: "@sib-swiss/sparql-editor",
@@ -21,8 +21,8 @@ export default defineConfig({
       plugins: [typescript()],
     },
   },
-  test: {
-    globals: true,
-    environment: "jsdom",
-  },
+  // test: {
+  //   globals: true,
+  //   environment: "jsdom",
+  // },
 });
