@@ -25,7 +25,7 @@
   "dependencies": {
     "@comunica/query-sparql": "^4.1.0",
     "@sib-swiss/sparql-overview": "*",
-    "@zazuko/yasgui": "4.3.3",
+    "@zazuko/yasgui": "^4.5.0",
     "highlight.js": "^11.10.0",
     "mermaid": "^11.4.0",
     "sparqljs": "^3.7.3"

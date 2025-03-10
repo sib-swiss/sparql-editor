@@ -862,7 +862,6 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     setTimeout(() => {
       if (exampleQueriesEl.offsetHeight > 0) {
         const yasqe = this.yasgui?.getTab()?.getYasqe();
-        console.log(exampleQueriesEl.offsetHeight);
         yasqe?.setSize(null, `${exampleQueriesEl.offsetHeight}px`);
       }
     });

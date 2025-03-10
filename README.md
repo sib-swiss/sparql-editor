@@ -8,13 +8,15 @@
 
 </div>
 
-A standard web component to easily deploy a user-friendly [SPARQL](https://www.w3.org/TR/sparql12-query/) query editor for one or more endpoints. Built on the popular [YASGUI editor](https://github.com/zazuko/Yasgui), it provides context-aware autocomplete for classes and predicates based on the content of the endpoints.
+A user-friendly [SPARQL](https://www.w3.org/TR/sparql12-query/) query editor built on the popular [YASGUI editor](https://github.com/zazuko/Yasgui), it provides context-aware autocomplete for classes and predicates based on the content of the endpoints, as well as query examples.
 
-The editor retrieves metadata about the endpoints by directly querying them, so all that is needed is to generate and upload some metadata to each endpoints, and it works on top of any triplestore without configuration needed. Reducing the need for complex infrastructure, while making your SPARQL endpoints easier to query for users and machines.
+Use it directly for any endpoint at **[sib-swiss.github.io/sparql-editor](https://sib-swiss.github.io/sparql-editor)**.
 
-> [!TIP]
->
-> 👆️ **Try it** with [SIB](https://www.sib.swiss/) endpoints, such as UniProt and Bgee, at **[sib-swiss.github.io/sparql-editor](https://sib-swiss.github.io/sparql-editor)**
+The editor retrieves metadata about the endpoints by directly querying them, or searching in the SPARQL service description. So all that is needed is to generate and upload some metadata to each endpoints, and it works on top of any triplestore without configuration needed. Reducing the need for complex infrastructure, while making your SPARQL endpoints easier to query for users and machines.
+
+You can also redeploy it for a specific endpoint, or set of endpoints using the standard web component documented below,
+
+## 🪄 Features
 
 - **✨ Autocomplete possibilities for properties and classes** are automatically pulled from the endpoints based on the [VoID description](https://www.w3.org/TR/void/) present in the triplestore. The suggested properties are contextually filtered based on the class of the subject at the cursor's position, and are aware of `SERVICE` clauses, ensuring relevant autocompletion even in federated queries. Checkout the [`void-generator`](https://github.com/JervenBolleman/void-generator) project to automatically generate VoID description for your endpoint.
 
@@ -74,6 +76,8 @@ The editor retrieves metadata about the endpoints by directly querying them, so 
   ORDER BY ?prefix
   ```
 
+- **🗺️ Overview of classes** using the VoID description.
+
   </details>
 
 ![Screenshot gene](packages/demo/src/screenshot_gene.png)
@@ -84,18 +88,22 @@ The editor retrieves metadata about the endpoints by directly querying them, so 
 
 ## 🚀 Use
 
-1. Import from a CDN:
+1. Install with a package manager in your project:
+
+   ```bash
+   npm i --save @sib-swiss/sparql-editor
+   ```
+
+   And import in your JS/TS file with:
+
+   ```ts
+   import "@sib-swiss/sparql-editor";
+   ```
+
+   Or directly import from a CDN:
 
    ```html
    <script type="module" src="https://unpkg.com/@sib-swiss/sparql-editor"></script>
-   ```
-
-   Or install with a package manager in your project:
-
-   ```bash
-   npm install --save @sib-swiss/sparql-editor
-   # or
-   pnpm add @sib-swiss/sparql-editor
    ```
 
 2. Use the custom element in your HTML/JSX/TSX code:
