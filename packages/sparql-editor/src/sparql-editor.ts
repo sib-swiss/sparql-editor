@@ -67,9 +67,6 @@ export class SparqlEditor extends HTMLElement {
 
   constructor() {
     super();
-
-    // TODO: add attribute for POST/GET default
-
     this.meta = this.loadMetaFromLocalStorage();
     this.endpoints = (this.getAttribute("endpoint") || "").split(",").map(e => e.trim());
 
@@ -79,10 +76,12 @@ export class SparqlEditor extends HTMLElement {
 
     // NOTE: will need to be removed at some point I guess
     // Check if examples contain the index field, if not reset cache
-    if (this.currentEndpoint() && this.currentEndpoint().examples?.some(example => example.index === undefined)) {
+    if (this.currentEndpoint() && this.currentEndpoint().examples?.some(example => example.iri === undefined)) {
       localStorage.removeItem("sparql-editor-metadata");
+      console.warn("Invalid metadata format, resetting cache");
       this.meta = {};
     }
+
     // console.log("Loaded metadata from localStorage", this.meta);
     if (this.endpoints.length === 0)
       throw new Error("No endpoint provided. Please use the 'endpoint' attribute to specify the SPARQL endpoint URL.");
@@ -275,6 +274,21 @@ export class SparqlEditor extends HTMLElement {
     await this.loadCurrentEndpoint();
     await this.showExamples();
     await this.showOverview();
+
+    // TODO: once https://github.com/zazuko/Yasgui/pull/31 is merged
+    // Check if a # param is provided in the URL
+    // If a # param is provided, search for an example that matches the IRI, and add a new tab with the query
+    // console.log("currentUrl", window.location.href);
+    // if (window.location.hash) {
+    //   const hash = window.location.hash.substring(1);
+    //   console.log(hash)
+    //   const example = this.currentEndpoint().examples.find(ex => ex.iri === hash);
+    //   if (example) {
+    //     this.addTab(example.query, example.comment);
+    //   }
+    // } else {
+    //   console.log("no hash")
+    // }
 
     window.addEventListener("popstate", event => {
       if (this.dialogElOpen) {

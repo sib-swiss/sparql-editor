@@ -931,7 +931,7 @@ export class SparqlOverview extends HTMLElement {
       this.storedMeta = JSON.parse(metaString);
       const meta = this.storedMeta[this.endpoints.join(",")];
       if (meta) {
-        console.log("Loaded graph metadata from localStorage", meta);
+        // console.log("Loaded SPARQL overview metadata from localStorage", meta);
         this.prefixes = meta.prefixes;
         this.clusters = meta.clusters;
         this.hidePredicates = new Set(meta.hidePredicates);

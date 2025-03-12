@@ -30,6 +30,7 @@ type ExampleQuery = {
   comment: string;
   query: string;
   index: number;
+  iri: string;
 };
 
 // Replace the longest prefix in a URI with its corresponding prefix
@@ -150,11 +151,7 @@ const virtuosoNamespace = "http://www.openlinksw.com/schemas/virtrdf#";
 // If no VoID description found we just get the list of classes
 export async function getClassesFallback(endpoint: string) {
   try {
-    const queryResults = await queryEndpoint(
-      `SELECT DISTINCT ?cls
-      WHERE { [] a ?cls . }`,
-      endpoint,
-    );
+    const queryResults = await queryEndpoint(`SELECT DISTINCT ?cls WHERE { [] a ?cls . }`, endpoint);
     return queryResults.filter(b => !b.cls.value.startsWith(virtuosoNamespace)).map(b => b.cls.value);
   } catch (error) {
     console.warn(`Error retrieving classes from ${endpoint} for autocomplete:`, error);
@@ -165,11 +162,7 @@ export async function getClassesFallback(endpoint: string) {
 // If no VoID description found we just get the list of predicates
 export async function getPredicatesFallback(endpoint: string) {
   try {
-    const queryResults = await queryEndpoint(
-      `SELECT DISTINCT ?pred
-      WHERE { [] ?pred [] . }`,
-      endpoint,
-    );
+    const queryResults = await queryEndpoint(`SELECT DISTINCT ?pred WHERE { [] ?pred [] . }`, endpoint);
     // Filter out the Virtuoso-specific predicates
     return queryResults.filter(b => !b.pred.value.startsWith(virtuosoNamespace)).map(b => b.pred.value);
   } catch (error) {
@@ -194,7 +187,7 @@ export async function getExampleQueries(endpoint: string): Promise<ExampleQuery[
       endpoint,
     );
     queryResults.forEach((b, index) => {
-      exampleQueries.push({comment: b.comment.value, query: b.query.value, index: index + 1});
+      exampleQueries.push({comment: b.comment.value, query: b.query.value, index: index + 1, iri: b.sq.value});
     });
     // console.log(queryResults);
   } catch (error) {
