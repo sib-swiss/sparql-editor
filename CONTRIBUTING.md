@@ -77,11 +77,20 @@ npm run build
 
 To create a new release, you will need to login on your machine once with `npm adduser` if not already done.
 
+### New release for the sparql-editor
+
 Running the following script will upgrade version in `package.json`, generate changelog, create a tag, and publish the package to NPM:
 
-```bash
+```sh
 npm version patch
 # Or minor / major
 ```
 
 > You will need to go through NPM 2FA to publish.
+
+### New release for the sparql-overview
+
+```sh
+cd packages/sparql-overview
+npm version patch
+```

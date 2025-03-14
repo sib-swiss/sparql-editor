@@ -10,7 +10,7 @@ import type {Coordinates, EdgeDisplayData, NodeDisplayData} from "sigma/types";
 // import { createNodeImageProgram } from "@sigma/node-image";
 // import ForceSupervisor from "graphology-layout-force/worker";
 
-import {getPrefixes, compressUri, queryEndpoint, getEdgeCurvature, voidQuery, isMetadataNode} from "./utils";
+import {getPrefixes, getVoidDescription, compressUri, getEdgeCurvature} from "./utils";
 import {componentStyle} from "./styles";
 
 type Cluster = {
@@ -34,6 +34,7 @@ type StoredMetadata = {
 };
 
 const metadataClusterLabel = "Endpoint Metadata";
+const defaultGraph = "Default";
 
 /**
  * Custom element to create a SPARQL network overview for a given endpoint classes and predicates
@@ -75,7 +76,6 @@ export class SparqlOverview extends HTMLElement {
     super();
     this.endpoints = (this.getAttribute("endpoint") || "").split(",").map(value => value.trim());
     this.loadGraph();
-    this.hideClusters.add(metadataClusterLabel);
 
     if (this.endpoints.length === 0)
       throw new Error("No endpoint provided. Please use the 'endpoint' attribute to specify the SPARQL endpoint URL.");
@@ -106,7 +106,7 @@ export class SparqlOverview extends HTMLElement {
           ${endpointsHtml}
           <p style="margin-top: 1.5em;">
             This visualization uses informations about classes and their relations described using
-            <a href="https://www.w3.org/TR/void/" target="_blank">VoID description</a> RDF uploaded to the endpoint.
+            <a href="https://www.w3.org/TR/void/" target="_blank">VoID description</a> RDF uploaded to the endpoint, or added to the SPARQL service description.
           <p>
           </p>
             You can easily generate it for your endpoint with the
@@ -135,9 +135,9 @@ export class SparqlOverview extends HTMLElement {
 
         <hr></hr>
         <div style="text-align: center; ">
-          <span>Filter clusters ·</span>
-          <button id="overview-show-clusters" title="Show all clusters">Show all</button>
-          <button id="overview-hide-clusters" title="Hide all clusters">Hide all</button>
+          <span>Filter graphs ·</span>
+          <button id="overview-show-clusters" title="Show all graphs">Show all</button>
+          <button id="overview-hide-clusters" title="Hide all graphs">Hide all</button>
         </div>
         <div id="overview-clusters-list" style="flex: 1; overflow-y: auto;"></div>
 
@@ -179,7 +179,6 @@ export class SparqlOverview extends HTMLElement {
       this.predicates = {};
       this.hidePredicates.clear();
       this.hideClusters.clear();
-      this.hideClusters.add(metadataClusterLabel);
       this.displayMsg("Loading overview...");
       this.connectedCallback();
       dialogInfo.close();
@@ -270,15 +269,11 @@ export class SparqlOverview extends HTMLElement {
 
         const subjUri = row.subjectClass.value;
         // Get the cluster for the subject node
-        const subjCluster = isMetadataNode(subjUri)
-          ? metadataClusterLabel
-          : row.subjectClassTopParentLabel
-            ? row.subjectClassTopParentLabel.value
-            : row.subjectClassTopParent
-              ? this.getCurie(row.subjectClassTopParent.value)
-              : subjUri.includes("Citation") // quick hack to cluster citations in uniprot
-                ? "Citation"
-                : "Other";
+        const graphCluster = row.graphLabel
+          ? row.graphLabel.value
+          : row.graph
+            ? this.getCurie(row.graph.value)
+            : defaultGraph;
         // Add subject node
         const subjCurie = this.getCurie(subjUri);
         if (!this.graph.hasNode(subjUri)) {
@@ -287,7 +282,7 @@ export class SparqlOverview extends HTMLElement {
             curie: subjCurie,
             // count: 1,
             size: defaultNodeSize,
-            cluster: subjCluster,
+            cluster: graphCluster,
             endpoints: [],
             datatypes: [],
           });
@@ -298,6 +293,7 @@ export class SparqlOverview extends HTMLElement {
           if (row.subjectClassComment)
             this.graph.updateNodeAttribute(subjUri, "comment", () => row.subjectClassComment.value);
         }
+        if (graphCluster !== defaultGraph) this.graph.updateNodeAttribute(subjUri, "cluster", () => graphCluster);
         this.graph.updateNodeAttribute(subjUri, "count", (value: number) => value + count);
         this.graph.updateNodeAttribute(subjUri, "endpoints", (value: string[]) => {
           if (!value.includes(endpoint)) return [...value, endpoint];
@@ -329,16 +325,6 @@ export class SparqlOverview extends HTMLElement {
         // Handle when the object is a class
         if (row.objectClass && !row.objectDatatype) {
           const objUri = row.objectClass.value;
-          // Get the cluster for the object node
-          const objCluster = isMetadataNode(objUri)
-            ? metadataClusterLabel
-            : row.objectClassTopParentLabel
-              ? row.objectClassTopParentLabel.value
-              : row.objectClassTopParent
-                ? this.getCurie(row.objectClassTopParent.value)
-                : objUri.includes("Citation") // quick hack to cluster citations in uniprot
-                  ? "Citation"
-                  : "Other";
           // Add object node
           if (!this.graph.hasNode(objUri)) {
             const objCurie = this.getCurie(objUri);
@@ -347,7 +333,7 @@ export class SparqlOverview extends HTMLElement {
               curie: objCurie,
               // count: 1,
               size: defaultNodeSize,
-              cluster: objCluster,
+              cluster: graphCluster,
               endpoints: [],
               datatypes: [],
             });
@@ -362,6 +348,7 @@ export class SparqlOverview extends HTMLElement {
             if (!value.includes(endpoint)) return [...value, endpoint];
             return value;
           });
+          if (graphCluster !== defaultGraph) this.graph.updateNodeAttribute(objUri, "cluster", () => graphCluster);
           // Add edge
           const predCurie = this.getCurie(row.prop.value);
           let edgeExists = false;
@@ -391,6 +378,7 @@ export class SparqlOverview extends HTMLElement {
           }
         }
       }
+      // console.log(this.graph.getNodeAttributes("http://purl.uniprot.org/core/Disease"));
     }
 
     // TODO: get graph for cluster, if only 1 graph use subClassOf
@@ -407,29 +395,9 @@ export class SparqlOverview extends HTMLElement {
       else this.clusters[atts.cluster].count += 1;
     });
 
-    // Identify single-node clusters and create the "Other" cluster
-    const otherClusterName = "Other";
-    if (!this.clusters[otherClusterName]) {
-      this.clusters[otherClusterName] = {
-        label: otherClusterName,
-        positions: [],
-        count: 0,
-        // TODO: 1 Other per endpoint?
-        endpoint: this.endpoints[0],
-      };
-    }
-    this.graph.forEachNode((node, atts) => {
-      const cluster = atts.cluster;
-      if (this.clusters[cluster].count === 1) {
-        // Reassign the node to the "Other" cluster
-        this.graph.setNodeAttribute(node, "cluster", otherClusterName);
-        this.clusters[otherClusterName].count += 1;
-        this.clusters[cluster].count -= 1;
-      }
-    });
     // Remove empty clusters
     for (const cluster in this.clusters) {
-      if (this.clusters[cluster].count === 0 && cluster !== otherClusterName) {
+      if (this.clusters[cluster].count === 0) {
         delete this.clusters[cluster];
       }
     }
@@ -809,7 +777,9 @@ export class SparqlOverview extends HTMLElement {
       if (nodeAttrs.displayLabel) nodeHtml += `<p>${nodeAttrs.displayLabel}</p>`;
       if (nodeAttrs.comment) nodeHtml += `<p>${nodeAttrs.comment}</p>`;
       if (nodeAttrs.cluster)
-        nodeHtml += `<p>Cluster: <code style="background-color: ${this.clusters[nodeAttrs.cluster].color}">${nodeAttrs.cluster}</code></p>`;
+        nodeHtml += `<p><span title="In this graph" style="display: inline-block; border-radius: 6px; padding: 0.1em 0.3em; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); background-color: ${this.clusters[nodeAttrs.cluster].color}">
+          ${nodeAttrs.cluster}
+        </span></p>`;
       if (this.endpoints.length > 1) {
         nodeHtml += "<p>Endpoint:";
         for (const endpoint of nodeAttrs.endpoints) {
@@ -948,10 +918,8 @@ export class SparqlOverview extends HTMLElement {
     // Function to fetch prefixes and VoID data for one endpoint
     const fetchEndpointMetadata = async (endpoint: string) => {
       try {
-        const [endpointPrefixes, voidInfo] = await Promise.all([
-          getPrefixes(endpoint),
-          queryEndpoint(voidQuery, endpoint),
-        ]);
+        const [endpointPrefixes, voidInfo] = await Promise.all([getPrefixes(endpoint), getVoidDescription(endpoint)]);
+
         // Merge results
         Object.assign(prefixes, endpointPrefixes); // Merge prefixes into shared object
         metadata[endpoint] = {prefixes: endpointPrefixes, void: voidInfo};
@@ -1010,10 +978,11 @@ export class SparqlOverview extends HTMLElement {
     sidebar.innerHTML = "";
     const sortedClusters = Object.entries(this.clusters).sort((a, b) => b[1].count - a[1].count);
     for (const [clusterLabel, clusterAttrs] of sortedClusters) {
+      if (clusterAttrs.count === 0) continue; // Skip clusters with 0 entries
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
       checkbox.id = clusterLabel;
-      checkbox.checked = clusterLabel == metadataClusterLabel ? false : true;
+      checkbox.checked = true;
       checkbox.onchange = () => this.toggleCluster(clusterLabel, checkbox.checked);
       const label = document.createElement("label");
       if (clusterAttrs.color) label.style.color = clusterAttrs.color;

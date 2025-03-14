@@ -1,6 +1,6 @@
 {
   "name": "@sib-swiss/sparql-overview",
-  "version": "0.0.1",
+  "version": "0.0.0",
   "description": "A web component to easily deploy a user-friendly network visualization for one or more endpoints.",
   "license": "MIT",
   "author": {
@@ -19,12 +19,14 @@
     "dev": "vite",
     "build": "vite build",
     "test": "npm run lint && vitest run",
-    "upgrade": "npx npm-check-updates -u && npm install"
+    "upgrade": "npx npm-check-updates -u && npm install",
+    "version": "npm run build && npm publish"
   },
   "dependencies": {
+    "@comunica/query-sparql": "^4.1.0",
     "@sigma/edge-curve": "^3.1.0",
     "@sigma/node-image": "^3.0.0",
-    "graphology": "^0.25.4",
+    "graphology": "^0.26.0",
     "graphology-layout-force": "^0.2.4",
     "graphology-layout-forceatlas2": "^0.10.1",
     "iwanthue": "^2.0.0",
