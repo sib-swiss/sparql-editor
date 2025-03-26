@@ -10,7 +10,7 @@ import type {Coordinates, EdgeDisplayData, NodeDisplayData} from "sigma/types";
 // import { createNodeImageProgram } from "@sigma/node-image";
 // import ForceSupervisor from "graphology-layout-force/worker";
 
-import {getPrefixes, getVoidDescription, compressUri, getEdgeCurvature} from "./utils";
+import {compressUri, getEdgeCurvature} from "./utils";
 import {componentStyle} from "./styles.js";
 
 type Cluster = {
@@ -41,14 +41,14 @@ const defaultGraph = "Default";
  * @example new SparqlOverview(document.getElementById('container'), ['https://sparql.uniprot.org/sparql/']);
  */
 export class SparqlOverview {
-  endpoints: string[] = [];
   dom: HTMLElement;
+  endpoints: {[key: string]: any[]};
+  prefixes: {[key: string]: string};
 
   // Metadata stored in localStorage
   storedMeta: StoredMetadata = {};
 
   graph: Graph = new Graph({multi: true});
-  prefixes: {[key: string]: string} = {};
   clusters: {[key: string]: Cluster} = {};
 
   // Used for rendering and filtering
@@ -71,12 +71,27 @@ export class SparqlOverview {
 
   dialogElOpen: HTMLDialogElement | null = null;
 
-  constructor(containerElement: HTMLElement, endpoints: string[]) {
+  /** Create a new SPARQL overview instance
+   *
+   * @param containerElement - The HTML element where the component will be rendered
+   * @param endpoints - An object with SPARQL endpoint URLs as keys and their VoID description as values
+   * @param prefixes - An object with prefixes as keys and their full URIs as values
+   */
+  constructor(
+    containerElement: HTMLElement,
+    endpoints: {[key: string]: any[]},
+    prefixes: {[key: string]: string} = {},
+  ) {
     this.dom = containerElement;
-    this.endpoints = endpoints.map(value => value.trim());
+    this.endpoints = endpoints;
+    this.prefixes = prefixes;
+
+    console.log(this.endpoints);
+
+    // this.endpoints = endpoints.map(value => value.trim());
     this.loadGraph();
 
-    if (this.endpoints.length === 0)
+    if (Object.keys(this.endpoints).length === 0)
       throw new Error("No endpoints provided. Please provide at least one SPARQL endpoint URL.");
 
     const styleEl = document.createElement("style");
@@ -87,7 +102,7 @@ export class SparqlOverview {
     container.className = "container";
     container.style.height = "100%";
     let endpointsHtml = "";
-    for (const endpoint of this.endpoints) {
+    for (const endpoint of Object.keys(this.endpoints)) {
       endpointsHtml += `<p><a href="${endpoint}" target="_blank"><code>${endpoint}</code></a></p>`;
     }
     container.innerHTML = `
@@ -100,7 +115,7 @@ export class SparqlOverview {
 
         <dialog id="overview-dialog-info" style="text-align: center;">
           <h4>
-            Overview of classes and their relations for SPARQL endpoint${this.endpoints.length > 1 ? "s" : ""}
+            Overview of classes and their relations for SPARQL endpoint${Object.keys(this.endpoints).length > 1 ? "s" : ""}
           </h4>
           ${endpointsHtml}
           <p style="margin-top: 1.5em;">
@@ -259,13 +274,13 @@ export class SparqlOverview {
     const defaultNodeSize = 8;
     // let largestNodeCount = 0;
     let largestEdgeCount = 0;
-    const {prefixes, metadata} = await this.fetchEndpointsMetadata(this.endpoints);
-    this.prefixes = prefixes;
+    // const {prefixes, metadata} = await this.fetchEndpointsMetadata(this.endpoints);
+    // this.prefixes = prefixes;
 
     // Create nodes and edges based on SPARQL query results
-    for (const endpoint of this.endpoints) {
-      if (metadata[endpoint] && !metadata[endpoint].void) continue;
-      for (const row of metadata[endpoint].void) {
+    for (const [endpointUrl, endpointVoid] of Object.entries(this.endpoints)) {
+      if (!endpointVoid) continue;
+      for (const row of endpointVoid) {
         const count = row.triples ? parseInt(row.triples.value) : 5;
         if (largestEdgeCount < count) largestEdgeCount = count;
 
@@ -298,7 +313,7 @@ export class SparqlOverview {
         if (graphCluster !== defaultGraph) this.graph.updateNodeAttribute(subjUri, "cluster", () => graphCluster);
         this.graph.updateNodeAttribute(subjUri, "count", (value: number) => value + count);
         this.graph.updateNodeAttribute(subjUri, "endpoints", (value: string[]) => {
-          if (!value.includes(endpoint)) return [...value, endpoint];
+          if (!value.includes(endpointUrl)) return [...value, endpointUrl];
           return value;
         });
         // const subjCount = parseInt(this.graph.getNodeAttribute(subjUri, "count"))
@@ -347,7 +362,7 @@ export class SparqlOverview {
               this.graph.updateNodeAttribute(objUri, "comment", () => row.objectClassComment.value);
           }
           this.graph.updateNodeAttribute(objUri, "endpoints", (value: string[]) => {
-            if (!value.includes(endpoint)) return [...value, endpoint];
+            if (!value.includes(endpointUrl)) return [...value, endpointUrl];
             return value;
           });
           if (graphCluster !== defaultGraph) this.graph.updateNodeAttribute(objUri, "cluster", () => graphCluster);
@@ -386,7 +401,7 @@ export class SparqlOverview {
     // TODO: get graph for cluster, if only 1 graph use subClassOf
 
     if (this.graph.nodes().length < 2) {
-      this.displayMsg(`No VoID description found in endpoints ${this.endpoints.join(", ")}`, true);
+      this.displayMsg(`No VoID description found in endpoints ${Object.keys(this.endpoints).join(", ")}`, true);
       return;
     }
 
@@ -782,7 +797,7 @@ export class SparqlOverview {
         nodeHtml += `<p><span title="In this graph" style="display: inline-block; border-radius: 6px; padding: 0.1em 0.3em; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); background-color: ${this.clusters[nodeAttrs.cluster].color}">
           ${nodeAttrs.cluster}
         </span></p>`;
-      if (this.endpoints.length > 1) {
+      if (Object.keys(this.endpoints).length > 1) {
         nodeHtml += "<p>Endpoint:";
         for (const endpoint of nodeAttrs.endpoints) {
           nodeHtml += `<br/><a href="${endpoint}">${endpoint}</a>`;
@@ -875,7 +890,7 @@ export class SparqlOverview {
 
   // Save graph metadata to localStorage
   saveGraph() {
-    this.storedMeta[this.endpoints.join(",")] = {
+    this.storedMeta[Object.keys(this.endpoints).join(",")] = {
       prefixes: this.prefixes,
       clusters: this.clusters,
       // NOTE: array/set conversion does not seems to work
@@ -901,7 +916,7 @@ export class SparqlOverview {
     const metaString = localStorage.getItem("sparql-overview-metadata");
     if (metaString) {
       this.storedMeta = JSON.parse(metaString);
-      const meta = this.storedMeta[this.endpoints.join(",")];
+      const meta = this.storedMeta[Object.keys(this.endpoints).join(",")];
       if (meta) {
         // console.log("Loaded SPARQL overview metadata from localStorage", meta);
         this.prefixes = meta.prefixes;
@@ -913,26 +928,27 @@ export class SparqlOverview {
     }
   }
 
+  // TODO: NOT USED, remove, should be done in parent (e.g. sparql-editor)
   // Fetch endpoints metadata in parallel (prefixes, VoID)
-  async fetchEndpointsMetadata(endpoints: string[]) {
-    const prefixes: {[key: string]: string} = {};
-    const metadata: any = {};
-    // Function to fetch prefixes and VoID data for one endpoint
-    const fetchEndpointMetadata = async (endpoint: string) => {
-      try {
-        const [endpointPrefixes, voidInfo] = await Promise.all([getPrefixes(endpoint), getVoidDescription(endpoint)]);
+  // async fetchEndpointsMetadata(endpoints: string[]) {
+  //   const prefixes: {[key: string]: string} = {};
+  //   const metadata: any = {};
+  //   // Function to fetch prefixes and VoID data for one endpoint
+  //   const fetchEndpointMetadata = async (endpoint: string) => {
+  //     try {
+  //       const [endpointPrefixes, voidInfo] = await Promise.all([getPrefixes(endpoint), getVoidDescription(endpoint)]);
 
-        // Merge results
-        Object.assign(prefixes, endpointPrefixes); // Merge prefixes into shared object
-        metadata[endpoint] = {prefixes: endpointPrefixes, void: voidInfo};
-      } catch (err) {
-        this.displayMsg(`Error fetching metadata for endpoint ${endpoint}: ${err}`, true);
-      }
-    };
-    // Run all endpoint metadata fetches in parallel
-    await Promise.all(endpoints.map(fetchEndpointMetadata));
-    return {prefixes, metadata};
-  }
+  //       // Merge results
+  //       Object.assign(prefixes, endpointPrefixes); // Merge prefixes into shared object
+  //       metadata[endpoint] = {prefixes: endpointPrefixes, void: voidInfo};
+  //     } catch (err) {
+  //       this.displayMsg(`Error fetching metadata for endpoint ${endpoint}: ${err}`, true);
+  //     }
+  //   };
+  //   // Run all endpoint metadata fetches in parallel
+  //   await Promise.all(endpoints.map(fetchEndpointMetadata));
+  //   return {prefixes, metadata};
+  // }
 
   renderPredicatesFilter() {
     const sidebar = this.dom.querySelector("#overview-predicates-list") as HTMLElement;
@@ -990,7 +1006,7 @@ export class SparqlOverview {
       if (clusterAttrs.color) label.style.color = clusterAttrs.color;
       label.htmlFor = clusterLabel;
       label.textContent = `${clusterLabel} (${clusterAttrs.count})`;
-      if (this.endpoints.length > 1) label.title = clusterAttrs.endpoint;
+      if (Object.keys(this.endpoints).length > 1) label.title = clusterAttrs.endpoint;
       // Special title for endpoint metadata
       if (clusterLabel == metadataClusterLabel) label.title = "Show metadata classes (ontology, SHACL, VoID, examples)";
       const container = document.createElement("div");

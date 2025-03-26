@@ -682,7 +682,8 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     const overviewEl = overviewDialog.querySelector("#sparql-overview") as HTMLElement;
     new SparqlOverview(
       overviewEl,
-      [this.endpointUrl()],
+      {[this.endpointUrl()]: this.currentEndpoint().voidQueryBindings},
+      this.currentEndpoint().prefixes,
       // [this.currentEndpoint().void, this.currentEndpoint().classes, this.currentEndpoint().predicates],
     );
 
@@ -703,7 +704,7 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     newOverviewBtn.addEventListener("click", () => {
       this.openDialog(overviewDialog);
       // Trigger the rendering of the graph to make sure it is properly displayed
-      const overviewEl = overviewDialog.querySelector("sparql-overview") as HTMLElement;
+      // const overviewEl = overviewDialog.querySelector("sparql-overview") as HTMLElement;
       overviewEl.dispatchEvent(new Event("render"));
     });
     dialogCloseBtn.addEventListener("click", () => {

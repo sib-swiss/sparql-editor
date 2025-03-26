@@ -123,69 +123,68 @@ export async function getPrefixes(endpoint: string): Promise<{[key: string]: str
   return prefixes;
 }
 
-const voidQuery = `PREFIX up: <http://purl.uniprot.org/core/>
-PREFIX void: <http://rdfs.org/ns/void#>
-PREFIX void-ext: <http://ldf.fi/void-ext#>
-SELECT DISTINCT ?subjectClass ?prop ?objectClass ?objectDatatype
-WHERE {
-  {
-    ?cp void:class ?subjectClass ;
-        void:propertyPartition ?pp .
-    ?pp void:property ?prop .
-    OPTIONAL {
-        {
-            ?pp  void:classPartition [ void:class ?objectClass ] .
-        } UNION {
-            ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
-        }
-    }
-  } UNION {
-    ?ls void:subjectsTarget [ void:class ?subjectClass ] ;
-        void:linkPredicate ?prop ;
-        void:objectsTarget [ void:class ?objectClass ] .
-  }
-}`;
-
-// export const voidQuery = `PREFIX owl: <http://www.w3.org/2002/07/owl#>
-// PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-// PREFIX sh:<http://www.w3.org/ns/shacl#>
-// PREFIX sd:<http://www.w3.org/ns/sparql-service-description#>
-// PREFIX void:<http://rdfs.org/ns/void#>
-// PREFIX void-ext:<http://ldf.fi/void-ext#>
-// SELECT DISTINCT ?graph ?graphLabel ?subjectClass ?prop ?objectClass ?objectDatatype ?triples
-// ?subjectClassLabel ?objectClassLabel ?subjectClassComment ?objectClassComment ?propLabel ?propComment
+// const voidQuery = `PREFIX up: <http://purl.uniprot.org/core/>
+// PREFIX void: <http://rdfs.org/ns/void#>
+// PREFIX void-ext: <http://ldf.fi/void-ext#>
+// SELECT DISTINCT ?subjectClass ?prop ?objectClass ?objectDatatype
 // WHERE {
-
-//       {
-//         OPTIONAL {
-//           ?graph sd:graph ?graphDesc .
-//           OPTIONAL { ?graph rdfs:label ?graphLabel }
-//           ?graphDesc void:classPartition ?cp .
-//         }
-//         ?cp void:class ?subjectClass ;
-//           void:propertyPartition ?pp .
-//         OPTIONAL { ?subjectClass rdfs:label ?subjectClassLabel }
-//         OPTIONAL { ?subjectClass rdfs:comment ?subjectClassComment }
-
-//         ?pp void:property ?prop ;
-//           void:triples ?triples .
-//         OPTIONAL { ?prop rdfs:label ?propLabel }
-//         OPTIONAL { ?prop rdfs:comment ?propComment }
-//         OPTIONAL {
-//           {
+//   {
+//     ?cp void:class ?subjectClass ;
+//         void:propertyPartition ?pp .
+//     ?pp void:property ?prop .
+//     OPTIONAL {
+//         {
 //             ?pp  void:classPartition [ void:class ?objectClass ] .
-//             OPTIONAL { ?objectClass rdfs:label ?objectClassLabel }
-//             OPTIONAL { ?objectClass rdfs:comment ?objectClassComment }
-//           } UNION {
+//         } UNION {
 //             ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
-//           }
 //         }
-//       } UNION {
-//         ?linkset void:subjectsTarget [ void:class ?subjectClass ] ;
-//           void:linkPredicate ?prop ;
-//           void:objectsTarget [ void:class ?objectClass ] .
-//       }
-// } ORDER BY ?subjectClass ?objectClass ?objectDatatype ?graph ?triples`;
+//     }
+//   } UNION {
+//     ?ls void:subjectsTarget [ void:class ?subjectClass ] ;
+//         void:linkPredicate ?prop ;
+//         void:objectsTarget [ void:class ?objectClass ] .
+//   }
+// }`;
+
+export const voidQuery = `PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX sh:<http://www.w3.org/ns/shacl#>
+PREFIX sd:<http://www.w3.org/ns/sparql-service-description#>
+PREFIX void:<http://rdfs.org/ns/void#>
+PREFIX void-ext:<http://ldf.fi/void-ext#>
+SELECT DISTINCT ?graph ?graphLabel ?subjectClass ?prop ?objectClass ?objectDatatype ?triples
+?subjectClassLabel ?objectClassLabel ?subjectClassComment ?objectClassComment ?propLabel ?propComment
+WHERE {
+      {
+        OPTIONAL {
+          ?graph sd:graph ?graphDesc .
+          OPTIONAL { ?graph rdfs:label ?graphLabel }
+          ?graphDesc void:classPartition ?cp .
+        }
+        ?cp void:class ?subjectClass ;
+          void:propertyPartition ?pp .
+        OPTIONAL { ?subjectClass rdfs:label ?subjectClassLabel }
+        OPTIONAL { ?subjectClass rdfs:comment ?subjectClassComment }
+
+        ?pp void:property ?prop .
+        OPTIONAL { ?pp void:triples ?triples }
+        OPTIONAL { ?prop rdfs:label ?propLabel }
+        OPTIONAL { ?prop rdfs:comment ?propComment }
+        OPTIONAL {
+          {
+            ?pp  void:classPartition [ void:class ?objectClass ] .
+            OPTIONAL { ?objectClass rdfs:label ?objectClassLabel }
+            OPTIONAL { ?objectClass rdfs:comment ?objectClassComment }
+          } UNION {
+            ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
+          }
+        }
+      } UNION {
+        ?linkset void:subjectsTarget [ void:class ?subjectClass ] ;
+          void:linkPredicate ?prop ;
+          void:objectsTarget [ void:class ?objectClass ] .
+      }
+} ORDER BY ?subjectClass ?objectClass ?objectDatatype ?graph ?triples`;
 
 /** Get VoID description to get classes and properties for advanced autocomplete */
 export async function getVoidDescription(
@@ -195,7 +194,7 @@ export async function getVoidDescription(
   const predSet = new Set<string>();
   const voidDescription: VoidDict = {};
   try {
-    const queryResults = await queryEndpoint(voidQuery, endpoint);
+    const queryResults = await queryEndpointMeta(voidQuery, endpoint);
     // console.log(queryResults)
     queryResults.forEach(b => {
       clsSet.add(b.subjectClass.value);
@@ -244,7 +243,7 @@ export async function getPredicatesFallback(endpoint: string) {
 export async function getExampleQueries(endpoint: string): Promise<ExampleQuery[]> {
   const exampleQueries: ExampleQuery[] = [];
   try {
-    const queryResults = await queryEndpoint(
+    const queryResults = await queryEndpointMeta(
       `PREFIX sh: <http://www.w3.org/ns/shacl#>
       PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
       SELECT DISTINCT ?sq ?comment ?query

@@ -27,9 +27,72 @@
     // import {SparqlOverview} from "@sib-swiss/sparql-overview";
     import {SparqlOverview} from "@sib-swiss/sparql-overview";
 
-    new SparqlOverview(document.querySelector("#sparql-overview"), [
-      "https://sparql.uniprot.org/sparql/",
-      "https://www.bgee.org/sparql/",
-    ]);
+    const prefixes = {
+      rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+      rdfs: "http://www.w3.org/2000/01/rdf-schema#",
+      owl: "http://www.w3.org/2002/07/owl#",
+      up: "http://purl.uniprot.org/core/",
+    };
+
+    const endpointsVoid = {
+      "https://sparql.uniprot.org/sparql/": [
+        {
+          graph: {
+            termType: "NamedNode",
+            value: "http://sparql.uniprot.org/uniprot",
+          },
+          subjectClass: {
+            termType: "NamedNode",
+            value: "http://biohackathon.org/resource/faldo#ExactPosition",
+          },
+          prop: {
+            termType: "NamedNode",
+            value: "http://biohackathon.org/resource/faldo#reference",
+          },
+          objectClass: {
+            termType: "NamedNode",
+            value: "http://purl.uniprot.org/core/External_Sequence",
+          },
+          triples: {
+            termType: "Literal",
+            value: "1448803725",
+            language: "",
+            datatype: {
+              termType: "NamedNode",
+              value: "http://www.w3.org/2001/XMLSchema#long",
+            },
+          },
+        },
+        {
+          graph: {
+            termType: "NamedNode",
+            value: "http://sparql.uniprot.org/citations",
+          },
+          subjectClass: {
+            termType: "NamedNode",
+            value: "http://purl.uniprot.org/core/Thesis_Citation",
+          },
+          prop: {
+            termType: "NamedNode",
+            value: "http://purl.uniprot.org/core/title",
+          },
+          objectDatatype: {
+            termType: "NamedNode",
+            value: "http://www.w3.org/2001/XMLSchema#string",
+          },
+          triples: {
+            termType: "Literal",
+            value: "852",
+            language: "",
+            datatype: {
+              termType: "NamedNode",
+              value: "http://www.w3.org/2001/XMLSchema#long",
+            },
+          },
+        },
+      ],
+    };
+
+    new SparqlOverview(document.querySelector("#sparql-overview"), endpointsVoid, prefixes);
   </script>
 </html>
