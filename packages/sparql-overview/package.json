@@ -8,17 +8,29 @@
     "email": "vincent.emonet@gmail.com"
   },
   "type": "module",
-  "main": "dist/sparql-overview.umd.cjs",
-  "module": "dist/sparql-overview.js",
-  "types": "dist/src/sparql-overview.d.ts",
+  "main": "./dist/sparql-overview.umd.cjs",
+  "module": "./dist/sparql-overview.js",
+  "types": "./dist/sparql-overview.d.ts",
+  "source": "./src/sparql-overview.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "development": "./src/sparql-overview.ts",
+        "default": "./dist/sparql-overview.js"
+      },
+      "require": {
+        "development": "./src/sparql-overview.ts",
+        "default": "./dist/sparql-overview.umd.cjs"
+      }
+    }
+  },
   "files": [
     "dist/*",
-    "../../LICENSE"
+    "src/*"
   ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "test": "npm run lint && vitest run",
     "upgrade": "npx npm-check-updates -u && npm install",
     "version": "npm run build && npm publish"
   },

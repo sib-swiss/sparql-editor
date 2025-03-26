@@ -4,6 +4,8 @@ export type EndpointsMetadata = {
   // Endpoint URL
   [key: string]: {
     void: VoidDict;
+    voidQueryBindings: SparqlResultBindings[];
+    // clsPredInfos: {[key: string]: ClsPredInfo};
     classes: string[];
     predicates: string[];
     prefixes: {[key: string]: string};
@@ -19,6 +21,7 @@ type VoidDict = {
   };
 };
 
+/** Results of SPARQL SELECT query */
 type SparqlResultBindings = {
   [key: string]: {
     value: string;
@@ -45,6 +48,11 @@ export function compressUri(prefixes: {[key: string]: string}, uri: string): str
   return uri.replace(prefixes[longestPrefix], longestPrefix + ":");
 }
 
+/** Query the SPARQL endpoint and return the results as an array of bindings.
+ *
+ * @param query
+ * @param endpoint
+ */
 export async function queryEndpoint(query: string, endpoint: string): Promise<SparqlResultBindings[]> {
   // We add `ac=1&` to all the queries to exclude these queries from stats of SIB endpoints
   const response = await fetch(`${endpoint}?ac=1&query=${encodeURIComponent(query)}`, {
@@ -56,6 +64,43 @@ export async function queryEndpoint(query: string, endpoint: string): Promise<Sp
   // console.log(await response.text());
   const json = await response.json();
   return json.results.bindings;
+}
+
+/** Query the SPARQL endpoint or service description for metadata and return the results as an array of bindings.
+ *
+ * @param query
+ * @param endpoint
+ */
+export async function queryEndpointMeta(query: string, endpoint: string): Promise<SparqlResultBindings[]> {
+  try {
+    let queryResults = await queryEndpoint(query, endpoint);
+    if (queryResults.length === 0) {
+      // If no results from SPARQL endpoint we try to retrieve from the service description
+      const sparqlEngine = new QueryEngine();
+      queryResults = [];
+      const result = await sparqlEngine.query(query, {
+        sources: [
+          // Directly query the service description:
+          {type: "file", value: endpoint},
+        ],
+      });
+      // Convert comunica bindings to the same format as fetched SPARQL results
+      if (result.resultType === "bindings") {
+        const variables = (await result.metadata()).variables;
+        for await (const bindings of await result.execute()) {
+          const b: any = {};
+          for (const variable of variables) {
+            if (bindings.get(variable.value)) b[variable.value] = bindings.get(variable.value);
+          }
+          queryResults.push(b);
+        }
+      }
+    }
+    return queryResults;
+  } catch (error) {
+    console.warn(`Error retrieving VoID description from ${endpoint}:`, error);
+  }
+  return [];
 }
 
 export async function getPrefixes(endpoint: string): Promise<{[key: string]: string}> {
@@ -101,33 +146,56 @@ WHERE {
   }
 }`;
 
-export async function getVoidDescription(endpoint: string): Promise<[VoidDict, string[], string[]]> {
-  // Get VoID description to get classes and properties for advanced autocomplete
+// export const voidQuery = `PREFIX owl: <http://www.w3.org/2002/07/owl#>
+// PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+// PREFIX sh:<http://www.w3.org/ns/shacl#>
+// PREFIX sd:<http://www.w3.org/ns/sparql-service-description#>
+// PREFIX void:<http://rdfs.org/ns/void#>
+// PREFIX void-ext:<http://ldf.fi/void-ext#>
+// SELECT DISTINCT ?graph ?graphLabel ?subjectClass ?prop ?objectClass ?objectDatatype ?triples
+// ?subjectClassLabel ?objectClassLabel ?subjectClassComment ?objectClassComment ?propLabel ?propComment
+// WHERE {
+
+//       {
+//         OPTIONAL {
+//           ?graph sd:graph ?graphDesc .
+//           OPTIONAL { ?graph rdfs:label ?graphLabel }
+//           ?graphDesc void:classPartition ?cp .
+//         }
+//         ?cp void:class ?subjectClass ;
+//           void:propertyPartition ?pp .
+//         OPTIONAL { ?subjectClass rdfs:label ?subjectClassLabel }
+//         OPTIONAL { ?subjectClass rdfs:comment ?subjectClassComment }
+
+//         ?pp void:property ?prop ;
+//           void:triples ?triples .
+//         OPTIONAL { ?prop rdfs:label ?propLabel }
+//         OPTIONAL { ?prop rdfs:comment ?propComment }
+//         OPTIONAL {
+//           {
+//             ?pp  void:classPartition [ void:class ?objectClass ] .
+//             OPTIONAL { ?objectClass rdfs:label ?objectClassLabel }
+//             OPTIONAL { ?objectClass rdfs:comment ?objectClassComment }
+//           } UNION {
+//             ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
+//           }
+//         }
+//       } UNION {
+//         ?linkset void:subjectsTarget [ void:class ?subjectClass ] ;
+//           void:linkPredicate ?prop ;
+//           void:objectsTarget [ void:class ?objectClass ] .
+//       }
+// } ORDER BY ?subjectClass ?objectClass ?objectDatatype ?graph ?triples`;
+
+/** Get VoID description to get classes and properties for advanced autocomplete */
+export async function getVoidDescription(
+  endpoint: string,
+): Promise<[VoidDict, SparqlResultBindings[], string[], string[]]> {
   const clsSet = new Set<string>();
   const predSet = new Set<string>();
   const voidDescription: VoidDict = {};
   try {
-    let queryResults = await queryEndpoint(voidQuery, endpoint);
-    if (queryResults.length === 0) {
-      // If no results from SPARQL endpoint we try to retrieve from the service description
-      const sparqlEngine = new QueryEngine();
-      const bindingsStream = await sparqlEngine.queryBindings(voidQuery, {
-        sources: [
-          // Directly query the service description:
-          {type: "file", value: endpoint},
-        ],
-      });
-      const bindings = await bindingsStream.toArray();
-      queryResults = bindings.map(b => {
-        const result: any = {
-          subjectClass: b.get("subjectClass"),
-          prop: b.get("prop"),
-        };
-        if (b.get("objectClass")) result.objectClass = b.get("objectClass");
-        if (b.get("objectDatatype")) result.objectDatatype = b.get("objectDatatype");
-        return result;
-      });
-    }
+    const queryResults = await queryEndpoint(voidQuery, endpoint);
     // console.log(queryResults)
     queryResults.forEach(b => {
       clsSet.add(b.subjectClass.value);
@@ -141,10 +209,11 @@ export async function getVoidDescription(endpoint: string): Promise<[VoidDict, s
       }
       if ("objectDatatype" in b) voidDescription[b.subjectClass.value][b.prop.value].push(b.objectDatatype.value);
     });
+    return [voidDescription, queryResults, Array.from(clsSet).sort(), Array.from(predSet).sort()];
   } catch (error) {
     console.warn(`Error retrieving VoID description from ${endpoint} for autocomplete:`, error);
   }
-  return [voidDescription, Array.from(clsSet).sort(), Array.from(predSet).sort()];
+  return [voidDescription, [], Array.from(clsSet).sort(), Array.from(predSet).sort()];
 }
 
 const virtuosoNamespace = "http://www.openlinksw.com/schemas/virtrdf#";

@@ -1,7 +1,11 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "outDir": "dist"
+    "outDir": "./dist",
+    "paths": {
+      "@sib-swiss/sparql-overview": ["../sparql-overview/src/sparql-overview.ts"]
+    }
   },
-  "include": ["src"]
+  "references": [{"path": "../sparql-overview"}],
+  "include": ["src/*"]
 }

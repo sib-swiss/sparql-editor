@@ -24,7 +24,7 @@ import {
   getPredicatesFallback,
   createUseButton,
 } from "./utils";
-import "@sib-swiss/sparql-overview";
+import {SparqlOverview} from "@sib-swiss/sparql-overview";
 
 // <sparql-overview endpoint="https://sparql.uniprot.org/sparql/"></sparql-overview>
 
@@ -92,15 +92,17 @@ export class SparqlEditor extends HTMLElement {
     this.examplesRepo = this.getAttribute("examples-repository");
     if (this.examplesRepoAddUrl && !this.examplesRepo) this.examplesRepo = this.examplesRepoAddUrl.split("/new/")[0];
 
-    const style = document.createElement("style");
-    style.textContent = `
+    // NOTE:
+    const styleEl = document.querySelector("style") || document.createElement("style");
+    styleEl.textContent = `
+      ${styleEl.textContent || ""}
       ${yasguiCss}
       ${yasguiGripInlineCss}
       ${highlightjsCss}
       ${editorCss}
 		`;
     if (this.endpoints.length === 1) {
-      style.textContent += `.yasgui .controlbar {
+      styleEl.textContent += `.yasgui .controlbar {
   display: none !important;
 }`;
     }
@@ -124,7 +126,7 @@ export class SparqlEditor extends HTMLElement {
   </button>
   <div id="yasgui"></div>
 </div>`;
-    this.appendChild(style);
+    this.appendChild(styleEl);
 
     // NOTE: autocompleters are executed when Yasgui is instantiated
     Yasgui.Yasqe.defaults.autocompleters.splice(Yasgui.Yasqe.defaults.autocompleters.indexOf("prefixes"), 1);
@@ -176,6 +178,7 @@ export class SparqlEditor extends HTMLElement {
     if (!this.meta[endpoint]) {
       this.meta[endpoint] = {
         void: {},
+        voidQueryBindings: [],
         classes: [],
         predicates: [],
         prefixes: {},
@@ -187,7 +190,12 @@ export class SparqlEditor extends HTMLElement {
       [
         this.meta[endpoint].examples,
         this.meta[endpoint].prefixes,
-        [this.meta[endpoint].void, this.meta[endpoint].classes, this.meta[endpoint].predicates],
+        [
+          this.meta[endpoint].void,
+          this.meta[endpoint].voidQueryBindings,
+          this.meta[endpoint].classes,
+          this.meta[endpoint].predicates,
+        ],
       ] = await Promise.all([getExampleQueries(endpoint), getPrefixes(endpoint), getVoidDescription(endpoint)]);
       this.meta[endpoint].retrievedAt = new Date().toISOString();
 
@@ -210,7 +218,7 @@ export class SparqlEditor extends HTMLElement {
     const statusLight = this.querySelector("#status-light") as HTMLElement;
     const statusLink = this.querySelector("#status-link") as HTMLAnchorElement;
     statusLight.style.backgroundColor = "purple";
-    statusLink.title = "Loading...";
+    statusLink.title = "Loading endpoint metadata...";
     await this.getMetadata(endpoint);
     if (this.yasgui) {
       // @ts-ignore set default query when new tab
@@ -290,13 +298,15 @@ export class SparqlEditor extends HTMLElement {
     //   console.log("no hash")
     // }
 
-    window.addEventListener("popstate", event => {
-      if (this.dialogElOpen) {
-        // If the dialog is open, close it instead of navigating
-        this.closeDialog();
-        event.preventDefault();
-      }
-    });
+    if (typeof window !== "undefined") {
+      // If the dialog is open, close it instead of navigating
+      window.addEventListener("popstate", event => {
+        if (this.dialogElOpen) {
+          this.closeDialog();
+          event.preventDefault();
+        }
+      });
+    }
 
     this.yasgui?.on("tabSelect", () => {
       setTimeout(async () => {
@@ -665,9 +675,16 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     overviewDialog.id = "sparql-cls-overview-dialog";
     overviewDialog.style.width = "100%";
     overviewDialog.style.height = "100%";
-    overviewDialog.innerHTML = `<div style="height: 100%;">
-      <sparql-overview endpoint="${this.endpointUrl()}"></sparql-overview>
-    </div>`;
+    // overviewDialog.innerHTML = `<div style="height: 100%;">
+    //   <sparql-overview endpoint="${this.endpointUrl()}"></sparql-overview>
+    // </div>`;
+    overviewDialog.innerHTML = `<div id="sparql-overview" style="height: 100%;"></div>`;
+    const overviewEl = overviewDialog.querySelector("#sparql-overview") as HTMLElement;
+    new SparqlOverview(
+      overviewEl,
+      [this.endpointUrl()],
+      // [this.currentEndpoint().void, this.currentEndpoint().classes, this.currentEndpoint().predicates],
+    );
 
     // Add button to close dialog
     const dialogCloseBtn = document.createElement("button");

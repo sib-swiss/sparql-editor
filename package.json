@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "workspaces": [
-    "packages/*"
+    "packages/sparql-overview",
+    "packages/sparql-editor",
+    "packages/demo"
   ],
   "description": "Web components for accessing SPARQL endpoints.",
   "license": "MIT",
@@ -13,10 +15,11 @@
     "email": "vincent.emonet@gmail.com"
   },
   "scripts": {
-    "build": "npm run build:overview && npm run build:editor && npm run build:demo",
-    "dev": "npm run build:overview && npm run dev:editor",
+    "dev": "npm run dev --workspace=@sib-swiss/sparql-editor",
+    "build": "npm run build --workspaces",
+    "test": "npm run test -w packages/sparql-editor",
     "build:editor": "npm run build -w packages/sparql-editor",
-    "dev:editor": "npm run build:overview && npm run dev -w packages/sparql-editor",
+    "dev:editor": "npm run dev -w packages/sparql-editor",
     "build:overview": "npm run build -w packages/sparql-overview",
     "dev:overview": "npm run dev -w packages/sparql-overview",
     "build:demo": "npm run build -w packages/demo",
@@ -24,7 +27,6 @@
     "preview:demo": "npm run build && npm run preview -w packages/demo",
     "fmt": "prettier --write . && eslint \"packages/**/*.{ts,tsx,html,json}\" --fix",
     "lint": "prettier --check . && eslint \"packages/**/*.{ts,tsx,html,json}\"",
-    "test": "npm run lint && npm test -w packages/sparql-editor",
     "upgrade": "npx npm-check-updates -u && npm install",
     "prepare": "husky",
     "version": "npm run lint && npm run build && auto-changelog -p && git add CHANGELOG.md && npm publish -w packages/sparql-editor",

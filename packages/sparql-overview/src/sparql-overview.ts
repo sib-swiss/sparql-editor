@@ -11,7 +11,7 @@ import type {Coordinates, EdgeDisplayData, NodeDisplayData} from "sigma/types";
 // import ForceSupervisor from "graphology-layout-force/worker";
 
 import {getPrefixes, getVoidDescription, compressUri, getEdgeCurvature} from "./utils";
-import {componentStyle} from "./styles";
+import {componentStyle} from "./styles.js";
 
 type Cluster = {
   label: string;
@@ -37,13 +37,12 @@ const metadataClusterLabel = "Endpoint Metadata";
 const defaultGraph = "Default";
 
 /**
- * Custom element to create a SPARQL network overview for a given endpoint classes and predicates
- * @example <sparql-overview endpoint="https://sparql.uniprot.org/sparql/"></sparql-overview>
+ * Class to create a SPARQL network overview for a given endpoint classes and predicates
+ * @example new SparqlOverview(document.getElementById('container'), ['https://sparql.uniprot.org/sparql/']);
  */
-export class SparqlOverview extends HTMLElement {
+export class SparqlOverview {
   endpoints: string[] = [];
-
-  // TODO: DRAG N DROP https://www.sigmajs.org/storybook/?path=/story/mouse-manipulations--story
+  dom: HTMLElement;
 
   // Metadata stored in localStorage
   storedMeta: StoredMetadata = {};
@@ -72,16 +71,16 @@ export class SparqlOverview extends HTMLElement {
 
   dialogElOpen: HTMLDialogElement | null = null;
 
-  constructor() {
-    super();
-    this.endpoints = (this.getAttribute("endpoint") || "").split(",").map(value => value.trim());
+  constructor(containerElement: HTMLElement, endpoints: string[]) {
+    this.dom = containerElement;
+    this.endpoints = endpoints.map(value => value.trim());
     this.loadGraph();
 
     if (this.endpoints.length === 0)
-      throw new Error("No endpoint provided. Please use the 'endpoint' attribute to specify the SPARQL endpoint URL.");
+      throw new Error("No endpoints provided. Please provide at least one SPARQL endpoint URL.");
 
-    const style = document.createElement("style");
-    style.textContent = componentStyle;
+    const styleEl = document.createElement("style");
+    styleEl.textContent = componentStyle;
     const container = document.createElement("div");
     container.id = "sparql-overview";
     container.style.display = "flex";
@@ -150,18 +149,18 @@ export class SparqlOverview extends HTMLElement {
       </div>
       <div id="network-container" width="100%" heigth="100%" style="flex: 1; display: flex; position: relative; align-items: center; justify-content: center; width: 100%; height: 100%;"></div>
     `;
-    this.appendChild(style);
-    this.appendChild(container);
+    this.dom.appendChild(styleEl);
+    this.dom.appendChild(container);
 
     // Show info dialog
-    const showInfoButton = this.querySelector("#overview-show-info") as HTMLButtonElement;
-    const dialogInfo = this.querySelector("#overview-dialog-info") as HTMLDialogElement;
+    const showInfoButton = container.querySelector("#overview-show-info") as HTMLButtonElement;
+    const dialogInfo = container.querySelector("#overview-dialog-info") as HTMLDialogElement;
     showInfoButton.addEventListener("click", async () => {
       dialogInfo.showModal();
       this.dialogElOpen = dialogInfo;
       history.pushState({dialogOpen: true}, "");
     });
-    const closeInfoButton = this.querySelector("#overview-close-info") as HTMLButtonElement;
+    const closeInfoButton = container.querySelector("#overview-close-info") as HTMLButtonElement;
     closeInfoButton.addEventListener("click", async () => {
       dialogInfo.close();
     });
@@ -169,7 +168,7 @@ export class SparqlOverview extends HTMLElement {
       this.dialogElOpen = null;
       // history.back();
     });
-    const clearCacheButton = this.querySelector("#overview-clear-cache") as HTMLButtonElement;
+    const clearCacheButton = container.querySelector("#overview-clear-cache") as HTMLButtonElement;
     clearCacheButton.addEventListener("click", async () => {
       localStorage.removeItem("sparql-overview-metadata");
       this.renderer?.kill();
@@ -180,29 +179,29 @@ export class SparqlOverview extends HTMLElement {
       this.hidePredicates.clear();
       this.hideClusters.clear();
       this.displayMsg("Loading overview...");
-      this.connectedCallback();
+      this.initialize();
       dialogInfo.close();
     });
 
     // A custom event to trigger the rendering of the graph to make sure it is properly displayed, e.g. in dialogs
-    // Trigger it with: overviewEl.dispatchEvent(new Event("render"));
-    this.addEventListener("render", () => {
+    // Trigger it with: overviewInstance.containerElement.dispatchEvent(new Event("render"));
+    this.dom.addEventListener("render", () => {
       this.renderer?.refresh({skipIndexation: true});
     });
 
     // Add sidebar filtering buttons
-    const showAllPredsButton = this.querySelector("#overview-show-preds") as HTMLButtonElement;
+    const showAllPredsButton = container.querySelector("#overview-show-preds") as HTMLButtonElement;
     showAllPredsButton.addEventListener("click", () => {
-      const checkboxes = this.querySelectorAll("#overview-predicates-list input[type='checkbox']");
+      const checkboxes = container.querySelectorAll("#overview-predicates-list input[type='checkbox']");
       checkboxes.forEach(checkbox => {
         (checkbox as HTMLInputElement).checked = true;
       });
       this.hidePredicates.clear();
       this.renderer?.refresh({skipIndexation: true});
     });
-    const hideAllPredsButton = this.querySelector("#overview-hide-preds") as HTMLButtonElement;
+    const hideAllPredsButton = container.querySelector("#overview-hide-preds") as HTMLButtonElement;
     hideAllPredsButton.addEventListener("click", () => {
-      const checkboxes = this.querySelectorAll("#overview-predicates-list input[type='checkbox']");
+      const checkboxes = container.querySelectorAll("#overview-predicates-list input[type='checkbox']");
       checkboxes.forEach(checkbox => {
         (checkbox as HTMLInputElement).checked = false;
       });
@@ -211,9 +210,9 @@ export class SparqlOverview extends HTMLElement {
     });
 
     // Filtering buttons for clusters
-    const showAllClustersButton = this.querySelector("#overview-show-clusters") as HTMLButtonElement;
+    const showAllClustersButton = container.querySelector("#overview-show-clusters") as HTMLButtonElement;
     showAllClustersButton.addEventListener("click", () => {
-      const checkboxes = this.querySelectorAll("#overview-clusters-list input[type='checkbox']");
+      const checkboxes = container.querySelectorAll("#overview-clusters-list input[type='checkbox']");
       checkboxes.forEach(checkbox => {
         (checkbox as HTMLInputElement).checked = true;
       });
@@ -221,9 +220,9 @@ export class SparqlOverview extends HTMLElement {
       this.renderPredicatesFilter();
       this.renderer?.refresh({skipIndexation: true});
     });
-    const hideAllClustersButton = this.querySelector("#overview-hide-clusters") as HTMLButtonElement;
+    const hideAllClustersButton = container.querySelector("#overview-hide-clusters") as HTMLButtonElement;
     hideAllClustersButton.addEventListener("click", () => {
-      const checkboxes = this.querySelectorAll("#overview-clusters-list input[type='checkbox']");
+      const checkboxes = container.querySelectorAll("#overview-clusters-list input[type='checkbox']");
       checkboxes.forEach(checkbox => {
         (checkbox as HTMLInputElement).checked = false;
       });
@@ -231,16 +230,9 @@ export class SparqlOverview extends HTMLElement {
       this.renderPredicatesFilter();
       this.renderer?.refresh({skipIndexation: true});
     });
-  }
 
-  async connectedCallback() {
-    if (this.graph.nodes().length < 1) {
-      await this.initGraph();
-      if (this.graph.nodes().length > 0) this.saveGraph();
-    }
-    await this.renderGraph();
-    const loadingSpinner = this.querySelector("#loading-msg") as HTMLElement;
-    if (loadingSpinner.style.color != "red") loadingSpinner.style.display = "none";
+    // Initialize the component
+    this.initialize();
 
     window.addEventListener("popstate", event => {
       if (this.dialogElOpen) {
@@ -250,6 +242,16 @@ export class SparqlOverview extends HTMLElement {
         event.preventDefault();
       }
     });
+  }
+
+  async initialize() {
+    if (this.graph.nodes().length < 1) {
+      await this.initGraph();
+      if (this.graph.nodes().length > 0) this.saveGraph();
+    }
+    await this.renderGraph();
+    const loadingSpinner = this.dom.querySelector("#loading-msg") as HTMLElement;
+    if (loadingSpinner.style.color != "red") loadingSpinner.style.display = "none";
   }
 
   // Initialize the graph by retrieving metadata from the SPARQL endpoints
@@ -534,7 +536,7 @@ export class SparqlOverview extends HTMLElement {
   // Render the initialized graph and add all event listeners
   async renderGraph() {
     // Instantiate Sigma.js graph
-    const container = this.querySelector("#network-container") as HTMLElement;
+    const container = this.dom.querySelector("#network-container") as HTMLElement;
     this.renderer = new Sigma(this.graph, container, {
       renderEdgeLabels: true,
       enableEdgeEvents: true,
@@ -563,7 +565,7 @@ export class SparqlOverview extends HTMLElement {
     layout.start();
 
     // Bind search input interactions:
-    const searchInput = this.querySelector("#search-input") as HTMLInputElement;
+    const searchInput = this.dom.querySelector("#search-input") as HTMLInputElement;
     searchInput.addEventListener("input", () => {
       this.setSearchQuery(searchInput.value || "");
     });
@@ -702,7 +704,7 @@ export class SparqlOverview extends HTMLElement {
     this.renderClustersFilter();
 
     // Feed the datalist autocomplete values:
-    const searchSuggestions = this.querySelector("#suggestions") as HTMLDataListElement;
+    const searchSuggestions = this.dom.querySelector("#suggestions") as HTMLDataListElement;
     searchSuggestions.innerHTML = this.graph
       .nodes()
       .sort()
@@ -747,7 +749,7 @@ export class SparqlOverview extends HTMLElement {
   }
 
   displayEdgeInfo(edge?: string) {
-    const edgeInfoDiv = this.querySelector("#overview-edge-info") as HTMLElement;
+    const edgeInfoDiv = this.dom.querySelector("#overview-edge-info") as HTMLElement;
     edgeInfoDiv.innerHTML = "";
     if (edge) {
       const edgeAttrs = this.graph.getEdgeAttributes(edge);
@@ -768,7 +770,7 @@ export class SparqlOverview extends HTMLElement {
   }
 
   displayNodeInfo(node?: string) {
-    const nodeInfoDiv = this.querySelector("#overview-node-info") as HTMLElement;
+    const nodeInfoDiv = this.dom.querySelector("#overview-node-info") as HTMLElement;
     if (node) {
       const nodeAttrs = this.graph.getNodeAttributes(node);
       let nodeHtml = "";
@@ -803,7 +805,7 @@ export class SparqlOverview extends HTMLElement {
   // https://www.sigmajs.org/storybook/?path=/story/use-reducers--story
   setSearchQuery(query: string) {
     this.searchQuery = query;
-    const searchInput = this.querySelector("#search-input") as HTMLInputElement;
+    const searchInput = this.dom.querySelector("#search-input") as HTMLInputElement;
     if (searchInput.value !== query) searchInput.value = query;
     if (query) {
       const lcQuery = query.toLowerCase();
@@ -861,7 +863,7 @@ export class SparqlOverview extends HTMLElement {
   }
 
   displayMsg(msg?: string, isError: boolean = false) {
-    const msgEl = this.querySelector("#loading-msg") as HTMLElement;
+    const msgEl = this.dom.querySelector("#loading-msg") as HTMLElement;
     if (msg) {
       msgEl.style.color = isError ? "red" : "black";
       msgEl.innerHTML = msg;
@@ -933,7 +935,7 @@ export class SparqlOverview extends HTMLElement {
   }
 
   renderPredicatesFilter() {
-    const sidebar = this.querySelector("#overview-predicates-list") as HTMLElement;
+    const sidebar = this.dom.querySelector("#overview-predicates-list") as HTMLElement;
     sidebar.innerHTML = "";
 
     // Recalculate predicates list for visible edges/nodes
@@ -974,7 +976,7 @@ export class SparqlOverview extends HTMLElement {
   }
 
   renderClustersFilter() {
-    const sidebar = this.querySelector("#overview-clusters-list") as HTMLElement;
+    const sidebar = this.dom.querySelector("#overview-clusters-list") as HTMLElement;
     sidebar.innerHTML = "";
     const sortedClusters = Object.entries(this.clusters).sort((a, b) => b[1].count - a[1].count);
     for (const [clusterLabel, clusterAttrs] of sortedClusters) {
@@ -1009,5 +1011,3 @@ export class SparqlOverview extends HTMLElement {
     return compressUri(this.prefixes, uri);
   }
 }
-
-customElements.define("sparql-overview", SparqlOverview);

@@ -1,6 +1,7 @@
 /// <reference types="vitest/config" />
 import {defineConfig} from "vite";
 import typescript from "@rollup/plugin-typescript";
+// import { resolve } from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -21,6 +22,11 @@ export default defineConfig({
       plugins: [typescript()],
     },
   },
+  // resolve: {
+  //   alias: {
+  //     '@sib-swiss/sparql-overview': resolve(__dirname, '../sparql-overview/src/sparql-overview.ts')
+  //   }
+  // }
   // test: {
   //   globals: true,
   //   environment: "jsdom",

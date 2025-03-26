@@ -7,6 +7,7 @@
 // .yasr .dataTable {
 //   font-size: 0.9em;
 // }
+
 export const editorCss = `.sparql-editor-container {
   --btn-color: #e30613;
   --btn-bg-color: #f8bca5;

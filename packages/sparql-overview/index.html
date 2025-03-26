@@ -7,13 +7,14 @@
     <meta name="description" content="SPARQL editor development page" />
     <link rel="icon" type="image/png" href="../demo/src/sib-logo.png" />
 
-    <script type="module" src="./src/sparql-overview.ts"></script>
+    <!-- <script type="module" src="./src/sparql-overview.ts"></script> -->
   </head>
 
   <body>
     <div style="height: 97vh">
+      <div id="sparql-overview" style="height: 100%"></div>
       <!-- <sparql-overview endpoint="https://sparql.uniprot.org/sparql/,https://www.bgee.org/sparql/"></sparql-overview> -->
-      <sparql-overview endpoint="https://sparql.uniprot.org/sparql/"></sparql-overview>
+      <!-- <sparql-overview endpoint="https://sparql.uniprot.org/sparql/"></sparql-overview> -->
       <!-- <sparql-overview endpoint="https://www.bgee.org/sparql/"></sparql-overview> -->
       <!-- <sparql-overview endpoint="https://sparql.rhea-db.org/sparql/"></sparql-overview> -->
       <!-- <sparql-overview endpoint="https://beta.sparql.swisslipids.org/"></sparql-overview> -->
@@ -21,4 +22,14 @@
       <!-- endpoints="https://sparql.uniprot.org/sparql/,https://www.bgee.org/sparql/,https://sparql.omabrowser.org/sparql/,https://beta.sparql.swisslipids.org/,https://sparql.rhea-db.org/sparql/,https://biosoda.unil.ch/graphdb/repositories/emi-dbgi,https://hamap.expasy.org/sparql/,https://rdf.metanetx.org/sparql/" -->
     </div>
   </body>
+
+  <script type="module">
+    // import {SparqlOverview} from "@sib-swiss/sparql-overview";
+    import {SparqlOverview} from "@sib-swiss/sparql-overview";
+
+    new SparqlOverview(document.querySelector("#sparql-overview"), [
+      "https://sparql.uniprot.org/sparql/",
+      "https://www.bgee.org/sparql/",
+    ]);
+  </script>
 </html>
