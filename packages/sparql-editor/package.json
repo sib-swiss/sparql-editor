@@ -20,7 +20,9 @@
     "dev": "vite",
     "build": "vite build",
     "test": "vitest run",
-    "upgrade": "npx npm-check-updates -u && npm install"
+    "upgrade": "npx npm-check-updates -u && npm install",
+    "version": "npm run build && auto-changelog -p -o ../../CHANGELOG.md && git add ../../CHANGELOG.md && npm publish",
+    "postversion": "git push origin v$(npm pkg get version | tr -d \\\")"
   },
   "dependencies": {
     "@comunica/query-sparql": "^4.1.0",
@@ -41,7 +43,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/sib-swiss/sparql-editor.git"
+    "url": "git+https://github.com/sib-swiss/sparql-editor.git"
   },
   "private": false,
   "publishConfig": {

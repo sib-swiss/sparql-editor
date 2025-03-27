@@ -27,10 +27,8 @@
     "preview:demo": "npm run build && npm run preview -w packages/demo",
     "fmt": "prettier --write . && eslint \"packages/**/*.{ts,tsx,html,json}\" --fix",
     "lint": "prettier --check . && eslint \"packages/**/*.{ts,tsx,html,json}\"",
-    "upgrade": "npx npm-check-updates -u && npm install",
-    "prepare": "husky",
-    "version": "npm run lint && npm run build && auto-changelog -p && git add CHANGELOG.md && npm publish -w packages/sparql-editor",
-    "postversion": "git push origin v$(npm pkg get version | tr -d \\\")"
+    "upgrade": "npx npm-check-updates -u && npm i",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
@@ -82,7 +80,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/sib-swiss/sparql-editor.git"
+    "url": "git+https://github.com/sib-swiss/sparql-editor.git"
   },
   "publishConfig": {
     "access": "public"

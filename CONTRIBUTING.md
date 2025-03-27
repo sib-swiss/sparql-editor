@@ -82,6 +82,7 @@ To create a new release, you will need to login on your machine once with `npm a
 Running the following script will upgrade version in `package.json`, generate changelog, create a tag, and publish the package to NPM:
 
 ```sh
+cd packages/sparql-editor
 npm version patch
 # Or minor / major
 ```
