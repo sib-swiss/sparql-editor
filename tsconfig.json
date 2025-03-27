@@ -11,9 +11,5 @@
     "isolatedModules": true,
     "declaration": true,
     "sourceMap": true
-    // "paths": {
-    //   "@sib-swiss/sparql-overview": ["./packages/sparql-overview"],
-    //   "@sib-swiss/sparql-editor": ["./packages/sparql-editor"]
-    // }
   }
 }

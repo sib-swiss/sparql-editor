@@ -15,7 +15,8 @@
     "upgrade": "npx npm-check-updates -u && npm install"
   },
   "dependencies": {
-    "@sib-swiss/sparql-editor": "*"
+    "@sib-swiss/sparql-editor": "*",
+    "@sib-swiss/sparql-overview": "*"
   },
   "keywords": [
     "SPARQL",

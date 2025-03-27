@@ -94,6 +94,8 @@ export class SparqlOverview {
     if (Object.keys(this.endpoints).length === 0)
       throw new Error("No endpoints provided. Please provide at least one SPARQL endpoint URL.");
 
+    this.dom.style.height = "100%";
+
     const styleEl = document.createElement("style");
     styleEl.textContent = componentStyle;
     const container = document.createElement("div");

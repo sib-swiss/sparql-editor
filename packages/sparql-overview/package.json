@@ -1,6 +1,6 @@
 {
   "name": "@sib-swiss/sparql-overview",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "A web component to easily deploy a user-friendly network visualization for one or more endpoints.",
   "license": "MIT",
   "author": {
@@ -11,7 +11,6 @@
   "main": "./dist/sparql-overview.umd.cjs",
   "module": "./dist/sparql-overview.js",
   "types": "./dist/sparql-overview.d.ts",
-  "source": "./src/sparql-overview.ts",
   "exports": {
     ".": {
       "import": {
@@ -26,7 +25,8 @@
   },
   "files": [
     "dist/*",
-    "src/*"
+    "README.md",
+    "../../LICENSE"
   ],
   "scripts": {
     "dev": "vite",
