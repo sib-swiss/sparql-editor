@@ -11,10 +11,20 @@
   "main": "dist/sparql-editor.umd.cjs",
   "module": "dist/sparql-editor.js",
   "types": "dist/src/sparql-editor.d.ts",
+  "browser": "dist/sparql-editor.umd.cjs",
+  "unpkg": "dist/sparql-editor.umd.cjs",
+  "jsdelivr": "dist/sparql-editor.umd.cjs",
+  "exports": {
+    ".": {
+      "import": "./dist/sparql-editor.js",
+      "require": "./dist/sparql-editor.umd.cjs",
+      "types": "./dist/src/sparql-editor.d.ts"
+    }
+  },
+  "homepage": "https://sib-swiss.github.io/sparql-editor",
   "files": [
-    "dist/*",
-    "../../README.md",
-    "../../LICENSE"
+    "dist",
+    "README.md"
   ],
   "scripts": {
     "dev": "vite",
