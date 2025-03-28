@@ -1,6 +1,6 @@
 {
   "name": "@sib-swiss/sparql-editor",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "A standard web component to easily deploy a user-friendly SPARQL query editor for one or more endpoints. Built on the popular YASGUI editor, it provides context-aware autocomplete for classes and predicates based on the content of the endpoints.",
   "license": "MIT",
   "author": {
@@ -31,7 +31,7 @@
     "test": "vitest run",
     "upgrade": "npx npm-check-updates -u && npm install",
     "version": "npm run build && auto-changelog -p -o ../../CHANGELOG.md && git add ../../CHANGELOG.md && npm publish",
-    "postversion": "git push origin v$(node -e \"console.log(require('./package.json').version)\")"
+    "postversion": "git tag v$(npm pkg get version --no-workspaces | tr -d \\\") && git push origin v$(npm pkg get version --no-workspaces | tr -d \\\")"
   },
   "dependencies": {
     "@comunica/query-sparql": "^4.1.0",

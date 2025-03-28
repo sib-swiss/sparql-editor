@@ -1,7 +1,4 @@
 export const componentStyle = `
-  html, body {
-    font: 10pt arial;
-  }
   #sparql-overview {
     height: 100%;
 

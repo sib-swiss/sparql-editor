@@ -86,8 +86,6 @@ export class SparqlOverview {
     this.endpoints = endpoints;
     this.prefixes = prefixes;
 
-    console.log(this.endpoints);
-
     // this.endpoints = endpoints.map(value => value.trim());
     this.loadGraph();
 

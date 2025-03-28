@@ -70,10 +70,6 @@ export class SparqlEditor extends HTMLElement {
     this.meta = this.loadMetaFromLocalStorage();
     this.endpoints = (this.getAttribute("endpoint") || "").split(",").map(e => e.trim());
 
-    const defaultMethod = (this.getAttribute("default-method")?.toUpperCase() as "GET" | "POST") || "GET";
-    if (!["GET", "POST"].includes(defaultMethod))
-      console.warn("Default method is wrong, should be GET or POST", defaultMethod);
-
     // NOTE: will need to be removed at some point I guess
     // Check if examples contain the index field, if not reset cache
     if (this.currentEndpoint() && this.currentEndpoint().examples?.some(example => example.iri === undefined)) {
@@ -91,67 +87,6 @@ export class SparqlEditor extends HTMLElement {
     this.examplesRepoAddUrl = this.getAttribute("examples-repo-add-url");
     this.examplesRepo = this.getAttribute("examples-repository");
     if (this.examplesRepoAddUrl && !this.examplesRepo) this.examplesRepo = this.examplesRepoAddUrl.split("/new/")[0];
-
-    // NOTE:
-    const styleEl = document.querySelector("style") || document.createElement("style");
-    styleEl.textContent = `
-      ${styleEl.textContent || ""}
-      ${yasguiCss}
-      ${yasguiGripInlineCss}
-      ${highlightjsCss}
-      ${editorCss}
-		`;
-    if (this.endpoints.length === 1) {
-      styleEl.textContent += `.yasgui .controlbar {
-  display: none !important;
-}`;
-    }
-    this.className = "sparql-editor-container";
-    this.innerHTML = `
-<div style="width: 100%;">
-  <a id="status-link" href="" target="_blank" title="Loading..." style="display: inline-flex; width: 16px; height: 16px;">
-    <div id="status-light" style="width: 10px; height: 10px; background-color: purple; border-radius: 50%; margin: 0 auto;"></div>
-  </a><button id="sparql-add-prefixes-btn" class="btn top-btn" title="Add prefixes commonly used in the selected endpoint to the query">
-    Add common prefixes
-  </button><button id="sparql-save-example-btn" class="btn top-btn" title="Save the current query as example">
-    Save query as example
-  </button><button id="sparql-examples-top-btn" class="btn top-btn" title="Browse examples available for the selected endpoint">
-    Browse examples
-  </button><button id="sparql-cls-overview-btn" class="btn top-btn" title="Overview of classes and their relations in the endpoint">
-    Classes overview
-  </button><button id="sparql-clear-cache-btn" class="btn top-btn" title="Clear and update the endpoints metadata stored in the cache">
-    Clear cache
-  </button><button id="sparql-toggle-examples-btn" class="btn top-btn" title="Toggle display of the examples panel">
-    Toggle examples
-  </button>
-  <div id="yasgui"></div>
-</div>`;
-    this.appendChild(styleEl);
-
-    // NOTE: autocompleters are executed when Yasgui is instantiated
-    Yasgui.Yasqe.defaults.autocompleters.splice(Yasgui.Yasqe.defaults.autocompleters.indexOf("prefixes"), 1);
-    Yasgui.Yasqe.defaults.autocompleters.splice(Yasgui.Yasqe.defaults.autocompleters.indexOf("class"), 1);
-    Yasgui.Yasqe.defaults.autocompleters.splice(Yasgui.Yasqe.defaults.autocompleters.indexOf("property"), 1);
-    Yasgui.Yasqe.forkAutocompleter("prefixes", this.prefixesCompleter);
-    Yasgui.Yasqe.forkAutocompleter("class", this.voidClassCompleter);
-    Yasgui.Yasqe.forkAutocompleter("property", this.voidPropertyCompleter);
-    Yasgui.defaults.requestConfig = {
-      ...Yasgui.defaults.requestConfig,
-      endpoint: this.endpoints[0],
-      method: defaultMethod,
-    };
-    Yasgui.defaults.endpointCatalogueOptions = {
-      ...Yasgui.defaults.endpointCatalogueOptions,
-      getData: () =>
-        this.endpoints.map(endpoint => ({
-          endpoint: endpoint,
-        })),
-      renderItem: (data, source) => {
-        const contentDiv = document.createElement("div");
-        contentDiv.innerText = data.value.endpoint;
-        source.appendChild(contentDiv);
-      },
-    };
 
     hljs.registerLanguage("ttl", hljsDefineTurtle);
     hljs.registerLanguage("sparql", hljsDefineSparql);
@@ -272,6 +207,71 @@ export class SparqlEditor extends HTMLElement {
   }
 
   async connectedCallback() {
+    const defaultMethod = (this.getAttribute("default-method")?.toUpperCase() as "GET" | "POST") || "GET";
+    if (!["GET", "POST"].includes(defaultMethod))
+      console.warn("Default method is wrong, should be GET or POST", defaultMethod);
+
+    // NOTE:
+    const styleEl = document.querySelector("style") || document.createElement("style");
+    styleEl.textContent = `
+      ${styleEl.textContent || ""}
+      ${yasguiCss}
+      ${yasguiGripInlineCss}
+      ${highlightjsCss}
+      ${editorCss}
+		`;
+    if (this.endpoints.length === 1) {
+      styleEl.textContent += `.yasgui .controlbar {
+  display: none !important;
+}`;
+    }
+    this.className = "sparql-editor-container";
+    this.innerHTML = `
+<div style="width: 100%;">
+  <a id="status-link" href="" target="_blank" title="Loading..." style="display: inline-flex; width: 16px; height: 16px;">
+    <div id="status-light" style="width: 10px; height: 10px; background-color: purple; border-radius: 50%; margin: 0 auto;"></div>
+  </a><button id="sparql-add-prefixes-btn" class="btn top-btn" title="Add prefixes commonly used in the selected endpoint to the query">
+    Add common prefixes
+  </button><button id="sparql-save-example-btn" class="btn top-btn" title="Save the current query as example">
+    Save query as example
+  </button><button id="sparql-examples-top-btn" class="btn top-btn" title="Browse examples available for the selected endpoint">
+    Browse examples
+  </button><button id="sparql-cls-overview-btn" class="btn top-btn" title="Overview of classes and their relations in the endpoint">
+    Classes overview
+  </button><button id="sparql-clear-cache-btn" class="btn top-btn" title="Clear and update the endpoints metadata stored in the cache">
+    Clear cache
+  </button><button id="sparql-toggle-examples-btn" class="btn top-btn" title="Toggle display of the examples panel">
+    Toggle examples
+  </button>
+  <div id="yasgui"></div>
+</div>`;
+    this.appendChild(styleEl);
+
+    // NOTE: autocompleters are executed when Yasgui is instantiated
+    Yasgui.Yasqe.defaults.autocompleters.splice(Yasgui.Yasqe.defaults.autocompleters.indexOf("prefixes"), 1);
+    Yasgui.Yasqe.defaults.autocompleters.splice(Yasgui.Yasqe.defaults.autocompleters.indexOf("class"), 1);
+    Yasgui.Yasqe.defaults.autocompleters.splice(Yasgui.Yasqe.defaults.autocompleters.indexOf("property"), 1);
+    Yasgui.Yasqe.forkAutocompleter("prefixes", this.prefixesCompleter);
+    Yasgui.Yasqe.forkAutocompleter("class", this.voidClassCompleter);
+    Yasgui.Yasqe.forkAutocompleter("property", this.voidPropertyCompleter);
+    Yasgui.defaults.requestConfig = {
+      ...Yasgui.defaults.requestConfig,
+      endpoint: this.endpoints[0],
+      method: defaultMethod,
+    };
+    Yasgui.defaults.endpointCatalogueOptions = {
+      ...Yasgui.defaults.endpointCatalogueOptions,
+      getData: () =>
+        this.endpoints.map(endpoint => ({
+          endpoint: endpoint,
+        })),
+      renderItem: (data, source) => {
+        const contentDiv = document.createElement("div");
+        contentDiv.innerText = data.value.endpoint;
+        source.appendChild(contentDiv);
+      },
+    };
+
     // Instantiate YASGUI editor
     const editorEl = this.querySelector("#yasgui") as HTMLElement;
     this.yasgui = new Yasgui(editorEl, {

@@ -22,7 +22,7 @@ export default defineConfig({
       plugins: [typescript()],
     },
   },
-  // Make sure to set the environment variable to an empty object, because some stupid dependencies are using process.env.NODE_ENV
+  // Make sure to set the environment variable to an empty object, because some dependencies are using process.env.NODE_ENV
   define: {
     "process.env": JSON.stringify({}),
   },

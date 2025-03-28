@@ -103,7 +103,7 @@ You can also redeploy it for a specific endpoint, or set of endpoints using the 
    Or directly import from a CDN:
 
    ```html
-   <script type="module" src="https://unpkg.com/@sib-swiss/sparql-editor"></script>
+   <script type="module" src="https://esm.sh/@sib-swiss/sparql-editor"></script>
    ```
 
 2. Use the custom element in your HTML/JSX/TSX code:
