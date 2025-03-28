@@ -26,8 +26,6 @@ import {
 } from "./utils";
 import {SparqlOverview} from "@sib-swiss/sparql-overview";
 
-// <sparql-overview endpoint="https://sparql.uniprot.org/sparql/"></sparql-overview>
-
 type Autocompleter = {name: string} & Partial<CompleterConfig>;
 const addSlashAtEnd = (str: string) => (str.endsWith("/") ? str : `${str}/`);
 const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
@@ -39,14 +37,14 @@ const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1).t
  * @example <sparql-editor endpoint="https://sparql.uniprot.org/sparql/" examples-on-main-page="10"></sparql-editor>
  */
 export class SparqlEditor extends HTMLElement {
-  examplesOnMainPage: number;
+  endpoints: string[] = [];
+  examplesOnMainPage: number = 8;
   yasgui: Yasgui | undefined;
-  endpoints: string[];
   meta: EndpointsMetadata;
-  examplesRepo: string | null;
-  examplesRepoAddUrl: string | null;
-  addLimit: number | null;
-  dialogElOpen: HTMLDialogElement | null = null;
+  examplesRepo: string | undefined;
+  examplesRepoAddUrl: string | undefined;
+  addLimit: number | undefined;
+  dialogElOpen: HTMLDialogElement | undefined;
   // TODO: make exampleQueries a dict with the query IRI as key, so if the window.location matches a key, it will load the query?
 
   examplesNamespace() {
@@ -57,6 +55,7 @@ export class SparqlEditor extends HTMLElement {
 
   // Return the current endpoint URL
   endpointUrl() {
+    // console.log(this.yasgui?.getTab(), this.endpoints)
     return this.yasgui?.getTab()?.getEndpoint() || this.endpoints[0];
   }
 
@@ -68,28 +67,6 @@ export class SparqlEditor extends HTMLElement {
   constructor() {
     super();
     this.meta = this.loadMetaFromLocalStorage();
-    this.endpoints = (this.getAttribute("endpoint") || "").split(",").map(e => e.trim());
-
-    // NOTE: will need to be removed at some point I guess
-    // Check if examples contain the index field, if not reset cache
-    if (this.currentEndpoint() && this.currentEndpoint().examples?.some(example => example.iri === undefined)) {
-      localStorage.removeItem("sparql-editor-metadata");
-      console.warn("Invalid metadata format, resetting cache");
-      this.meta = {};
-    }
-
-    // console.log("Loaded metadata from localStorage", this.meta);
-    if (this.endpoints.length === 0)
-      throw new Error("No endpoint provided. Please use the 'endpoint' attribute to specify the SPARQL endpoint URL.");
-
-    this.addLimit = Number(this.getAttribute("add-limit")) || null;
-    this.examplesOnMainPage = Number(this.getAttribute("examples-on-main-page")) || 8;
-    this.examplesRepoAddUrl = this.getAttribute("examples-repo-add-url");
-    this.examplesRepo = this.getAttribute("examples-repository");
-    if (this.examplesRepoAddUrl && !this.examplesRepo) this.examplesRepo = this.examplesRepoAddUrl.split("/new/")[0];
-
-    hljs.registerLanguage("ttl", hljsDefineTurtle);
-    hljs.registerLanguage("sparql", hljsDefineSparql);
   }
 
   // Load and save metadata to localStorage
@@ -207,14 +184,35 @@ export class SparqlEditor extends HTMLElement {
   }
 
   async connectedCallback() {
+    this.endpoints = (this.getAttribute("endpoint") || "").split(",").map(e => e.trim());
+
+    // NOTE: will need to be removed at some point I guess
+    // Check if examples contain the index field, if not reset cache
+    if (this.currentEndpoint() && this.currentEndpoint().examples?.some(example => example.iri === undefined)) {
+      localStorage.removeItem("sparql-editor-metadata");
+      console.warn("Invalid metadata format, resetting cache");
+      this.meta = {};
+    }
+
+    // console.log("Loaded metadata from localStorage", this.meta);
+    if (this.endpoints.length === 0)
+      throw new Error("No endpoint provided. Please use the 'endpoint' attribute to specify the SPARQL endpoint URL.");
+
+    this.addLimit = Number(this.getAttribute("add-limit")) || this.addLimit;
+    this.examplesOnMainPage = Number(this.getAttribute("examples-on-main-page")) || this.examplesOnMainPage;
+    this.examplesRepoAddUrl = this.getAttribute("examples-repo-add-url") || this.examplesRepoAddUrl;
+    this.examplesRepo = this.getAttribute("examples-repository") || this.examplesRepo;
+    if (this.examplesRepoAddUrl && !this.examplesRepo) this.examplesRepo = this.examplesRepoAddUrl.split("/new/")[0];
+
+    hljs.registerLanguage("ttl", hljsDefineTurtle);
+    hljs.registerLanguage("sparql", hljsDefineSparql);
+
     const defaultMethod = (this.getAttribute("default-method")?.toUpperCase() as "GET" | "POST") || "GET";
     if (!["GET", "POST"].includes(defaultMethod))
       console.warn("Default method is wrong, should be GET or POST", defaultMethod);
 
-    // NOTE:
-    const styleEl = document.querySelector("style") || document.createElement("style");
+    const styleEl = document.createElement("style");
     styleEl.textContent = `
-      ${styleEl.textContent || ""}
       ${yasguiCss}
       ${yasguiGripInlineCss}
       ${highlightjsCss}
@@ -547,7 +545,7 @@ export class SparqlEditor extends HTMLElement {
   closeDialog() {
     if (this.dialogElOpen) {
       this.dialogElOpen.close();
-      this.dialogElOpen = null;
+      this.dialogElOpen = undefined;
       document.body.style.overflow = "";
       // history.back();
     }
