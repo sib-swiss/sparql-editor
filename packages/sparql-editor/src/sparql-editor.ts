@@ -158,7 +158,7 @@ export class SparqlEditor extends HTMLElement {
     if (this.yasgui) {
       // @ts-ignore set default query when new tab
       this.yasgui.config.yasqe.value =
-        this.addPrefixesToQuery(this.currentEndpoint().examples[0]?.query) || Yasgui.Yasqe.defaults.value;
+        this.addPrefixesToQuery(this.currentEndpoint()?.examples[0]?.query) || Yasgui.Yasqe.defaults.value;
     }
     Yasgui.Yasr.defaults.prefixes = this.meta[endpoint].prefixes;
 
