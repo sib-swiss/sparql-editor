@@ -155,10 +155,10 @@ export class SparqlEditor extends HTMLElement {
     statusLight.style.backgroundColor = "purple";
     statusLink.title = "Loading endpoint metadata...";
     await this.getMetadata(endpoint);
-    if (this.yasgui) {
+    if (this.yasgui && this.currentEndpoint()) {
       // @ts-ignore set default query when new tab
       this.yasgui.config.yasqe.value =
-        this.addPrefixesToQuery(this.currentEndpoint()?.examples[0]?.query) || Yasgui.Yasqe.defaults.value;
+        this.addPrefixesToQuery(this.currentEndpoint().examples[0]?.query) || Yasgui.Yasqe.defaults.value;
     }
     Yasgui.Yasr.defaults.prefixes = this.meta[endpoint].prefixes;
 
@@ -902,7 +902,7 @@ ex:${exampleUri} a sh:SPARQLExecutable${
   addPrefixesToQuery(query: string) {
     // Add prefixes to a query without using YASGUI
     // Required to add prefixes to the query before creating the YASGUI editor
-    const sortedKeys = Object.keys(this.currentEndpoint().prefixes).sort();
+    const sortedKeys = Object.keys(this.currentEndpoint()?.prefixes).sort();
     for (const key of sortedKeys) {
       const value = this.currentEndpoint().prefixes[key];
       const pref: {[index: string]: string} = {};
