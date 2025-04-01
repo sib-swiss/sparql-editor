@@ -40,12 +40,16 @@ export class SparqlEditor extends HTMLElement {
   endpoints: string[] = [];
   examplesOnMainPage: number = 8;
   yasgui: Yasgui | undefined;
-  meta: EndpointsMetadata;
+  meta: EndpointsMetadata = {};
   examplesRepo: string | undefined;
   examplesRepoAddUrl: string | undefined;
   addLimit: number | undefined;
   dialogElOpen: HTMLDialogElement | undefined;
   // TODO: make exampleQueries a dict with the query IRI as key, so if the window.location matches a key, it will load the query?
+
+  constructor() {
+    super();
+  }
 
   examplesNamespace() {
     return (
@@ -62,11 +66,6 @@ export class SparqlEditor extends HTMLElement {
   // Return the object with the current endpoint metadata
   currentEndpoint() {
     return this.meta[this.endpointUrl()];
-  }
-
-  constructor() {
-    super();
-    this.meta = this.loadMetaFromLocalStorage();
   }
 
   // Load and save metadata to localStorage
@@ -185,6 +184,7 @@ export class SparqlEditor extends HTMLElement {
 
   async connectedCallback() {
     this.endpoints = (this.getAttribute("endpoint") || "").split(",").map(e => e.trim());
+    this.meta = this.loadMetaFromLocalStorage();
 
     // NOTE: will need to be removed at some point I guess
     // Check if examples contain the index field, if not reset cache
