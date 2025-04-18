@@ -163,7 +163,7 @@ Create a `index.html` file with:
     <meta name="description" content="SPARQL editor demo page" />
     <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/f/f3/Rdf_logo.svg" />
     <!-- Import the module from a CDN -->
-    <script type="module" src="https://unpkg.com/@sib-swiss/sparql-editor"></script>
+    <script type="module" src="https://esm.sh/@sib-swiss/sparql-editor"></script>
   </head>
 
   <body>
