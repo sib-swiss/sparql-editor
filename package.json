@@ -15,7 +15,7 @@
     "email": "vincent.emonet@gmail.com"
   },
   "scripts": {
-    "dev": "npm run dev --workspace=@sib-swiss/sparql-editor",
+    "dev": "npm run dev -w packages/sparql-editor",
     "build": "npm run build --workspaces",
     "test": "npm run test -w packages/sparql-editor",
     "build:editor": "npm run build -w packages/sparql-editor",

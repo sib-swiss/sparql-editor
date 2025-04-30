@@ -134,8 +134,8 @@ export class SparqlOverview {
           <p style="opacity: 60%; margin: 1.5em 0;">
             💡 <code>shift + left click</code> to select multiple nodes.
           </p>
-          <button id="overview-clear-cache" title="Clear and update the endpoints metadata stored in the cache">
-            Clear cache
+          <button id="overview-clear-cache" title="Refresh and update the endpoints metadata stored in the cache">
+            Refresh cache
           </button>
           <button id="overview-close-info">Close</button>
         </dialog>

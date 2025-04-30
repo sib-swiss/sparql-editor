@@ -223,6 +223,12 @@ export class SparqlEditor extends HTMLElement {
   display: none !important;
 }`;
     }
+    console.log("this.examplesRepo", this.examplesRepo);
+    const saveAsExampleBtn = this.examplesRepo
+      ? `<button id="sparql-save-example-btn" class="btn top-btn" title="Save the current query as example">
+    Save query as example
+  </button>`
+      : "";
     this.className = "sparql-editor-container";
     this.innerHTML = `
 <div style="width: 100%;">
@@ -230,20 +236,24 @@ export class SparqlEditor extends HTMLElement {
     <div id="status-light" style="width: 10px; height: 10px; background-color: purple; border-radius: 50%; margin: 0 auto;"></div>
   </a><button id="sparql-add-prefixes-btn" class="btn top-btn" title="Add prefixes commonly used in the selected endpoint to the query">
     Add common prefixes
-  </button><button id="sparql-save-example-btn" class="btn top-btn" title="Save the current query as example">
-    Save query as example
-  </button><button id="sparql-examples-top-btn" class="btn top-btn" title="Browse examples available for the selected endpoint">
+  </button>${saveAsExampleBtn}<button id="sparql-examples-top-btn" class="btn top-btn" title="Browse examples available for the selected endpoint">
     Browse examples
   </button><button id="sparql-cls-overview-btn" class="btn top-btn" title="Overview of classes and their relations in the endpoint">
     Classes overview
-  </button><button id="sparql-clear-cache-btn" class="btn top-btn" title="Clear and update the endpoints metadata stored in the cache">
-    Clear cache
+  </button><button id="sparql-clear-cache-btn" class="btn top-btn" title="Refresh and update the endpoints metadata stored in the cache">
+    Refresh cache
   </button><button id="sparql-toggle-examples-btn" class="btn top-btn" title="Toggle display of the examples panel">
     Toggle examples
   </button>
   <div id="yasgui"></div>
 </div>`;
     this.appendChild(styleEl);
+    // TODO: hide `Save query as example` button if examplesRepo is not set
+    // // Hide "Save query as example" button if this.examplesRepo is not set
+    // const saveExampleBtn = this.querySelector("#sparql-save-example-btn") as HTMLButtonElement;
+    // if (!this.examplesRepo) {
+    //   saveExampleBtn.style.display = "none";
+    // }
 
     // NOTE: autocompleters are executed when Yasgui is instantiated
     Yasgui.Yasqe.defaults.autocompleters.splice(Yasgui.Yasqe.defaults.autocompleters.indexOf("prefixes"), 1);
@@ -432,21 +442,23 @@ export class SparqlEditor extends HTMLElement {
     });
 
     // Button to pop a dialog to save the query as an example in a turtle file
-    const saveExampleBtnEl = this.querySelector("#sparql-save-example-btn");
-    saveExampleBtnEl?.addEventListener("click", () => {
-      this.showSaveExampleDialog();
-    });
+    if (this.examplesRepo) {
+      const saveExampleBtnEl = this.querySelector("#sparql-save-example-btn");
+      saveExampleBtnEl?.addEventListener("click", () => {
+        this.showSaveExampleDialog();
+      });
+    }
 
     // NOTE: Yasqe already automatically loads search params from the URL in the editor and run the query
     // But it does not trigger the .on("query") event, so it does not add limit
     // http://localhost:3000/?endpoint=https://sparql.uniprot.org/sparql/&query=select%20*%20where%20{?s%20?p%20?o%20.}
-    if (window.location.search) {
-      const searchParams = new URLSearchParams(window.location.search);
-      if (searchParams.get("query")) {
-        this.addPrefixesToQueryInEditor();
-        this.yasgui.getTab()?.getYasqe().query();
-      }
-    }
+    // if (window.location.search) {
+    //   const searchParams = new URLSearchParams(window.location.search);
+    //   if (searchParams.get("query")) {
+    //     this.addPrefixesToQueryInEditor();
+    //     this.yasgui.getTab()?.getYasqe().query();
+    //   }
+    // }
   }
 
   // Original autocompleters: https://github.com/zazuko/Yasgui/blob/main/packages/yasqe/src/autocompleters/classes.ts#L8

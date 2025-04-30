@@ -147,6 +147,10 @@ You can customize a few optional attributes when calling the custom element:
 ></sparql-editor>
 ```
 
+### 🎨 Styling
+
+The web component uses a light DOM, instead of a shadow DOM, to make it easier for the developers to style the application at their convenience, using the usual tool they know: CSS. Just inspect the elements you want to change and write the appropriate CSS.
+
 ### 📝 Basic example
 
 No need for a complex project you can integrate SPARQL editor in any HTML page by importing from a CDN!
