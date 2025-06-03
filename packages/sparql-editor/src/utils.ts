@@ -94,6 +94,11 @@ export async function queryEndpointMeta(query: string, endpoint: string): Promis
     }, 5000); // 5 second timeout for service description query
 
     try {
+      // NOTE: hackity hack to temporarily use a custom VoID description for UniProt
+      if (endpoint.startsWith("https://sparql.uniprot.org/")) {
+        endpoint =
+          "https://raw.githubusercontent.com/sib-swiss/sparql-llm/refs/heads/main/src/sparql-llm/tests/void_uniprot.ttl";
+      }
       const result = await sparqlEngine.query(query, {
         sources: [
           // Directly query the service description:

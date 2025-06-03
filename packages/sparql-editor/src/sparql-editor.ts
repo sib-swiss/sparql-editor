@@ -223,7 +223,6 @@ export class SparqlEditor extends HTMLElement {
   display: none !important;
 }`;
     }
-    console.log("this.examplesRepo", this.examplesRepo);
     const saveAsExampleBtn = this.examplesRepo
       ? `<button id="sparql-save-example-btn" class="btn top-btn" title="Save the current query as example">
     Save query as example
