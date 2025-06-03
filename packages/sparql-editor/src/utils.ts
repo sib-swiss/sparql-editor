@@ -66,6 +66,8 @@ export async function queryEndpoint(query: string, endpoint: string): Promise<Sp
   return json.results.bindings;
 }
 
+const sparqlEngine = new QueryEngine();
+
 /** Query the SPARQL endpoint or service description for metadata and return the results as an array of bindings.
  *
  * @param query
@@ -74,16 +76,32 @@ export async function queryEndpoint(query: string, endpoint: string): Promise<Sp
 export async function queryEndpointMeta(query: string, endpoint: string): Promise<SparqlResultBindings[]> {
   try {
     let queryResults = await queryEndpoint(query, endpoint);
-    if (queryResults.length === 0) {
-      // If no results from SPARQL endpoint we try to retrieve from the service description
-      const sparqlEngine = new QueryEngine();
-      queryResults = [];
+    if (queryResults.length > 0) return queryResults;
+    // If we're getting an example query (checking if the query contains specific patterns)
+    // if (query.includes("sh:SPARQLExecutable") && query.includes("sh:select|sh:ask|sh:construct|sh:describe")) {
+    //   console.log("Example query detected, skipping service description query");
+    //   return []; // Return empty results rather than attempting service description query
+    // }
+
+    // If no results from SPARQL endpoint we try to retrieve from the service description
+    // const sparqlEngine = new QueryEngine();
+    queryResults = [];
+    // console.log("queryEndpointMeta", query, endpoint);
+
+    const abortController = new AbortController();
+    const timeout = setTimeout(() => {
+      abortController.abort("Timeout querying service description");
+    }, 5000); // 5 second timeout for service description query
+
+    try {
       const result = await sparqlEngine.query(query, {
         sources: [
           // Directly query the service description:
           {type: "file", value: endpoint},
         ],
+        signal: abortController.signal,
       });
+
       // Convert comunica bindings to the same format as fetched SPARQL results
       if (result.resultType === "bindings") {
         const variables = (await result.metadata()).variables;
@@ -95,10 +113,14 @@ export async function queryEndpointMeta(query: string, endpoint: string): Promis
           queryResults.push(b);
         }
       }
+    } catch (error: any) {
+      console.log(`Error querying service description for ${endpoint}:`, error.message || error);
+    } finally {
+      clearTimeout(timeout);
     }
     return queryResults;
-  } catch (error) {
-    console.warn(`Error retrieving VoID description from ${endpoint}:`, error);
+  } catch (error: any) {
+    console.log(`Error querying SPARQL endpoint ${endpoint}:`, error.message || error);
   }
   return [];
 }
@@ -107,7 +129,7 @@ export async function getPrefixes(endpoint: string): Promise<{[key: string]: str
   // Get prefixes from the SPARQL endpoint using SHACL
   const prefixes: {[key: string]: string} = {};
   try {
-    const queryResults = await queryEndpoint(
+    const queryResults = await queryEndpointMeta(
       `PREFIX sh: <http://www.w3.org/ns/shacl#>
       SELECT DISTINCT ?prefix ?namespace
       WHERE { [] sh:namespace ?namespace ; sh:prefix ?prefix}
@@ -117,8 +139,8 @@ export async function getPrefixes(endpoint: string): Promise<{[key: string]: str
     queryResults.forEach(b => {
       prefixes[b.prefix.value] = b.namespace.value;
     });
-  } catch (error) {
-    console.warn(`Error retrieving Prefixes from ${endpoint}:`, error);
+  } catch (error: any) {
+    console.log(`Error retrieving Prefixes from ${endpoint}:`, error.message || error);
   }
   return prefixes;
 }
@@ -195,7 +217,6 @@ export async function getVoidDescription(
   const voidDescription: VoidDict = {};
   try {
     const queryResults = await queryEndpointMeta(voidQuery, endpoint);
-    // console.log(queryResults)
     queryResults.forEach(b => {
       clsSet.add(b.subjectClass.value);
       predSet.add(b.prop.value);
@@ -209,8 +230,8 @@ export async function getVoidDescription(
       if ("objectDatatype" in b) voidDescription[b.subjectClass.value][b.prop.value].push(b.objectDatatype.value);
     });
     return [voidDescription, queryResults, Array.from(clsSet).sort(), Array.from(predSet).sort()];
-  } catch (error) {
-    console.warn(`Error retrieving VoID description from ${endpoint} for autocomplete:`, error);
+  } catch (error: any) {
+    console.log(`Error retrieving VoID description from ${endpoint} for autocomplete:`, error.message || error);
   }
   return [voidDescription, [], Array.from(clsSet).sort(), Array.from(predSet).sort()];
 }
@@ -221,8 +242,8 @@ export async function getClassesFallback(endpoint: string) {
   try {
     const queryResults = await queryEndpoint(`SELECT DISTINCT ?cls WHERE { [] a ?cls . }`, endpoint);
     return queryResults.filter(b => !b.cls.value.startsWith(virtuosoNamespace)).map(b => b.cls.value);
-  } catch (error) {
-    console.warn(`Error retrieving classes from ${endpoint} for autocomplete:`, error);
+  } catch (error: any) {
+    console.log(`Error retrieving classes from ${endpoint} for autocomplete:`, error.message || error);
   }
   return [];
 }
@@ -233,8 +254,8 @@ export async function getPredicatesFallback(endpoint: string) {
     const queryResults = await queryEndpoint(`SELECT DISTINCT ?pred WHERE { [] ?pred [] . }`, endpoint);
     // Filter out the Virtuoso-specific predicates
     return queryResults.filter(b => !b.pred.value.startsWith(virtuosoNamespace)).map(b => b.pred.value);
-  } catch (error) {
-    console.warn(`Error retrieving predicates from ${endpoint} for autocomplete:`, error);
+  } catch (error: any) {
+    console.log(`Error retrieving predicates from ${endpoint} for autocomplete:`, error.message || error);
   }
   return ["http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "http://www.w3.org/2000/01/rdf-schema#label"];
 }
@@ -257,9 +278,8 @@ export async function getExampleQueries(endpoint: string): Promise<ExampleQuery[
     queryResults.forEach((b, index) => {
       exampleQueries.push({comment: b.comment.value, query: b.query.value, index: index + 1, iri: b.sq.value});
     });
-    // console.log(queryResults);
-  } catch (error) {
-    console.warn(`Error fetching or processing example queries from ${endpoint}:`, error);
+  } catch (error: any) {
+    console.log(`Error fetching or processing example queries from ${endpoint}:`, error.message || error);
   }
   return exampleQueries;
 }
