@@ -80,7 +80,12 @@ export class SparqlEditor extends HTMLElement {
     }
   }
   saveMetaToLocalStorage() {
-    localStorage.setItem("sparql-editor-metadata", JSON.stringify(this.meta));
+    try {
+      localStorage.setItem("sparql-editor-metadata", JSON.stringify(this.meta));
+    } catch (error) {
+      console.warn("Error saving metadata to local storage", error);
+      localStorage.removeItem("sparql-editor-metadata");
+    }
   }
 
   // Get prefixes, VoID and examples

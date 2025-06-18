@@ -29,16 +29,16 @@
     "dev": "vite",
     "build": "vite build",
     "test": "vitest run",
-    "upgrade": "npx npm-check-updates -u && npm install",
+    "upgrade": "npx npm-check-updates -u",
     "version": "npm run build && auto-changelog -p -o ../../CHANGELOG.md && git add ../../CHANGELOG.md && npm publish",
     "postversion": "git tag v$(npm pkg get version --no-workspaces | tr -d \\\") && git push origin v$(npm pkg get version --no-workspaces | tr -d \\\")"
   },
   "dependencies": {
-    "@comunica/query-sparql": "^4.1.0",
+    "@comunica/query-sparql": "^4.3.0",
     "@sib-swiss/sparql-overview": "*",
     "@zazuko/yasgui": "^4.5.0",
-    "highlight.js": "^11.10.0",
-    "mermaid": "^11.4.0",
+    "highlight.js": "^11.11.1",
+    "mermaid": "^11.6.0",
     "sparqljs": "^3.7.3"
   },
   "keywords": [

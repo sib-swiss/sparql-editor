@@ -31,18 +31,18 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "upgrade": "npx npm-check-updates -u && npm install",
+    "upgrade": "npx npm-check-updates -u",
     "version": "npm run build && npm publish"
   },
   "dependencies": {
-    "@comunica/query-sparql": "^4.1.0",
+    "@comunica/query-sparql": "^4.3.0",
     "@sigma/edge-curve": "^3.1.0",
     "@sigma/node-image": "^3.0.0",
     "graphology": "^0.26.0",
     "graphology-layout-force": "^0.2.4",
     "graphology-layout-forceatlas2": "^0.10.1",
     "iwanthue": "^2.0.0",
-    "sigma": "^3.0.0"
+    "sigma": "^3.0.2"
   },
   "keywords": [
     "SPARQL",
