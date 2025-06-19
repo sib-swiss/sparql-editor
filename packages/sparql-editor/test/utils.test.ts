@@ -1,5 +1,5 @@
 import {describe, it, expect} from "vitest";
-import {getVoidDescription, getExampleQueries, getPrefixes} from "../src/utils";
+import {getVoidDescription, getExampleQueries, getPrefixes} from "../src/metadata";
 import {QueryEngine} from "@comunica/query-sparql";
 
 const sparqlEngine = new QueryEngine();

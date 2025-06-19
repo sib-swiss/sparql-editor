@@ -3,27 +3,41 @@ import {CompleterConfig, AutocompletionToken} from "@zazuko/yasqe/build/ts/src/a
 import hljs from "highlight.js/lib/core";
 
 import {hljsDefineTurtle, hljsDefineSparql} from "./highlight-sparql";
-import {editorCss, yasguiCss, yasguiGripInlineCss, highlightjsCss} from "./styles";
+import {
+  editorCss,
+  yasguiCss,
+  yasguiGripInlineCss,
+  highlightjsCss,
+  saveIcon,
+  addPrefixesIcon,
+  overviewIcon,
+  reloadIcon,
+  sidebarIcon as toggleExamplesIcon,
+  browseExamplesIcon,
+  closeIcon,
+} from "./styles";
 // import { drawSvgStringAsElement } from "@zazuko/yasgui-utils";
 // import tooltip from "@zazuko/yasqe/src/tooltip";
 // import {warning} from "@zazuko/yasqe/src/imgs";
 // import {Parser} from "sparqljs";
 
 import {
+  compressUri,
+  createUseButton,
   extractAllSubjectsAndTypes,
   getSubjectForCursorPosition,
+  getServiceUriForCursorPosition,
+  generateTabLabel,
+} from "./utils";
+import {
+  EndpointsMetadata,
+  defaultPrefixes,
   getExampleQueries,
   getPrefixes,
   getVoidDescription,
-  EndpointsMetadata,
-  getServiceUriForCursorPosition,
-  compressUri,
-  defaultPrefixes,
-  generateTabLabel,
   getClassesFallback,
   getPredicatesFallback,
-  createUseButton,
-} from "./utils";
+} from "./metadata";
 import {SparqlOverview} from "@sib-swiss/sparql-overview";
 
 type Autocompleter = {name: string} & Partial<CompleterConfig>;
@@ -57,18 +71,18 @@ export class SparqlEditor extends HTMLElement {
     );
   }
 
-  // Return the current endpoint URL
+  /** Return the current endpoint URL */
   endpointUrl() {
     // console.log(this.yasgui?.getTab(), this.endpoints)
     return this.yasgui?.getTab()?.getEndpoint() || this.endpoints[0];
   }
 
-  // Return the object with the current endpoint metadata
+  /** Return the object with the current endpoint metadata */
   currentEndpoint() {
     return this.meta[this.endpointUrl()];
   }
 
-  // Load and save metadata to localStorage
+  /** Load metadata from localStorage */
   loadMetaFromLocalStorage(): EndpointsMetadata {
     const metaString = localStorage.getItem("sparql-editor-metadata");
     try {
@@ -79,27 +93,22 @@ export class SparqlEditor extends HTMLElement {
       return {};
     }
   }
+
+  /** Save metadata to localStorage */
   saveMetaToLocalStorage() {
     try {
       localStorage.setItem("sparql-editor-metadata", JSON.stringify(this.meta));
     } catch (error) {
       console.warn("Error saving metadata to local storage", error);
-      localStorage.removeItem("sparql-editor-metadata");
+      // localStorage.removeItem("sparql-editor-metadata");
     }
   }
 
-  // Get prefixes, VoID and examples
+  /** Get prefixes, VoID and examples */
   async getMetadata(endpoint: string | undefined) {
     if (!endpoint) return;
     if (!this.meta[endpoint]) {
-      this.meta[endpoint] = {
-        void: {},
-        voidQueryBindings: [],
-        classes: [],
-        predicates: [],
-        prefixes: {},
-        examples: [],
-      };
+      this.meta[endpoint] = {void: {}, voidQueryBindings: [], classes: [], predicates: [], prefixes: {}, examples: []};
     }
     if (!this.meta[endpoint].retrievedAt) {
       // Run the 3 async queries in parallel
@@ -128,7 +137,7 @@ export class SparqlEditor extends HTMLElement {
     }
   }
 
-  // Load current endpoint in the YASGUI input box
+  /** Load current endpoint in the YASGUI input box */
   async loadCurrentEndpoint(endpoint: string = this.endpointUrl()) {
     // console.log("Switching endpoint", endpoint);
     const statusLight = this.querySelector("#status-light") as HTMLElement;
@@ -187,6 +196,7 @@ export class SparqlEditor extends HTMLElement {
     statusLink.href = `https://sib-swiss.github.io/sparql-editor/check?url=${endpoint}`;
   }
 
+  /** Component initialization */
   async connectedCallback() {
     this.endpoints = (this.getAttribute("endpoint") || "").split(",").map(e => e.trim());
     this.meta = this.loadMetaFromLocalStorage();
@@ -230,7 +240,7 @@ export class SparqlEditor extends HTMLElement {
     }
     const saveAsExampleBtn = this.examplesRepo
       ? `<button id="sparql-save-example-btn" class="btn top-btn" title="Save the current query as example">
-    Save query as example
+    ${saveIcon}
   </button>`
       : "";
     this.className = "sparql-editor-container";
@@ -238,16 +248,22 @@ export class SparqlEditor extends HTMLElement {
 <div style="width: 100%;">
   <a id="status-link" href="" target="_blank" title="Loading..." style="display: inline-flex; width: 16px; height: 16px;">
     <div id="status-light" style="width: 10px; height: 10px; background-color: purple; border-radius: 50%; margin: 0 auto;"></div>
-  </a><button id="sparql-add-prefixes-btn" class="btn top-btn" title="Add prefixes commonly used in the selected endpoint to the query">
-    Add common prefixes
-  </button>${saveAsExampleBtn}<button id="sparql-examples-top-btn" class="btn top-btn" title="Browse examples available for the selected endpoint">
-    Browse examples
-  </button><button id="sparql-cls-overview-btn" class="btn top-btn" title="Overview of classes and their relations in the endpoint">
-    Classes overview
-  </button><button id="sparql-clear-cache-btn" class="btn top-btn" title="Refresh and update the endpoints metadata stored in the cache">
-    Refresh cache
-  </button><button id="sparql-toggle-examples-btn" class="btn top-btn" title="Toggle display of the examples panel">
-    Toggle examples
+  </a>
+  <button id="sparql-add-prefixes-btn" class="btn top-btn" title="Add prefixes commonly used in the selected endpoint to the query">
+    ${addPrefixesIcon}
+  </button>
+  <button id="sparql-cls-overview-btn" class="btn top-btn" title="Overview of classes and their relations in the endpoint">
+    ${overviewIcon}
+  </button>
+  <button id="sparql-examples-top-btn" class="btn top-btn" title="Browse examples available for the selected endpoint">
+    ${browseExamplesIcon}
+  </button>
+  ${saveAsExampleBtn}
+  <button id="sparql-clear-cache-btn" class="btn top-btn" title="Refresh and update the endpoints metadata stored in the cache">
+    ${reloadIcon}
+  </button>
+  <button id="sparql-toggle-examples-btn" class="btn top-btn" title="Toggle display of the examples panel">
+    ${toggleExamplesIcon}
   </button>
   <div id="yasgui"></div>
 </div>`;
@@ -273,10 +289,7 @@ export class SparqlEditor extends HTMLElement {
     };
     Yasgui.defaults.endpointCatalogueOptions = {
       ...Yasgui.defaults.endpointCatalogueOptions,
-      getData: () =>
-        this.endpoints.map(endpoint => ({
-          endpoint: endpoint,
-        })),
+      getData: () => this.endpoints.map(endpoint => ({endpoint: endpoint})),
       renderItem: (data, source) => {
         const contentDiv = document.createElement("div");
         contentDiv.innerText = data.value.endpoint;
@@ -388,7 +401,7 @@ export class SparqlEditor extends HTMLElement {
       //   console.log(l, token);
       // }
 
-      // // TODO: here is how we can show an error at a specific line
+      // // TODO: here is how we can show an error at a specific line with CodeMirror 5
       // const warningEl = drawSvgStringAsElement(warning);
       // warningEl.className = "parseErrorIcon";
       // // @ts-ignore TS is not smart enough to understand that Yasqe and Yasqe are same type...
@@ -421,13 +434,12 @@ export class SparqlEditor extends HTMLElement {
     //     return;
     //   }
     // })
-
     // mermaid.initialize({ startOnLoad: false });
     // await mermaid.run({
     //     querySelector: '.language-mermaid',
     // });
 
-    // Hack to add Describe links for IRIs in the results without touching the YASR table plugin
+    // NOTE: Hack to add Describe links for IRIs in the results without touching the YASR table plugin
     // But it is lost when we change the tab (user need to rerun the query to get the links back)
     // https://github.com/zazuko/Yasgui/blob/main/packages/yasr/src/plugins/table/index.ts#L76
     // https://datatables.net/extensions/buttons/
@@ -741,10 +753,8 @@ ex:${exampleUri} a sh:SPARQLExecutable${
       toggleExamplesBtn.style.display = "none";
       return;
     } else {
-      examplesTopBtnEl.textContent = btnTextContent;
+      examplesTopBtnEl.innerHTML = `${browseExamplesIcon} ${btnTextContent}`;
       examplesTopBtnEl.title = `${btnTextContent} available for the selected endpoint`;
-      examplesTopBtnEl.style.display = "inline-block";
-      toggleExamplesBtn.style.display = "inline-block";
       toggleExamplesBtn.addEventListener("click", () => this.toggleExamplesVisibility());
     }
     if (existingExampleQueriesEl && !forceReload) {
@@ -788,10 +798,13 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     // Add button to close dialog
     const exDialogCloseBtn = document.createElement("button");
     exDialogCloseBtn.className = "btn closeBtn";
-    exDialogCloseBtn.textContent = "Close";
+    exDialogCloseBtn.innerHTML = closeIcon;
     exDialogCloseBtn.style.position = "fixed";
     exDialogCloseBtn.style.top = "1.5em";
     exDialogCloseBtn.style.right = "2em";
+    exDialogCloseBtn.style.borderRadius = "50%";
+    // exDialogCloseBtn.style.width = "40px";
+    // exDialogCloseBtn.style.height = "40px";
     exQueryDialog.appendChild(exDialogCloseBtn);
     yasqeElParent.appendChild(exQueryDialog);
 
@@ -880,7 +893,7 @@ ex:${exampleUri} a sh:SPARQLExecutable${
 
     // Add button to open dialog
     const openExDialogBtn = document.createElement("button");
-    openExDialogBtn.textContent = btnTextContent;
+    openExDialogBtn.innerHTML = `${browseExamplesIcon} ${btnTextContent}`;
     openExDialogBtn.title = `${btnTextContent} available for the selected endpoint`;
     openExDialogBtn.className = "btn";
     exampleQueriesEl.appendChild(openExDialogBtn);
@@ -948,10 +961,7 @@ ex:${exampleUri} a sh:SPARQLExecutable${
     this.yasgui?.addTab(true, {
       ...Yasgui.Tab.getDefaults(),
       name: generateTabLabel(label),
-      requestConfig: {
-        ...Yasgui.defaults.requestConfig,
-        endpoint: this.endpointUrl(),
-      },
+      requestConfig: {...Yasgui.defaults.requestConfig, endpoint: this.endpointUrl()},
       yasqe: {value: query},
     });
     this.addPrefixesToQueryInEditor();
