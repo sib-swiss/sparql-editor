@@ -40,7 +40,7 @@ export const useIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="${iconSiz
 
 export const editorCss = `.sparql-editor-container {
   --btn-color: #e30613;
-  --btn-bg-color: #f8bca5;
+  --btn-bg-color: #ffe8e5;
   font-family: Arial, sans-serif;
   display: flex;
   flex-direction: row;

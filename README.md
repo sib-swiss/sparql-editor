@@ -23,27 +23,44 @@ You can also redeploy it for a specific endpoint, or set of endpoints using the 
   <details><summary>Click here to see the SPARQL query used to retrieve the VoID description.</summary>
 
   ```SPARQL
-  PREFIX void: <http://rdfs.org/ns/void#>
-  PREFIX void-ext: <http://ldf.fi/void-ext#>
-  SELECT DISTINCT ?subjectClass ?prop ?objectClass ?objectDatatype
+  PREFIX owl: <http://www.w3.org/2002/07/owl#>
+  PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+  PREFIX sh:<http://www.w3.org/ns/shacl#>
+  PREFIX sd:<http://www.w3.org/ns/sparql-service-description#>
+  PREFIX void:<http://rdfs.org/ns/void#>
+  PREFIX void-ext:<http://ldf.fi/void-ext#>
+  SELECT DISTINCT ?graph ?graphLabel ?subjectClass ?prop ?objectClass ?objectDatatype
+  ?triples ?subjectClassLabel ?objectClassLabel ?subjectClassComment ?objectClassComment ?propLabel ?propComment
   WHERE {
-      {
-          ?cp void:class ?subjectClass ;
-              void:propertyPartition ?pp .
-          ?pp void:property ?prop .
+        {
           OPTIONAL {
-              {
-                  ?pp  void:classPartition [ void:class ?objectClass ] .
-              } UNION {
-                  ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
-              }
+            ?graph sd:graph ?graphDesc .
+            OPTIONAL { ?graph rdfs:label ?graphLabel }
+            ?graphDesc void:classPartition ?cp .
           }
-      } UNION {
-          ?linkset void:subjectsTarget ?subjectClass ;
-              void:linkPredicate ?prop ;
-              void:objectsTarget ?objectClass .
-      }
-  }
+          ?cp void:class ?subjectClass ;
+            void:propertyPartition ?pp .
+          OPTIONAL { ?subjectClass rdfs:label ?subjectClassLabel }
+          OPTIONAL { ?subjectClass rdfs:comment ?subjectClassComment }
+          ?pp void:property ?prop .
+          OPTIONAL { ?pp void:triples ?triples }
+          OPTIONAL { ?prop rdfs:label ?propLabel }
+          OPTIONAL { ?prop rdfs:comment ?propComment }
+          OPTIONAL {
+            {
+              ?pp  void:classPartition [ void:class ?objectClass ] .
+              OPTIONAL { ?objectClass rdfs:label ?objectClassLabel }
+              OPTIONAL { ?objectClass rdfs:comment ?objectClassComment }
+            } UNION {
+              ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
+            }
+          }
+        } UNION {
+          ?linkset void:subjectsTarget [ void:class ?subjectClass ] ;
+            void:linkPredicate ?prop ;
+            void:objectsTarget [ void:class ?objectClass ] .
+        }
+  } ORDER BY ?subjectClass ?objectClass ?objectDatatype ?graph ?triples
   ```
 
   </details>
