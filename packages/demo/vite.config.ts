@@ -23,6 +23,7 @@ export default defineConfig({
         swisslipids: resolve(__dirname, "src/swisslipids.html"),
         hamap: resolve(__dirname, "src/hamap.html"),
         emi: resolve(__dirname, "src/emi.html"),
+        "metrin-kg": resolve(__dirname, "src/metrin-kg.html"),
       },
     },
   },
