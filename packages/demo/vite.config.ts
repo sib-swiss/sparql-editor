@@ -22,7 +22,7 @@ export default defineConfig({
         rhea: resolve(__dirname, "src/rhea.html"),
         swisslipids: resolve(__dirname, "src/swisslipids.html"),
         hamap: resolve(__dirname, "src/hamap.html"),
-        emi: resolve(__dirname, "src/metrin-kg.html"),
+        emi: resolve(__dirname, "src/emi.html"),
         "metrin-kg": resolve(__dirname, "src/metrin-kg.html"),
       },
     },
