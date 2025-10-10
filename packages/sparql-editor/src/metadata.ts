@@ -265,21 +265,23 @@ export async function getPredicatesFallback(endpoint: string) {
   return ["http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "http://www.w3.org/2000/01/rdf-schema#label"];
 }
 
+const DEFAULT_QUERY_GET_EXAMPLES = `PREFIX sh: <http://www.w3.org/ns/shacl#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT DISTINCT ?sq ?comment ?query
+WHERE {
+  ?sq a sh:SPARQLExecutable ;
+    rdfs:comment ?comment ;
+    sh:select|sh:ask|sh:construct|sh:describe ?query .
+} ORDER BY ?sq`;
+
 // Retrieve example queries from the SPARQL endpoint
-export async function getExampleQueries(endpoint: string): Promise<ExampleQuery[]> {
+export async function getExampleQueries(
+  endpoint: string,
+  queryToGetExamples: string = DEFAULT_QUERY_GET_EXAMPLES,
+): Promise<ExampleQuery[]> {
   const exampleQueries: ExampleQuery[] = [];
   try {
-    const queryResults = await queryEndpointMeta(
-      `PREFIX sh: <http://www.w3.org/ns/shacl#>
-      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-      SELECT DISTINCT ?sq ?comment ?query
-      WHERE {
-        ?sq a sh:SPARQLExecutable ;
-          rdfs:comment ?comment ;
-          sh:select|sh:ask|sh:construct|sh:describe ?query .
-      } ORDER BY ?sq`,
-      endpoint,
-    );
+    const queryResults = await queryEndpointMeta(endpoint, queryToGetExamples);
     queryResults.forEach((b, index) => {
       exampleQueries.push({comment: b.comment.value, query: b.query.value, index: index + 1, iri: b.sq.value});
     });
