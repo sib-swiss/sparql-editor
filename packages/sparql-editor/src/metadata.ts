@@ -281,7 +281,7 @@ export async function getExampleQueries(
 ): Promise<ExampleQuery[]> {
   const exampleQueries: ExampleQuery[] = [];
   try {
-    const queryResults = await queryEndpointMeta(endpoint, queryToGetExamples);
+    const queryResults = await queryEndpointMeta(queryToGetExamples, endpoint);
     queryResults.forEach((b, index) => {
       exampleQueries.push({comment: b.comment.value, query: b.query.value, index: index + 1, iri: b.sq.value});
     });
