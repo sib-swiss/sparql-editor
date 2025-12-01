@@ -282,6 +282,10 @@ export class SparqlEditor extends HTMLElement {
     //   saveExampleBtn.style.display = "none";
     // }
 
+    // NOTE: we cannot enable this by default, due to Credential is not supported if the CORS header ‘Access-Control-Allow-Origin’ is ‘*’
+    // We could make this configurable though (by maintainer through an attribute, or in the request config panel by the user)
+    // Yasgui.Yasqe.defaults.requestConfig.withCredentials = true;
+
     // NOTE: autocompleters are executed when Yasgui is instantiated
     Yasgui.Yasqe.defaults.autocompleters.splice(Yasgui.Yasqe.defaults.autocompleters.indexOf("prefixes"), 1);
     Yasgui.Yasqe.defaults.autocompleters.splice(Yasgui.Yasqe.defaults.autocompleters.indexOf("class"), 1);

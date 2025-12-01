@@ -2391,6 +2391,22 @@ li.CodeMirror-hint-active {
 .yasgui .autocompleteList:empty {
     display: none;
 }
+.yasgui .clearEndpointBtn {
+    background-color: #d1d1d1;
+    color: #505050;
+    border-radius: 3px;
+    cursor: pointer;
+    padding: 4px 8px;
+    margin: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    transition: opacity ease-in 200ms;
+}
+.yasgui .clearEndpointBtn:hover {
+    opacity: 0.8;
+}
 .yasgui .tabPanel {
     display: none;
     position: relative;
