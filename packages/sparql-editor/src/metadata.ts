@@ -267,11 +267,12 @@ export async function getPredicatesFallback(endpoint: string) {
 
 const DEFAULT_QUERY_GET_EXAMPLES = `PREFIX sh: <http://www.w3.org/ns/shacl#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX spex: <https://purl.expasy.org/sparql-examples/ontology#>
 SELECT DISTINCT ?sq ?comment ?query
 WHERE {
-  ?sq a sh:SPARQLExecutable ;
-    rdfs:comment ?comment ;
-    sh:select|sh:ask|sh:construct|sh:describe ?query .
+    ?sq a sh:SPARQLExecutable ;
+        rdfs:comment ?comment ;
+        sh:select|sh:ask|sh:construct|spex:describe ?query .
 } ORDER BY ?sq`;
 
 // Retrieve example queries from the SPARQL endpoint

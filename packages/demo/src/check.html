@@ -84,11 +84,12 @@ ORDER BY ?prefix`;
 
           const checkExamplesQuery = `PREFIX sh: <http://www.w3.org/ns/shacl#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX spex: <https://purl.expasy.org/sparql-examples/ontology#>
 SELECT DISTINCT ?sq ?comment ?query
 WHERE {
-  ?sq a sh:SPARQLExecutable ;
-    rdfs:comment ?comment ;
-    sh:select|sh:ask|sh:construct|sh:describe ?query .
+    ?sq a sh:SPARQLExecutable ;
+        rdfs:comment ?comment ;
+        sh:select|sh:ask|sh:construct|spex:describe ?query .
 } ORDER BY ?sq`;
           const exampleQueriesResults = await queryEndpoint(endpoint, checkExamplesQuery);
 
@@ -104,28 +105,45 @@ WHERE {
 
           const voidResults = await queryEndpoint(
             endpoint,
-            `PREFIX up: <http://purl.uniprot.org/core/>
-            PREFIX void: <http://rdfs.org/ns/void#>
-            PREFIX void-ext: <http://ldf.fi/void-ext#>
-            SELECT DISTINCT ?subjectClass ?prop ?objectClass ?objectDatatype
-            WHERE {
-              {
-                ?cp void:class ?subjectClass ;
-                    void:propertyPartition ?pp .
-                ?pp void:property ?prop .
-                OPTIONAL {
-                    {
-                        ?pp  void:classPartition [ void:class ?objectClass ] .
-                    } UNION {
-                        ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
-                    }
-                }
-              } UNION {
-                ?ls void:subjectsTarget [ void:class ?subjectClass ] ;
-                    void:linkPredicate ?prop ;
-                    void:objectsTarget [ void:class ?objectClass ] .
-              }
-            }`,
+            `PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX sh:<http://www.w3.org/ns/shacl#>
+PREFIX sd:<http://www.w3.org/ns/sparql-service-description#>
+PREFIX void:<http://rdfs.org/ns/void#>
+PREFIX void-ext:<http://ldf.fi/void-ext#>
+SELECT DISTINCT ?graph ?graphLabel ?subjectClass ?prop ?objectClass ?objectDatatype
+?triples ?subjectClassLabel ?objectClassLabel ?subjectClassComment ?objectClassComment ?propLabel ?propComment
+WHERE {
+      {
+        OPTIONAL {
+          ?graph sd:graph ?graphDesc .
+          OPTIONAL { ?graph rdfs:label ?graphLabel }
+          ?graphDesc void:classPartition ?cp .
+        }
+        ?cp void:class ?subjectClass ;
+          void:propertyPartition ?pp .
+        OPTIONAL { ?subjectClass rdfs:label ?subjectClassLabel }
+        OPTIONAL { ?subjectClass rdfs:comment ?subjectClassComment }
+
+        ?pp void:property ?prop .
+        OPTIONAL { ?pp void:triples ?triples }
+        OPTIONAL { ?prop rdfs:label ?propLabel }
+        OPTIONAL { ?prop rdfs:comment ?propComment }
+        OPTIONAL {
+          {
+            ?pp  void:classPartition [ void:class ?objectClass ] .
+            OPTIONAL { ?objectClass rdfs:label ?objectClassLabel }
+            OPTIONAL { ?objectClass rdfs:comment ?objectClassComment }
+          } UNION {
+            ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
+          }
+        }
+      } UNION {
+        ?linkset void:subjectsTarget [ void:class ?subjectClass ] ;
+          void:linkPredicate ?prop ;
+          void:objectsTarget [ void:class ?objectClass ] .
+      }
+} ORDER BY ?subjectClass ?objectClass ?objectDatatype ?graph ?triples`,
           );
 
           if (voidResults.length === 0) {
