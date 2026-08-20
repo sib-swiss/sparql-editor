@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "A User-Friendly SPARQL Query Editor Powered by Lightweight Metadata"
+repository-code: https://github.com/sib-swiss/sparql-editor
+type: conference-paper
+doi: 10.1007/978-3-031-99554-5_1
+date-released: 2026-01-01
+license: MIT
+conference:
+  name: "The Semantic Web: ESWC 2025 Satellite Events"
+collection-title: "The Semantic Web: ESWC 2025 Satellite Events"
+publisher:
+  name: Springer Nature Switzerland
+  city: Cham
+isbn: 978-3-031-99554-5
+pages: "3-7"
+year: 2026
+authors:
+  - given-names: Vincent
+    family-names: Emonet
+    orcid: https://orcid.org/0000-0002-1501-1082
+    affiliation: SIB Swiss Institute of Bioinformatics
+  - given-names: Ana-Claudia
+    family-names: Sima
+    orcid: https://orcid.org/0000-0003-3213-4495
+    affiliation: SIB Swiss Institute of Bioinformatics
+  - given-names: Tarcisio
+    family-names: Mendes de Farias
+    orcid: https://orcid.org/0000-0002-3175-5372
+    affiliation: SIB Swiss Institute of Bioinformatics

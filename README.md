@@ -226,3 +226,20 @@ Thanks to:
 
 - [Triply](https://triply.cc) for originally developing the YASGUI editor
 - [Zazuko](https://zazuko.com/) for keeping it up-to-date the last few years
+
+## Cite us
+
+```tex
+@InProceedings{10.1007/978-3-031-99554-5_1,
+  author="Emonet, Vincent
+  and Sima, Ana-Claudia
+  and Mendes de Farias, Tarcisio",
+  title="A User-Friendly SPARQL Query Editor Powered by Lightweight Metadata",
+  booktitle="The Semantic Web: ESWC 2025 Satellite Events",
+  year="2026",
+  publisher="Springer Nature Switzerland",
+  address="Cham",
+  pages="3--7",
+  isbn="978-3-031-99554-5"
+}
+```
