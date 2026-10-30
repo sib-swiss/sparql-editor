@@ -155,6 +155,8 @@ You can customize a few optional attributes when calling the custom element:
 - `examples-namespace`: the namespace used when saving a query as example (defaults to the endpoint URL + /.well-known/sparql-examples/ when not specified),
 - `examples-on-main-page`: the number of examples displayed on the main page (defaults to 10),
 - `add-limit`: the number of rows to be added as limit to the query before being sent, if no limit has been defined by the user (default to none)
+- `query-to-get-examples`: a custom SPARQL query (can be multiline) to retrieve example queries from the endpoint. The query should return bindings for `?sq` (query IRI), `?comment` (description), and `?query` (the SPARQL query text)
+- `query-to-get-void`: a custom SPARQL query (can be multiline) to retrieve the VoID description from the endpoint for autocomplete. The query should return the same bindings as the default VoID query
 - `style="--btn-color / --btn-bg-color"`: buttons color.
 
 ```html

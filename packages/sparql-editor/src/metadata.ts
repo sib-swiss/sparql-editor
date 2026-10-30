@@ -173,7 +173,7 @@ export async function getPrefixes(endpoint: string): Promise<{[key: string]: str
 //   }
 // }`;
 
-export const voidQuery = `PREFIX owl: <http://www.w3.org/2002/07/owl#>
+export const defaultVoidQuery = `PREFIX owl: <http://www.w3.org/2002/07/owl#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX sh:<http://www.w3.org/ns/shacl#>
 PREFIX sd:<http://www.w3.org/ns/sparql-service-description#>
@@ -216,6 +216,7 @@ WHERE {
 /** Get VoID description to get classes and properties for advanced autocomplete */
 export async function getVoidDescription(
   endpoint: string,
+  voidQuery: string = defaultVoidQuery,
 ): Promise<[VoidDict, SparqlResultBindings[], string[], string[]]> {
   const clsSet = new Set<string>();
   const predSet = new Set<string>();

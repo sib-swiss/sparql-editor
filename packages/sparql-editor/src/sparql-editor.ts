@@ -60,6 +60,7 @@ export class SparqlEditor extends HTMLElement {
   addLimit: number | undefined;
   dialogElOpen: HTMLDialogElement | undefined;
   queryToGetExamples: string | undefined;
+  queryToGetVoid: string | undefined;
   // TODO: make exampleQueries a dict with the query IRI as key, so if the window.location matches a key, it will load the query?
 
   constructor() {
@@ -125,7 +126,7 @@ export class SparqlEditor extends HTMLElement {
       ] = await Promise.all([
         getExampleQueries(endpoint, this.queryToGetExamples),
         getPrefixes(endpoint),
-        getVoidDescription(endpoint),
+        getVoidDescription(endpoint, this.queryToGetVoid),
       ]);
       this.meta[endpoint].retrievedAt = new Date().toISOString();
 
@@ -207,6 +208,7 @@ export class SparqlEditor extends HTMLElement {
     this.meta = this.loadMetaFromLocalStorage();
 
     this.queryToGetExamples = this.getAttribute("query-to-get-examples") || undefined;
+    this.queryToGetVoid = this.getAttribute("query-to-get-void") || undefined;
 
     // NOTE: will need to be removed at some point I guess
     // Check if examples contain the index field, if not reset cache
