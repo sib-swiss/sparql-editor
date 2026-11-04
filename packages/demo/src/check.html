@@ -103,9 +103,7 @@ WHERE {
             resultsDiv.innerHTML += `<h4>✅ Found ${exampleQueriesResults.length} example SPARQL queries</h4>`;
           }
 
-          const voidResults = await queryEndpoint(
-            endpoint,
-            `PREFIX owl: <http://www.w3.org/2002/07/owl#>
+          const checkVoidQuery = `PREFIX owl: <http://www.w3.org/2002/07/owl#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX sh:<http://www.w3.org/ns/shacl#>
 PREFIX sd:<http://www.w3.org/ns/sparql-service-description#>
@@ -114,37 +112,37 @@ PREFIX void-ext:<http://ldf.fi/void-ext#>
 SELECT DISTINCT ?graph ?graphLabel ?subjectClass ?prop ?objectClass ?objectDatatype
 ?triples ?subjectClassLabel ?objectClassLabel ?subjectClassComment ?objectClassComment ?propLabel ?propComment
 WHERE {
+  {
+    ?cp void:class ?subjectClass ;
+      void:propertyPartition ?pp .
+    ?pp void:property ?prop .
+    OPTIONAL {
       {
-        OPTIONAL {
-          ?graph sd:graph ?graphDesc .
-          OPTIONAL { ?graph rdfs:label ?graphLabel }
-          ?graphDesc void:classPartition ?cp .
-        }
-        ?cp void:class ?subjectClass ;
-          void:propertyPartition ?pp .
-        OPTIONAL { ?subjectClass rdfs:label ?subjectClassLabel }
-        OPTIONAL { ?subjectClass rdfs:comment ?subjectClassComment }
-
-        ?pp void:property ?prop .
-        OPTIONAL { ?pp void:triples ?triples }
-        OPTIONAL { ?prop rdfs:label ?propLabel }
-        OPTIONAL { ?prop rdfs:comment ?propComment }
-        OPTIONAL {
-          {
-            ?pp  void:classPartition [ void:class ?objectClass ] .
-            OPTIONAL { ?objectClass rdfs:label ?objectClassLabel }
-            OPTIONAL { ?objectClass rdfs:comment ?objectClassComment }
-          } UNION {
-            ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
-          }
-        }
+        ?pp  void:classPartition [ void:class ?objectClass ] .
+        OPTIONAL { ?objectClass rdfs:label ?objectClassLabel }
+        OPTIONAL { ?objectClass rdfs:comment ?objectClassComment }
       } UNION {
-        ?linkset void:subjectsTarget [ void:class ?subjectClass ] ;
-          void:linkPredicate ?prop ;
-          void:objectsTarget [ void:class ?objectClass ] .
+        ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
       }
-} ORDER BY ?subjectClass ?objectClass ?objectDatatype ?graph ?triples`,
-          );
+    }
+    # Optional metadata must come after the required patterns, otherwise Virtuoso returns nothing when there is no sd:graph
+    OPTIONAL {
+      ?graph sd:graph ?graphDesc .
+      ?graphDesc void:classPartition ?cp .
+      OPTIONAL { ?graph rdfs:label ?graphLabel }
+    }
+    OPTIONAL { ?pp void:triples ?triples }
+    OPTIONAL { ?subjectClass rdfs:label ?subjectClassLabel }
+    OPTIONAL { ?subjectClass rdfs:comment ?subjectClassComment }
+    OPTIONAL { ?prop rdfs:label ?propLabel }
+    OPTIONAL { ?prop rdfs:comment ?propComment }
+  } UNION {
+    ?linkset void:subjectsTarget [ void:class ?subjectClass ] ;
+      void:linkPredicate ?prop ;
+      void:objectsTarget [ void:class ?objectClass ] .
+  }
+} ORDER BY ?subjectClass ?objectClass ?objectDatatype ?graph ?triples`;
+          const voidResults = await queryEndpoint(endpoint, checkVoidQuery);
 
           if (voidResults.length === 0) {
             resultsDiv.innerHTML += `<h4>⚠️ No VoID description found</h4>
@@ -152,28 +150,7 @@ WHERE {
               to automatically generate a <a href="https://www.w3.org/TR/void/">VoID description</a> for the classes and predicates inside your endpoint,
               and upload it to your endpoint.</p>
               <p>We are running this query to retrieve the VoID description:</p>
-              <pre><code>PREFIX up: &lt;http://purl.uniprot.org/core/&gt;
-PREFIX void: &lt;http://rdfs.org/ns/void#&gt;
-PREFIX void-ext: &lt;http://ldf.fi/void-ext#&gt;
-SELECT DISTINCT ?subjectClass ?prop ?objectClass ?objectDatatype
-WHERE {
-  {
-    ?cp void:class ?subjectClass ;
-        void:propertyPartition ?pp .
-    ?pp void:property ?prop .
-    OPTIONAL {
-        {
-            ?pp  void:classPartition [ void:class ?objectClass ] .
-        } UNION {
-            ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
-        }
-    }
-  } UNION {
-    ?ls void:subjectsTarget [ void:class ?subjectClass ] ;
-        void:linkPredicate ?prop ;
-        void:objectsTarget [ void:class ?objectClass ] .
-  }
-}</code></pre>`;
+              <pre><code>${checkVoidQuery.replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</code></pre>`;
             return;
           } else {
             resultsDiv.innerHTML += `<h4>✅ Found VoID description for ${voidResults.length} classes</h4>`;

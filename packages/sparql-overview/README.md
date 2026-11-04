@@ -65,20 +65,9 @@ SELECT DISTINCT ?graph ?graphLabel ?subjectClass ?prop ?objectClass ?objectDatat
 ?triples ?subjectClassLabel ?objectClassLabel ?subjectClassComment ?objectClassComment ?propLabel ?propComment
 WHERE {
   {
-    OPTIONAL {
-      ?graph sd:graph ?graphDesc .
-      OPTIONAL { ?graph rdfs:label ?graphLabel }
-      ?graphDesc void:classPartition ?cp .
-    }
     ?cp void:class ?subjectClass ;
       void:propertyPartition ?pp .
-    OPTIONAL { ?subjectClass rdfs:label ?subjectClassLabel }
-    OPTIONAL { ?subjectClass rdfs:comment ?subjectClassComment }
-
     ?pp void:property ?prop .
-    OPTIONAL { ?pp void:triples ?triples }
-    OPTIONAL { ?prop rdfs:label ?propLabel }
-    OPTIONAL { ?prop rdfs:comment ?propComment }
     OPTIONAL {
       {
         ?pp  void:classPartition [ void:class ?objectClass ] .
@@ -88,6 +77,17 @@ WHERE {
         ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
       }
     }
+    # Optional metadata must come after the required patterns, otherwise Virtuoso returns nothing when there is no sd:graph
+    OPTIONAL {
+      ?graph sd:graph ?graphDesc .
+      ?graphDesc void:classPartition ?cp .
+      OPTIONAL { ?graph rdfs:label ?graphLabel }
+    }
+    OPTIONAL { ?pp void:triples ?triples }
+    OPTIONAL { ?subjectClass rdfs:label ?subjectClassLabel }
+    OPTIONAL { ?subjectClass rdfs:comment ?subjectClassComment }
+    OPTIONAL { ?prop rdfs:label ?propLabel }
+    OPTIONAL { ?prop rdfs:comment ?propComment }
   } UNION {
     ?linkset void:subjectsTarget [ void:class ?subjectClass ] ;
       void:linkPredicate ?prop ;

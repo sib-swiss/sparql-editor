@@ -173,6 +173,7 @@ export async function getPrefixes(endpoint: string): Promise<{[key: string]: str
 //   }
 // }`;
 
+// Required patterns are the same as GET_VOID_DESC in sparql-llm (indexing), extra metadata is only added through OPTIONALs
 export const defaultVoidQuery = `PREFIX owl: <http://www.w3.org/2002/07/owl#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX sh:<http://www.w3.org/ns/shacl#>
@@ -182,35 +183,35 @@ PREFIX void-ext:<http://ldf.fi/void-ext#>
 SELECT DISTINCT ?graph ?graphLabel ?subjectClass ?prop ?objectClass ?objectDatatype
 ?triples ?subjectClassLabel ?objectClassLabel ?subjectClassComment ?objectClassComment ?propLabel ?propComment
 WHERE {
+  {
+    ?cp void:class ?subjectClass ;
+      void:propertyPartition ?pp .
+    ?pp void:property ?prop .
+    OPTIONAL {
       {
-        OPTIONAL {
-          ?graph sd:graph ?graphDesc .
-          OPTIONAL { ?graph rdfs:label ?graphLabel }
-          ?graphDesc void:classPartition ?cp .
-        }
-        ?cp void:class ?subjectClass ;
-          void:propertyPartition ?pp .
-        OPTIONAL { ?subjectClass rdfs:label ?subjectClassLabel }
-        OPTIONAL { ?subjectClass rdfs:comment ?subjectClassComment }
-
-        ?pp void:property ?prop .
-        OPTIONAL { ?pp void:triples ?triples }
-        OPTIONAL { ?prop rdfs:label ?propLabel }
-        OPTIONAL { ?prop rdfs:comment ?propComment }
-        OPTIONAL {
-          {
-            ?pp  void:classPartition [ void:class ?objectClass ] .
-            OPTIONAL { ?objectClass rdfs:label ?objectClassLabel }
-            OPTIONAL { ?objectClass rdfs:comment ?objectClassComment }
-          } UNION {
-            ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
-          }
-        }
+        ?pp  void:classPartition [ void:class ?objectClass ] .
+        OPTIONAL { ?objectClass rdfs:label ?objectClassLabel }
+        OPTIONAL { ?objectClass rdfs:comment ?objectClassComment }
       } UNION {
-        ?linkset void:subjectsTarget [ void:class ?subjectClass ] ;
-          void:linkPredicate ?prop ;
-          void:objectsTarget [ void:class ?objectClass ] .
+        ?pp void-ext:datatypePartition [ void-ext:datatype ?objectDatatype ] .
       }
+    }
+    # Optional metadata must come after the required patterns, otherwise Virtuoso returns nothing when there is no sd:graph
+    OPTIONAL {
+      ?graph sd:graph ?graphDesc .
+      ?graphDesc void:classPartition ?cp .
+      OPTIONAL { ?graph rdfs:label ?graphLabel }
+    }
+    OPTIONAL { ?pp void:triples ?triples }
+    OPTIONAL { ?subjectClass rdfs:label ?subjectClassLabel }
+    OPTIONAL { ?subjectClass rdfs:comment ?subjectClassComment }
+    OPTIONAL { ?prop rdfs:label ?propLabel }
+    OPTIONAL { ?prop rdfs:comment ?propComment }
+  } UNION {
+    ?linkset void:subjectsTarget [ void:class ?subjectClass ] ;
+      void:linkPredicate ?prop ;
+      void:objectsTarget [ void:class ?objectClass ] .
+  }
 } ORDER BY ?subjectClass ?objectClass ?objectDatatype ?graph ?triples`;
 
 /** Get VoID description to get classes and properties for advanced autocomplete */
